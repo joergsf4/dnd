@@ -317,16 +317,16 @@ def main():
             act(b, "gamepads.1.a")
             b.shot("r2_myrnath_dead")
 
-            # --- desk, (2,5) ---
+            # --- lectern, (2,5) ---
             act(b, "gamepads.1.left")          # north -> west
             walk(b, 1)                         # (3,4)
             act(b, "gamepads.1.left")          # west -> south
             walk(b, 1)                         # (3,5)
             act(b, "gamepads.1.right")         # south -> west
             act(b, "gamepads.1.a")
-            b.shot("r2_desk")
+            b.shot("r2_lectern")
             act(b, "gamepads.1.a")
-            b.shot("r2_desk2")
+            b.shot("r2_lectern2")
             act(b, "gamepads.1.a")
 
             # --- vivisection table, (2,2) ---

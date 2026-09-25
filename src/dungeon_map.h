@@ -50,7 +50,7 @@ typedef enum
     OBJ_POD_BROKEN,        // a shattered clone pod (scenery, flavour text only)
     OBJ_MYRNATH,           // Room 2: the elf on the operating couch, "Wir" in his skull
     OBJ_OP_TABLE,          // Room 2: vivisection table (scenery; param0 picks the text)
-    OBJ_DESK,              // Room 2: bone desk with notes (lore)
+    OBJ_LECTERN,           // Room 2: lectern grown from the floor, notes on it (lore)
     OBJ_TABLET,            // Room 2: cartilage tablet on a wall (lore; param0 picks the text)
     OBJ_KIND_COUNT
 } ObjectKind;

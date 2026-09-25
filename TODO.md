@@ -28,7 +28,7 @@ together in Room 1 (the "Klonkammer" — see `BeschreibungInhaltVerticalSlice.md
 
 - [x] Room 2 (Operationssaal): Myrnath with the two-stage menu from the doc's demake dialogue
       (STÄ/GES to free the brain, failure kills it; lobotomise [GES 15] or take along), "Wir"
-      joins with its own class and avatar, lore desk/tablets, vivisection tables. Flat, no lift.
+      joins with its own class and avatar, lore lectern/tablets, vivisection tables. Flat, no lift.
       Verified via `tools/emutest.py room2`.
 - [x] Room-to-room doors, both ways (`map_enterRoom`: arrive in front of the matching door).
 

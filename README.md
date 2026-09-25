@@ -31,7 +31,7 @@ Same setup as the other Mega Drive projects in this workspace:
 Eye of the Beholder / Dungeon Master style: the player always stands in a cell centre facing a
 cardinal direction, and sees up to 5 cells ahead and 5 to either side. Walls are drawn with real
 perspective, textured and darkened with distance; floor and ceiling are a static perspective
-backdrop: a wet floor with glossy patches and a ribbed ceiling (mirrored on alternate steps, the classic trick that
+backdrop: a fleshy floor of bulging plates and a dark ribbed ceiling (mirrored on alternate steps, the classic trick that
 makes stepping read as movement).
 
 Because the viewpoint is always a cell centre and a cardinal direction, the ray through each
@@ -51,7 +51,9 @@ cell, pre-scaled by `make_view.py` for each distance 1-5 like the originals did 
 near, and in each column only if the wall there is farther away than the prop
 (`src/view_draw.s`, `viewMaskSpan`). A prop blocks its cell; it's used from a neighbouring cell.
 Some have an image per state (pool burst, chest opened; `objectProp()` in `src/dungeon_view.c`).
-The look is the Nautiloid's: chitin plates, sinews and veins.
+The look follows BG3's Nautiloid (reference shots in `screenso/`): near-black chitin ribs with
+glowing red membranes between them, a fleshy mauve floor, cold blue light, and every object
+grown rather than built.
 
 To change textures, the backdrop, the palette or the draw distance: edit `tools/make_view.py` and
 re-run it (`python3 tools/make_view.py --preview` also writes sample renders to
@@ -119,7 +121,7 @@ Room 2, the Operationssaal (7x6): Myrnath sits on an operating couch in the midd
 open skull. Break the skull [STÄ] or loosen the brain carefully [GES] (a failed check kills the
 brain, no second try), crush it, or ignore him. Once freed, "Wir" can be lobotomised [GES, 15:
 weaker, obeys blindly] or taken along as it is; either way it joins as the second party member
-with its own avatar. Also: three vivisection tables, a bone desk with notes, two lore tablets on
+with its own avatar. Also: three vivisection tables, a lectern grown from the floor with the mind flayers' notes, two lore tablets on
 the walls, and the door north to the outer deck, which stays shut until Room 3 exists. Doors work
 both ways: going through one puts the player in front of the matching door in the other room
 (`map_enterRoom`), and every room keeps its objects' state. D-Pad Up/Down walks forward/back, Left/Right turns 90°, A interacts with

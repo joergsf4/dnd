@@ -44,25 +44,35 @@ LMAX = 5                   # lateral cells visible either side
 DMAX = 5                   # depth cells visible
 
 # ---------------------------------------------------------------- palette (Mega Drive levels 0-7)
-# The Nautiloid (the mind flayers' ship the vertical slice takes place on) is organic throughout:
-# chitin-plated walls with sinews and veins, wet floors, ribbed ceilings.
+# The Nautiloid (the mind flayers' ship the vertical slice takes place on), after BG3's look:
+# near-black, blue-grey chitin ribs with glowing red membranes between them, a fleshy mauve floor,
+# everything grown rather than built; cold blue light for the ship's "technology".
+BLACK = 0
+CH0, CH1, CH2, CH3 = 1, 2, 3, 4          # chitin, darkest to highlight
+FL0, FL1, FL2 = 5, 6, 7                  # fleshy floor, dark to wet sheen
+MEM0, MEM1, MEM2 = 8, 9, 10              # glowing membrane, dark red to hot glow
+TEAL = 11                                # slime, pod glass
+BONE = 12                                # bone, cartilage, pale skin
+BLUE = 13                                # psionic / technological glow
+FLESH = 14                               # mind flayer skin, brains, fleshy rims
+GLINT = 15
 PAL = [
-    (0, 0, 0),   # 0 black / darkness
-    (1, 0, 1),   # 1 wall darkest: sinew gaps, deep shadow
-    (2, 1, 2),   # 2 wall dark
-    (3, 2, 3),   # 3 wall: chitin plates
-    (5, 3, 4),   # 4 wall highlight
-    (1, 1, 1),   # 5 floor dark (wet)
-    (2, 2, 2),   # 6 floor
-    (3, 3, 4),   # 7 floor sheen
-    (4, 2, 5),   # 8 purple (mind flayer skin)
-    (1, 3, 1),   # 9 slime green dark
-    (3, 6, 2),   # 10 slime green light
-    (1, 5, 5),   # 11 turquoise pod glass
-    (6, 5, 4),   # 12 bone / cartilage
-    (3, 5, 7),   # 13 blue glow
-    (5, 1, 2),   # 14 flesh red
-    (7, 7, 6),   # 15 bright glint
+    (0, 0, 0),   # BLACK
+    (1, 1, 1),   # CH0
+    (2, 2, 3),   # CH1
+    (3, 3, 4),   # CH2
+    (5, 5, 6),   # CH3
+    (2, 1, 2),   # FL0
+    (4, 2, 3),   # FL1
+    (5, 3, 4),   # FL2
+    (3, 0, 1),   # MEM0
+    (5, 1, 1),   # MEM1
+    (7, 3, 2),   # MEM2
+    (1, 5, 5),   # TEAL
+    (6, 5, 4),   # BONE
+    (3, 5, 7),   # BLUE
+    (5, 2, 4),   # FLESH
+    (7, 7, 6),   # GLINT
 ]
 RGB = [tuple(round(c * 255 / 7) for c in p) for p in PAL]
 SHADE_F = [1.0, 0.72, 0.48, 0.3]   # per distance band
@@ -77,8 +87,15 @@ def nearest(rgb, family=range(16)):
 
 
 def family_of(i):
-    """Wall colours only darken into wall colours, floor into floor, so distance keeps the tint."""
-    return range(0, 5) if i <= 4 else (0, 5, 6, 7) if i <= 7 else range(16)
+    """Colours darken with distance within their own family (chitin, floor, membrane), so the
+    distance keeps the tint instead of drifting into another material."""
+    if i <= CH3:
+        return range(0, CH3 + 1)
+    if i <= FL2:
+        return (BLACK, FL0, FL1, FL2)
+    if i <= MEM2:
+        return (BLACK, MEM0, MEM1, MEM2)
+    return range(16)
 
 
 SHADE = [[i if b == 0 else nearest(tuple(c * SHADE_F[b] for c in RGB[i]), family_of(i))
@@ -117,29 +134,54 @@ def vein(t, rng, x, y, length, c):
         x += rng.choice((-1, 0, 0, 1))
 
 
+def membrane(t, x0, y0, x1, y1):
+    """A glowing red membrane between ribs: an elongated oval, hottest down the middle, with
+    fibrous vertical striations and a dark chitin seam around it."""
+    cx, cy = (x0 + x1 - 1) / 2, (y0 + y1 - 1) / 2
+    rx, ry = (x1 - x0) / 2, (y1 - y0) / 2
+    for y in range(y0 - 1, y1 + 1):
+        for x in range(x0 - 1, x1 + 1):
+            if not (0 <= x < TEX and 0 <= y < TEX):
+                continue
+            if in_ellipse(x, y, cx, cy, rx, ry):
+                e = ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2
+                c = MEM2 if e < 0.12 else MEM1 if e < 0.6 else MEM0
+                if c != MEM2 and (x - x0) % 3 == 0:
+                    c = MEM0 if c == MEM1 else CH0             # fibres
+                t[y][x] = c
+            elif in_ellipse(x, y, cx, cy, rx + 1.2, ry + 1.2):
+                t[y][x] = CH0
+
+
 def organic_wall(seed):
-    """Chitin plates in columns, separated by dark sinew gaps, with segment joints and veins."""
+    """Two bays per cell: dark, slightly arched chitin ribs with lit edges, a glowing membrane in
+    each bay, and irregular overlapping chitin scales around it (nothing straight, nothing
+    regular -- straight plate lines read as riveted metal)."""
     rng = random.Random(seed)
-    t = blank(3)
-    joints = [rng.randint(8, 24) for _ in range(4)]        # joint height per plate column
-    for x in range(TEX):
-        col, px = x // 16, x % 16
-        for y in range(TEX):
-            jy = (y + joints[col]) % 22
-            if px < 2:
-                c = 1                                      # sinew gap between plates
-            elif jy < 2:
-                c = 2 if jy == 1 else 1                    # segment joint
-            elif px < 4 or jy == 2:
-                c = 4                                      # lit plate edge
-            elif px > 13:
-                c = 2                                      # plate curving away
-            else:
-                r = rng.random()
-                c = 2 if r < 0.10 else 4 if r < 0.13 else 3
-            t[y][x] = c
-    for _ in range(3):
-        vein(t, rng, rng.randint(4, 60), rng.randint(0, 30), rng.randint(14, 30), 14)
+    t = blank(CH0)
+    for y in range(TEX):                                   # scales: short lit arcs on dark ground
+        for x in range(TEX):
+            if rng.random() < 0.05:
+                t[y][x] = CH1
+    for _ in range(26):
+        cx, cy = rng.randint(0, 63), rng.randint(0, 63)
+        r = rng.randint(3, 6)
+        for dx in range(-r, r + 1):
+            yy = cy - int(math.sqrt(max(0, r * r - dx * dx)) * 0.6)
+            if 0 <= cx + dx < TEX and 0 <= yy < TEX:
+                t[yy][cx + dx] = CH1
+                if 0 <= yy + 1 < TEX:
+                    t[yy + 1][cx + dx] = CH0
+    for bay in (0, 32):
+        membrane(t, bay + 9, 10 + rng.randint(0, 3), bay + 27, 52 + rng.randint(0, 3))
+        for y in range(TEX):                               # rib, bowing out towards the middle
+            x = bay + int(round(2.5 * math.sin(math.pi * y / TEX)))
+            for i, c in enumerate((CH1, CH2, CH3, CH2, CH1, BLACK)):
+                if 0 <= x + i < TEX:
+                    t[y][x + i] = c
+            if y % 11 == 5 and 0 <= x + 2 < TEX:
+                t[y][x + 1] = t[y][x + 2] = CH1            # rib segments
+    rect(t, 0, 61, TEX, TEX, BLACK)                        # dark footing along the floor
     return t
 
 
@@ -148,35 +190,43 @@ def tex_wall():
 
 
 def tex_door():
-    """Sphincter door: a ring of flesh folded shut in a chitin frame."""
+    """Sphincter door: folds of red flesh drawn shut in a ring of chitin."""
     t = organic_wall(7)
-    rect(t, 6, 2, 58, 64, 1)                               # frame
-    ellipse(t, 32, 34, 24, 28, 14)
-    for i in range(14):                                    # folds of the sphincter
+    ellipse(t, 32, 33, 29, 31, CH0)
+    ellipse(t, 32, 33, 27, 29, CH2)                        # chitin ring
+    ellipse(t, 32, 33, 23, 25, MEM1)
+    for i in range(14):                                    # folds
         a = i * math.tau / 14
-        for rr in range(3, 26):
+        for rr in range(3, 24):
             x = int(32 + math.cos(a) * rr * 0.95)
-            y = int(34 + math.sin(a) * rr * 1.1)
-            if in_ellipse(x, y, 32, 34, 24, 28):
-                t[y][x] = 2
-    ellipse(t, 32, 34, 3, 4, 1)                            # the closed opening
+            y = int(33 + math.sin(a) * rr * 1.05)
+            if in_ellipse(x, y, 32, 33, 23, 25):
+                t[y][x] = MEM0
+    ellipse(t, 32, 33, 9, 10, MEM2)                        # glow from the other side
+    for i in range(14):
+        a = i * math.tau / 14
+        for rr in range(2, 10):
+            t[int(33 + math.sin(a) * rr)][int(32 + math.cos(a) * rr)] = MEM1
+    ellipse(t, 32, 33, 2, 3, BLACK)
     return t
 
 
 def tex_tablet():
-    """A cartilage tablet grown into the wall, glowing mind flayer diagrams on it (Room 2 lore)."""
+    """A slate of dark chitin grown into the wall, blue glowing diagrams on it (Room 2 lore)."""
     rng = random.Random(10)
     t = organic_wall(10)
-    rect(t, 9, 9, 55, 53, 12)                              # cartilage frame
-    rect(t, 12, 12, 52, 50, 1)                             # dark slate
-    ellipse(t, 32, 24, 9, 8, 13)                           # a head...
-    ellipse(t, 32, 24, 7, 6, 1)
+    rect(t, 8, 8, 56, 54, CH0)
+    rect(t, 10, 10, 54, 52, CH2)                           # ridged frame
+    rect(t, 10, 10, 54, 11, CH3)
+    rect(t, 13, 13, 51, 49, BLACK)
+    ellipse(t, 32, 24, 9, 8, BLUE)                         # a head...
+    ellipse(t, 32, 24, 7, 6, BLACK)
     for dx in (-6, -2, 2, 6):                              # ...with tentacles reaching round it
-        vein(t, rng, 32 + dx, 30, 10, 13)
-    for y in range(42, 49, 3):                             # rows of glyphs
-        for x in range(15, 50, 4):
+        vein(t, rng, 32 + dx, 30, 10, BLUE)
+    for y in range(41, 48, 3):                             # rows of glyphs
+        for x in range(16, 49, 4):
             if rng.random() < 0.8:
-                rect(t, x, y, x + 2, y + 1, 13)
+                rect(t, x, y, x + 2, y + 1, BLUE)
     return t
 
 
@@ -186,12 +236,13 @@ TEX_NAMES = ["TEX_WALL", "TEX_DOOR", "TEX_TABLET"]
 # ---------------------------------------------------------------- props (free-standing objects)
 # A prop stands in the middle of a floor cell, drawn as an upright billboard one cell wide and one
 # cell high (64x64 texels, bottom row on the floor), pre-scaled per distance like the originals
-# did it. T marks transparent texels.
+# did it. T marks transparent texels. Nothing on this ship is built, it's all grown: stalks,
+# claws, shells, membranes.
 
 T = -1
 
 
-def shade_body(t, x0, x1, c=3, lit=4, dark=2):
+def shade_body(t, x0, x1, c, lit, dark):
     """Side lighting for a round body: left edge lit, right edge in shadow."""
     for y in range(TEX):
         for x in range(TEX):
@@ -202,209 +253,277 @@ def shade_body(t, x0, x1, c=3, lit=4, dark=2):
                     t[y][x] = dark
 
 
+def shadow(t, rx):
+    ellipse(t, 32, 62, rx, 2, BLACK)
+
+
+def claw(t, x, y0, y1, bend, c=CH2, tip=CH3):
+    """A curved chitin claw/finger rising from the floor, bending by `bend` towards the top."""
+    for y in range(y0, y1):
+        k = (y1 - y) / max(1, y1 - y0)                     # 0 at the root, 1 at the tip
+        xx = int(round(x + bend * k * k))
+        w = 2 if k < 0.7 else 1
+        for i in range(w):
+            if 0 <= xx + i < TEX:
+                t[y][xx + i] = tip if k > 0.85 else c
+
+
 def prop_pool(broken):
-    """Larva pool: a fleshy basin on the floor, slime and tadpoles in it (burst: torn, empty)."""
+    """Larva pool: a chitin basin with a fleshy rim, teal slime and tadpoles in it (burst: torn,
+    drained, slime running down)."""
     rng = random.Random(2)
     t = blank(T)
+    shadow(t, 30)
     if broken:
-        ellipse(t, 32, 61, 31, 3, 9)                       # acid puddle around the base
-    for y in range(38, 63):                                # bowl body, rounded towards the floor
+        ellipse(t, 32, 61, 31, 3, TEAL)                    # slime puddle round the base
+    for y in range(38, 63):                                # basin, rounded towards the floor
         for x in range(TEX):
             if in_ellipse(x, y, 32, 38, 27, 24):
-                t[y][x] = 3
-    shade_body(t, 12, 51)
-    for x in (18, 31, 44):                                 # veins down the bowl
-        vein(t, rng, x, 42, 18, 14)
-    ellipse(t, 32, 38, 27, 8, 14)                          # rim, seen slightly from above
+                t[y][x] = CH2
+    shade_body(t, 12, 51, CH2, CH3, CH1)
+    for x in range(10, 56, 7):                             # ribs round the basin
+        for y in range(40, 61):
+            if t[y][x] != T:
+                t[y][x] = CH0
+    ellipse(t, 32, 38, 27, 8, FLESH)                       # fleshy rim, seen slightly from above
+    ellipse(t, 32, 37, 26, 6, FL2)
     if broken:
-        ellipse(t, 32, 38, 23, 6, 1)                       # drained, dark
-        for _ in range(9):                                 # torn edge on the rim
+        ellipse(t, 32, 38, 23, 6, BLACK)                   # drained
+        for _ in range(9):                                 # torn edge
             x = rng.randint(8, 56)
             rect(t, x - 2, 29, x + 2, 36, T)
         for _ in range(6):
-            vein(t, rng, rng.randint(10, 54), 42, rng.randint(6, 16), 9)   # acid running down
+            vein(t, rng, rng.randint(10, 54), 42, rng.randint(6, 16), TEAL)
     else:
-        ellipse(t, 32, 38, 23, 6, 9)                       # slime
-        ellipse(t, 29, 37, 12, 3, 10)                      # glow on the surface
+        ellipse(t, 32, 38, 23, 6, TEAL)                    # slime
+        ellipse(t, 29, 37, 12, 3, BLUE)                    # glow on the surface
         for _ in range(9):                                 # tadpoles: head + tail
             x, y = rng.randint(14, 48), rng.randint(35, 41)
             if in_ellipse(x, y, 32, 38, 21, 5):
-                t[y][x] = t[y][x + 1] = 1
-                t[y + 1][x + 2] = 1
+                t[y][x] = t[y][x + 1] = CH0
+                t[y + 1][x + 2] = CH0
         for _ in range(4):
             x, y = rng.randint(14, 50), rng.randint(35, 41)
             if in_ellipse(x, y, 32, 38, 21, 5):
-                t[y][x] = 15                               # bubbles
+                t[y][x] = GLINT                            # bubbles
     return t
 
 
 def prop_chest(opened):
-    """A cartilage chest: ribbed, bone coloured; lid thrown back once looted."""
+    """A cartilage chest: a ribbed, rounded box of pale cartilage with a fleshy clasp; the lid
+    peeled back once looted."""
     t = blank(T)
-    ellipse(t, 32, 62, 28, 2, 1)                           # shadow on the floor
+    shadow(t, 28)
     if opened:
-        rect(t, 11, 18, 53, 36, 3)                         # lid, inside facing us
-        rect(t, 11, 18, 53, 20, 12)
-        rect(t, 11, 18, 13, 36, 12)
-        rect(t, 51, 18, 53, 36, 12)
-        rect(t, 10, 34, 54, 41, 12)                        # rim of the open box
-        rect(t, 13, 35, 51, 40, 1)                         # dark, empty inside
+        ellipse(t, 32, 30, 21, 12, FL1)                    # lid peeled back, inside facing us
+        ellipse(t, 32, 30, 18, 9, FL0)
+        for dx in (-9, 0, 9):
+            vein(t, random.Random(dx), 32 + dx, 22, 14, MEM0)
+    for y in range(36, 63):                                # body: rounded box
+        for x in range(TEX):
+            if in_ellipse(x, y, 32, 48, 24, 16) and y >= 38:
+                t[y][x] = FL2
+    shade_body(t, 14, 50, FL2, BONE, FL1)
+    for x in (15, 23, 32, 41, 49):                         # cartilage ribs
+        for y in range(39, 62):
+            if t[y][x] != T:
+                t[y][x] = BONE if x < 32 else FL1
+            if x + 1 < TEX and t[y][x + 1] != T:
+                t[y][x + 1] = FL0
+    if opened:
+        ellipse(t, 32, 39, 22, 4, FL0)                     # the open top
+        ellipse(t, 32, 39, 19, 3, BLACK)
     else:
-        rect(t, 9, 32, 55, 41, 12)                         # closed lid
-        rect(t, 9, 32, 55, 34, 15)
-    rect(t, 10, 41, 54, 62, 12)                            # body
-    for x in range(14, 52, 7):
-        rect(t, x, 41, x + 2, 62, 3)                       # cartilage ribs
-    rect(t, 10, 60, 54, 62, 3)
-    if not opened:
-        rect(t, 29, 38, 35, 46, 14)                        # fleshy clasp
+        ellipse(t, 32, 39, 24, 6, BONE)                    # domed lid
+        ellipse(t, 32, 38, 21, 4, FL2)
+        rect(t, 12, 38, 52, 39, BONE)
+        ellipse(t, 32, 44, 4, 3, MEM1)                     # fleshy sphincter clasp
+        t[44][32] = BLACK
     return t
 
 
 def prop_corpse():
-    """A dead mind flayer, slumped on the floor: purple head, tentacles, dark robe."""
+    """A dead mind flayer, slumped on the floor: purple head, tentacles, dark robe with red trim."""
     t = blank(T)
-    ellipse(t, 32, 62, 30, 2, 1)                           # shadow
-    ellipse(t, 32, 53, 21, 11, 2)                          # robe
-    rect(t, 11, 53, 54, 63, 2)
-    rect(t, 20, 43, 44, 45, 12)                            # collar trim
-    ellipse(t, 30, 34, 9, 10, 8)                           # head, lolling to one side
+    shadow(t, 30)
+    ellipse(t, 32, 53, 21, 11, CH1)                        # robe
+    rect(t, 11, 53, 54, 63, CH1)
+    for y in range(44, 63):                                # a fold in the robe
+        t[y][40 + (y - 44) // 6] = CH0
+    rect(t, 20, 43, 44, 45, MEM1)                          # red collar trim
+    ellipse(t, 30, 34, 9, 10, FLESH)                       # head, lolling to one side
+    ellipse(t, 27, 30, 4, 3, FL2)                          # shine on the skull
     for dx in (-5, -2, 1, 4):                              # tentacles over the robe
-        rect(t, 30 + dx, 40, 30 + dx + 1, 53 - abs(dx), 8)
-    t[32][26] = t[32][33] = 15                             # dead white eyes
-    ellipse(t, 12, 60, 5, 3, 8)                            # hands on the floor
-    ellipse(t, 53, 60, 5, 3, 8)
+        rect(t, 30 + dx, 40, 30 + dx + 1, 53 - abs(dx), FLESH)
+    t[33][26] = t[33][33] = GLINT                          # dead white eyes
+    ellipse(t, 12, 60, 5, 3, FLESH)                        # hands on the floor
+    ellipse(t, 53, 60, 5, 3, FLESH)
     return t
 
 
 def prop_shrine():
-    """Restoration station: a big blue glowing tentacle bladder on a column."""
+    """Restoration station: a big blue glowing tentacle bladder on a ribbed chitin stalk."""
     t = blank(T)
-    ellipse(t, 32, 62, 16, 2, 1)
-    rect(t, 20, 57, 44, 63, 2)                             # base
-    rect(t, 20, 57, 44, 58, 4)
-    rect(t, 26, 34, 38, 57, 3)                             # column
-    rect(t, 26, 34, 28, 57, 4)
-    rect(t, 36, 34, 38, 57, 2)
-    for x, h in ((14, 16), (19, 22), (43, 22), (48, 16)):  # tentacles hanging from the bladder
-        rect(t, x, 26, x + 2, 26 + h, 13)
-        t[26 + h][x + (2 if x < 32 else -1)] = 13          # curled tip
-    ellipse(t, 32, 21, 19, 16, 13)                         # bladder
-    ellipse(t, 32, 26, 16, 9, 11)                          # darker underside
-    ellipse(t, 32, 21, 17, 12, 13)
-    ellipse(t, 26, 15, 6, 4, 15)                           # glow highlight
+    shadow(t, 18)
+    for dx, bend in ((-12, -6), (-7, -3), (7, 3), (12, 6)):   # roots spreading into the floor
+        claw(t, 32 + dx // 2, 52, 63, -bend, CH1, CH1)
+    for y in range(32, 60):                                # stalk, thicker at the bottom
+        w = 5 + (y - 32) // 7
+        rect(t, 32 - w, y, 32 + w, y + 1, CH2)
+        t[y][32 - w] = t[y][33 - w] = CH3
+        t[y][31 + w] = CH0
+        if y % 5 == 0:
+            rect(t, 32 - w, y, 32 + w, y + 1, CH0)         # ribs
+    for x, h in ((13, 16), (18, 22), (44, 22), (49, 16)):  # tentacles hanging from the bladder
+        rect(t, x, 26, x + 2, 26 + h, BLUE)
+        t[26 + h][x + (2 if x < 32 else -1)] = BLUE        # curled tip
+    ellipse(t, 32, 21, 19, 16, BLUE)                       # bladder
+    ellipse(t, 32, 27, 16, 8, TEAL)                        # darker underside
+    ellipse(t, 32, 21, 17, 12, BLUE)
+    for i in range(5):                                     # veins over it
+        vein(t, random.Random(20 + i), 20 + i * 6, 8, 12, TEAL)
+    ellipse(t, 26, 15, 6, 4, GLINT)                        # glow highlight
     return t
 
 
 def prop_pod(broken):
-    """Clone pod: an upright egg of chitin with a turquoise glass front (open, or shattered)."""
+    """Clone pod: an upright egg of ridged red flesh, held by dark chitin claws, its teal glass
+    front swung open (or shattered)."""
     rng = random.Random(8 if broken else 9)
     t = blank(T)
-    ellipse(t, 32, 62, 22, 2, 1)
-    ellipse(t, 32, 33, 20, 30, 2)                          # chitin shell
-    ellipse(t, 32, 33, 18, 28, 3)
-    shade_body(t, 19, 46)
-    ellipse(t, 32, 35, 13, 22, 1)                          # dark inside
+    shadow(t, 24)
+    ellipse(t, 32, 33, 20, 30, MEM0)                       # fleshy shell
+    for y in range(4, 63, 4):                              # horizontal ridges
+        for x in range(TEX):
+            if t[y][x] == MEM0:
+                t[y][x] = MEM1
+    shade_body(t, 17, 47, MEM1, MEM2, MEM0)
+    ellipse(t, 32, 35, 13, 22, BLACK)                      # dark inside
     if broken:
         for y in range(TEX):                               # jagged remains of the glass
             for x in range(TEX):
                 if in_ellipse(x, y, 32, 35, 13, 22) and not in_ellipse(x, y, 32, 35, 10, 18):
                     if (x * 7 + y * 3) % 5 < 3:
-                        t[y][x] = 11
+                        t[y][x] = TEAL
         for _ in range(5):
-            t[rng.randint(22, 50)][rng.randint(24, 40)] = 15   # glints on the shards
+            t[rng.randint(22, 50)][rng.randint(24, 40)] = GLINT
         for _ in range(8):                                 # shards on the floor
-            x = rng.randint(6, 58)
-            t[rng.randint(60, 63)][x] = rng.choice((11, 15))
+            t[rng.randint(60, 63)][rng.randint(6, 58)] = rng.choice((TEAL, GLINT))
     else:
         for _ in range(6):                                 # slime running down inside
-            vein(t, rng, rng.randint(24, 40), rng.randint(16, 30), rng.randint(8, 20), 10)
-        ellipse(t, 32, 53, 11, 3, 9)                       # slime pooled at the bottom
+            vein(t, rng, rng.randint(24, 40), rng.randint(16, 30), rng.randint(8, 20), TEAL)
         for y in range(TEX):                               # glass front swung open to the left
             for x in range(TEX):
-                if in_ellipse(x, y, 9, 34, 5, 21):
-                    t[y][x] = 11 if x > 6 else 15
-        rect(t, 13, 30, 18, 34, 12)                        # hinge
-    ellipse(t, 32, 60, 18, 3, 14)                          # sinews anchoring it to the floor
+                if in_ellipse(x, y, 8, 34, 5, 21):
+                    t[y][x] = TEAL if x > 5 else GLINT
+    for x, bend in ((13, 7), (17, 10), (47, -10), (51, -7)):   # claws gripping the shell
+        claw(t, x, 30, 63, bend)
+    ellipse(t, 32, 61, 16, 2, CH1)                         # root
     return t
 
 
 def prop_myrnath(dead):
-    """Myrnath: an elf sitting on a fleshy illithid couch, skull sawn open, the brain bulging out
-    (dead: slumped sideways, the skull empty)."""
+    """Myrnath: an elf in a chitin cradle, bound by fleshy tentacles, skull sawn open and the brain
+    bulging out (dead: slumped sideways, the skull empty)."""
     t = blank(T)
-    ellipse(t, 32, 62, 30, 2, 1)
-    rect(t, 4, 44, 60, 58, 14)                             # couch: a fleshy slab...
-    rect(t, 4, 44, 60, 46, 4)
-    for x in (8, 22, 42, 56):
-        rect(t, x, 58, x + 3, 63, 2)                       # ...on sinewy legs
+    shadow(t, 30)
     hx = 38 if dead else 32                                # head position (slumped when dead)
     hy = 22 if dead else 18
-    rect(t, 24, 28, 41, 46, 12)                            # pale torso
-    for y in (32, 37):
-        rect(t, 24, y, 41, y + 2, 15)                      # bandages
-    rect(t, 19, 29, 24, 44, 12)                            # arms
-    rect(t, 41, 29, 46, 44, 12)
-    rect(t, 24, 42, 41, 46, 2)                             # torn tunic
-    rect(t, 25, 46, 31, 60, 2)                             # legs hanging over the edge
-    rect(t, 34, 46, 40, 60, 2)
-    ellipse(t, hx, hy, 7, 8, 12)                           # face
-    t[hy + 1][hx - 3] = t[hy + 1][hx + 3] = 1              # eyes
-    rect(t, hx - 2, hy + 5, hx + 3, hy + 6, 14)            # mouth, twisted with pain
-    t[hy - 2][hx - 8] = t[hy - 1][hx - 8] = 12             # pointed ears
-    t[hy - 2][hx + 8] = t[hy - 1][hx + 8] = 12
+    for y in range(26, 63):                                # cradle: a chitin shell behind him
+        for x in range(TEX):
+            if in_ellipse(x, y, 32, 46, 26, 20) and not in_ellipse(x, y, 32, 40, 17, 16):
+                t[y][x] = CH2
+    shade_body(t, 12, 52, CH2, CH3, CH1)
+    for x in (9, 18, 46, 55):
+        for y in range(30, 62):
+            if t[y][x] != T:
+                t[y][x] = CH0                              # ribs of the cradle
+    rect(t, 24, 28, 41, 48, BONE)                          # pale torso
+    for y in (32, 38):
+        rect(t, 24, y, 41, y + 2, GLINT)                   # bandages
+    rect(t, 19, 29, 24, 46, BONE)                          # arms
+    rect(t, 41, 29, 46, 46, BONE)
+    rect(t, 24, 44, 41, 48, CH1)                           # torn tunic
+    rect(t, 25, 48, 31, 60, CH1)                           # legs
+    rect(t, 34, 48, 40, 60, CH1)
+    for y in (40, 54):                                     # tentacle restraints
+        rect(t, 14, y, 51, y + 2, FLESH)
+        rect(t, 14, y + 2, 51, y + 3, MEM0)
+    ellipse(t, hx, hy, 7, 8, BONE)                         # face
+    t[hy + 1][hx - 3] = t[hy + 1][hx + 3] = CH0            # eyes
+    rect(t, hx - 2, hy + 5, hx + 3, hy + 6, MEM0)          # mouth, twisted with pain
+    t[hy - 2][hx - 8] = t[hy - 1][hx - 8] = BONE           # pointed ears
+    t[hy - 2][hx + 8] = t[hy - 1][hx + 8] = BONE
     if dead:
-        ellipse(t, hx, hy - 6, 6, 3, 1)                    # the empty skull
+        ellipse(t, hx, hy - 6, 6, 3, BLACK)                # the empty skull
+        rect(t, hx - 4, hy - 4, hx + 4, hy - 3, MEM1)
     else:
-        ellipse(t, hx, hy - 8, 8, 6, 4)                    # the brain, bulging out
+        ellipse(t, hx, hy - 8, 8, 6, FLESH)                # the brain, bulging out
         for dx in (-5, -2, 1, 4):
-            rect(t, hx + dx, hy - 13, hx + dx + 1, hy - 4, 14)   # folds
-        t[hy - 12][hx - 3] = 15
+            rect(t, hx + dx, hy - 13, hx + dx + 1, hy - 4, MEM0)   # folds
+        t[hy - 12][hx - 3] = GLINT
     return t
 
 
 def prop_op_table():
-    """A vivisection table: a chitin slab on a tentacle stalk, dissected remains on it."""
+    """A vivisection table: a chitin slab carried by curved claws, lit red from below, remains
+    on it."""
     t = blank(T)
-    ellipse(t, 32, 62, 22, 2, 1)
-    rect(t, 27, 42, 37, 63, 2)                             # stalk
-    rect(t, 27, 42, 29, 63, 3)
-    ellipse(t, 32, 62, 12, 2, 14)                          # roots
-    rect(t, 4, 36, 60, 42, 3)                              # slab
-    rect(t, 4, 36, 60, 37, 4)
-    rect(t, 4, 41, 60, 42, 2)
-    ellipse(t, 22, 33, 10, 4, 14)                          # remains
-    ellipse(t, 40, 34, 7, 3, 12)
-    rect(t, 48, 33, 56, 35, 12)                            # a bone
-    rect(t, 10, 30, 12, 36, 15)                            # a surgical claw
+    shadow(t, 26)
+    for x, bend in ((14, 8), (24, 3), (40, -3), (50, -8)):   # claws carrying the slab
+        claw(t, x, 42, 63, bend, CH1, CH2)
+    ellipse(t, 32, 44, 22, 3, MEM1)                        # red glow on the underside
+    rect(t, 4, 36, 60, 42, CH2)                            # slab
+    rect(t, 4, 36, 60, 37, CH3)
+    rect(t, 4, 41, 60, 42, CH0)
+    for x in range(8, 60, 8):
+        t[38][x] = t[39][x] = CH1
+    ellipse(t, 22, 33, 10, 4, FLESH)                       # remains
+    ellipse(t, 22, 33, 6, 2, MEM1)
+    ellipse(t, 40, 34, 7, 3, BONE)
+    rect(t, 48, 33, 56, 35, BONE)                          # a bone
+    rect(t, 10, 30, 12, 36, CH3)                           # a surgical claw
     return t
 
 
-def prop_desk():
-    """A desk grown from bone, notes and a skull on it."""
+def prop_lectern():
+    """A lectern grown from the floor: a twisted chitin stalk opening into a shell-shaped plate
+    with blue glowing script on it -- the mind flayers' notes."""
+    rng = random.Random(11)
     t = blank(T)
-    ellipse(t, 32, 62, 28, 2, 1)
-    rect(t, 6, 36, 58, 40, 12)                             # top
-    rect(t, 6, 36, 58, 37, 15)
-    rect(t, 8, 40, 56, 60, 2)                              # front
-    for x in (10, 34):
-        rect(t, x, 43, x + 20, 50, 3)                      # drawers
-        rect(t, x + 9, 46, x + 11, 47, 12)
-    rect(t, 8, 60, 13, 63, 12)                             # feet
-    rect(t, 51, 60, 56, 63, 12)
-    rect(t, 12, 32, 26, 36, 15)                            # notes
-    rect(t, 16, 31, 30, 35, 7)
-    ellipse(t, 45, 31, 5, 5, 12)                           # a skull
-    t[30][43] = t[30][47] = 1
+    shadow(t, 16)
+    for dx, bend in ((-8, -5), (8, 5)):
+        claw(t, 32 + dx // 2, 54, 63, -bend, CH1, CH1)     # roots
+    for y in range(34, 60):                                # twisted stalk
+        x0 = 28 + int(2 * math.sin(y / 3))
+        rect(t, x0, y, x0 + 8, y + 1, CH2)
+        t[y][x0] = CH3
+        t[y][x0 + 7] = CH0
+    for y in range(16, 38):                                # shell-shaped plate, fanned ridges
+        for x in range(TEX):
+            if in_ellipse(x, y, 32, 38, 25, 20) and y < 36:
+                a = math.atan2(38 - y, x - 32)
+                t[y][x] = CH0 if int(a * 9) % 2 else CH1
+    for y in range(16, 38):                                # lit rim
+        for x in range(TEX):
+            if t[y][x] != T and not in_ellipse(x, y, 32, 38, 23, 18):
+                t[y][x] = CH3
+    for _ in range(9):                                     # glowing script, curling strokes
+        x, y = rng.randint(16, 46), rng.randint(22, 33)
+        for i in range(rng.randint(3, 6)):
+            if 0 <= y < TEX and 0 <= x + i < TEX and in_ellipse(x + i, y, 32, 38, 21, 16):
+                t[y][x + i] = BLUE
+            y += rng.choice((-1, 0, 1))
+    ellipse(t, 32, 36, 5, 2, MEM1)                         # where plate meets stalk: a fleshy node
     return t
 
 
 PROPS = [prop_pool(False), prop_pool(True), prop_chest(False), prop_chest(True), prop_corpse(),
          prop_shrine(), prop_pod(False), prop_pod(True), prop_myrnath(False), prop_myrnath(True),
-         prop_op_table(), prop_desk()]
+         prop_op_table(), prop_lectern()]
 PROP_NAMES = ["PROP_POOL", "PROP_POOL_BROKEN", "PROP_CHEST", "PROP_CHEST_OPEN", "PROP_CORPSE",
               "PROP_SHRINE", "PROP_POD_OPEN", "PROP_POD_BROKEN", "PROP_MYRNATH", "PROP_MYRNATH_DEAD",
-              "PROP_OP_TABLE", "PROP_DESK"]
+              "PROP_OP_TABLE", "PROP_LECTERN"]
 
 
 def bake_prop(sprite, d):
@@ -472,18 +591,32 @@ def backdrop_pixel(x, y):
     if z > MAXZ:
         return 0
     lat = (x + 0.5 - CX) * z / F
-    fl = (lat + 0.5) % 1.0
-    fz = (z - 0.5) % 1.0
-    w = 0.035 * max(1.0, z)                      # lines stay visible in the distance
+    band = band_of(z)
     if ceil:
-        rib = fz < 2.5 * w or fz > 1 - 2.5 * w   # organic ribs across the corridor
-        c = 2 if rib else 1
+        # dark chitin vault, ribs across it, a thin red glow along each rib
+        fz = (z - 0.5) % 1.0
+        w = 0.06 * max(1.0, z)
+        if fz < w or fz > 1 - w:
+            c = CH2
+        elif fz < 2 * w or fz > 1 - 2 * w:
+            c = CH1
+        else:
+            c = MEM0 if fz < 2.6 * w or fz > 1 - 2.6 * w else CH0   # red glow along the ribs
+        return SHADE[band][c]
+    # fleshy floor: irregular bulging plates with dark creases, a wet sheen on each bulge,
+    # fixed in world space (the wobble keeps the creases from reading as a tiled grid)
+    u = lat * 2.2 + 0.35 * math.sin(z * 2.7)
+    v = z * 2.2 + 0.35 * math.sin(lat * 3.1)
+    fu, fv = u % 1.0, v % 1.0
+    w = 0.07 * max(1.0, z * 0.8)
+    n = hash01(math.floor(u), math.floor(v))
+    if fu < w or fv < w:
+        c = FL0
+    elif (fu - 0.45) ** 2 + (fv - 0.55) ** 2 < 0.012 + 0.015 * n:
+        c = FL2
     else:
-        seam = fl < w or fl > 1 - w or fz < w or fz > 1 - w
-        # wet, uneven floor: dark patches and glossy puddles, fixed in world space
-        n = hash01(math.floor(lat * 3), math.floor(z * 5))
-        c = 5 if seam else 7 if n < 0.12 else 5 if n < 0.35 else 6
-    return SHADE[band_of(z)][c]
+        c = FL1 if n > 0.25 else FL0
+    return SHADE[band][c]
 
 
 def backdrop():

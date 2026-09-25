@@ -60,7 +60,7 @@ static u8 objectProp(const RoomObject *o)
         case OBJ_POD_OPEN:           return PROP_POD_OPEN;
         case OBJ_MYRNATH:            return (o->flags & OBJFLAG_TRIGGERED) ? PROP_MYRNATH_DEAD : PROP_MYRNATH;
         case OBJ_OP_TABLE:           return PROP_OP_TABLE;
-        case OBJ_DESK:               return PROP_DESK;
+        case OBJ_LECTERN:            return PROP_LECTERN;
         default:                     return PROP_POD_BROKEN;
     }
 }

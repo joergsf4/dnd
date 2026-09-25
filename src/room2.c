@@ -104,9 +104,9 @@ static void onOpTable(const RoomObject *obj)
     }
 }
 
-static void onDesk(void)
+static void onLectern(void)
 {
-    say("Ein Knochen-Schreibtisch.", "Notizen, fein säuberlich", "in fremder Schrift:");
+    say("Ein Pult, aus dem Boden", "gewachsen. Darauf glimmen", "fremde Schriftzeichen:");
     say("\"Die Larven reifen sieben", "Tage im Wirt. Dann beginnt", "die Umwandlung.\"");
 }
 
@@ -124,7 +124,7 @@ static void room2_onInteract(Player *p, RoomObject *obj)
     {
         case OBJ_MYRNATH:   onMyrnath(obj); break;
         case OBJ_OP_TABLE:  onOpTable(obj); break;
-        case OBJ_DESK:      onDesk(); break;
+        case OBJ_LECTERN:   onLectern(); break;
         case OBJ_TABLET:    onTablet(obj); break;
         case OBJ_DOOR_EXIT: dungeonObjects_tryDoor(p, obj); break;
         default: break;
@@ -140,7 +140,7 @@ static void room2_onInteract(Player *p, RoomObject *obj)
 //    2   T . V . . . V . 1     T tablets on the walls   V vivisection tables
 //    3   1 . . . M . . . 1     M Myrnath on the operating couch
 //    4   1 . . . . . . . T
-//    5   1 . D . . . V . 1     D bone desk
+//    5   1 . P . . . V . 1     P lectern with the mind flayers' notes
 //    6   1 . . . @ . . . 1     @ arrival from Room 1, facing north
 //    7   1 1 1 1 E 1 1 1 1     E door back to Room 1
 static const char *const room2Grid[8] = {
@@ -159,7 +159,7 @@ static const RoomObject room2Objects[] = {
     { 2, 2, OBJ_OP_TABLE,  0,      0, 0 },
     { 6, 2, OBJ_OP_TABLE,  1,      0, 0 },
     { 6, 5, OBJ_OP_TABLE,  2,      0, 0 },
-    { 2, 5, OBJ_DESK,      0,      0, 0 },
+    { 2, 5, OBJ_LECTERN,   0,      0, 0 },
     { 0, 2, OBJ_TABLET,    0,      0, 0 },
     { 8, 4, OBJ_TABLET,    1,      0, 0 },
     { 4, 7, OBJ_DOOR_EXIT, ROOM_1, 0, 0 },
