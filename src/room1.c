@@ -32,17 +32,27 @@ static void onLarvaPool(RoomObject *obj)
         return;
     }
 
-    // Once the danger is recognised, the pool is marked and investigating again is pointless.
+    // Once the danger is recognised, the pool is marked and investigating again is pointless. A
+    // Magier hero can set it off from a safe distance with Magierhand.
     bool marked = obj->flags & OBJFLAG_MARKED;
     const char *fresh[3] = { "Ein Becken voller zuckender", "Kaulquappen. Die Hülle", "scheint brüchig." };
     const char *known[2] = { "Das Becken ist markiert:", "Die Hülle ist instabil." };
-    const char *freshOpts[3] = { "Hineinfassen", "Untersuchen [INT]", "Weggehen" };
-    const char *knownOpts[2] = { "Hineinfassen", "Weggehen" };
+    enum { REACH, INVESTIGATE, MAGE_HAND, LEAVE };
+    const char *options[4];
+    u8 acts[4], n = 0;
+    options[n] = "Hineinfassen"; acts[n++] = REACH;
+    if (!marked) { options[n] = "Untersuchen [INT]"; acts[n++] = INVESTIGATE; }
+    if (party.members[0].cls == CLASS_MAGE) { options[n] = "Magierhand [Zauber]"; acts[n++] = MAGE_HAND; }
+    options[n] = "Weggehen"; acts[n++] = LEAVE;
 
-    u8 choice = marked ? textbox_show(known, 2, knownOpts, 2) : textbox_show(fresh, 3, freshOpts, 3);
-    if (marked && choice == 1) choice = 2;   // map onto the fresh menu's numbering
+    u8 choice = acts[marked ? textbox_show(known, 2, options, n) : textbox_show(fresh, 3, options, n)];
 
-    if (choice == 0)
+    if (choice == MAGE_HAND)
+    {
+        obj->flags |= OBJFLAG_BROKEN;
+        say("Eine Geisterhand stupst das", "Becken an - BOOM! Die Säure", "spritzt ins Leere.");
+    }
+    else if (choice == REACH)
     {
         Character *hero = &party.members[0];
         hero->hp = (hero->hp > 4) ? (hero->hp - 3) : 1;   // no death yet: never below 1 KP
@@ -50,7 +60,7 @@ static void onLarvaPool(RoomObject *obj)
         uiPanel_redrawChrome();
         say("BOOM! Das Becken platzt,", "Säure spritzt dich an.", "-3 KP Schaden.");
     }
-    else if (choice == 1)
+    else if (choice == INVESTIGATE)
     {
         if (skillCheck_run(&party.members[0], ATTR_INT, 12))
         {
@@ -60,7 +70,7 @@ static void onLarvaPool(RoomObject *obj)
         else
             say("Du erkennst nichts", "Besonderes.", NULL);
     }
-    // choice 2, "Weggehen": nothing happens
+    // LEAVE: nothing happens
 }
 
 static void onCorpse(RoomObject *obj)

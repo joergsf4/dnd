@@ -42,7 +42,7 @@ together in Room 1 (the "Klonkammer" — see `BeschreibungInhaltVerticalSlice.md
 - [x] Key items (`ITEM_RUNE`, `ITEM_GOLD_KEY`, `ITEM_SCROLL` in `src/inventory.h`), shown in the
       panel while carried.
 - [x] Room 4 (Kapselsaal): Schattenherz knocking in her pod, the socket console (rune from Room 5
-      frees her; she joins, heals in combat), the console with three buttons — it stands in
+      frees her; she joins as the party's paladin), the console with three buttons — it stands in
       Room 4, decided with the user; the doc's Szene 5 had it in the lab — (1 nothing, 2 two imps
       break out and attack, 3 the inmates die), gate to Room 6, passage to Room 5.
 - [x] Room 5 (Labor): dead cleric (rune + key), ornate chest (key: 25 gold, scroll, onyx), the
@@ -86,8 +86,12 @@ together in Room 1 (the "Klonkammer" — see `BeschreibungInhaltVerticalSlice.md
       interactive screen.
 
 ## Combat
-- [ ] Two spells so far (Magier: Geschoss, Schattenherz: Heilen); a spell list per class is the
-      natural next step.
+- [x] D&D 5e / BG3 level-1 class features (README, "Class features"): Kämpfer, Schurke, Magier,
+      Paladin; party menu on B.
+- [ ] Not in yet from the class guide: fighting style Bogenschießen (no ranged weapons), the
+      paladin's cure-poison use of Heilende Hände (no poison yet), Magierhand beyond the larva
+      pool, a short rest (features reset per fight / at restoration stations instead).
+- [ ] Levels / XP: everything is level 1 (the slice ends before level 2 would matter).
 - [ ] No fleeing, no status effects, no XP/levels; enemies pick targets at random.
 - [ ] Balance is a first guess (5e-like level-1 values in `party.c`, `ENEMY_IMP` in combat.c).
 - [ ] Room 1's larva pool still never takes the hero below 1 KP (death only happens in combat).

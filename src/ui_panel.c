@@ -27,9 +27,9 @@ static void drawSlotText(u8 i)
     text_draw(c->name, TEXT_COL, row);
     sprintf(text, "KP %2d/%2d", c->hp, c->hpMax);
     text_draw(text, TEXT_COL, row + 1);
-    if (c->mpMax > 0)
+    if (c->mpMax > 0)   // class resource: spell slots (Magier), Heilende-Hände pool (paladin)
     {
-        sprintf(text, "ZP %2d/%2d", c->mp, c->mpMax);
+        sprintf(text, "%s %2d/%2d", c->cls == CLASS_SHADOWHEART ? "HH" : "ZP", c->mp, c->mpMax);
         text_draw(text, TEXT_COL, row + 2);
     }
 }
@@ -89,6 +89,7 @@ void uiPanel_redrawChrome(void)
     text_draw("STEUERKREUZ:", UI_PANEL_COL, 22);
     text_draw("GEHEN/DREHEN", UI_PANEL_COL, 23);
     text_draw("A: BENUTZEN", UI_PANEL_COL, 24);
+    text_draw("B: GRUPPE", UI_PANEL_COL, 25);
 }
 
 void uiPanel_drawStatus(const Player *p)

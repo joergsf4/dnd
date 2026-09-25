@@ -5,11 +5,12 @@
 
 static const CharClass classOrder[3] = { CLASS_FIGHTER, CLASS_ROGUE, CLASS_MAGE };
 
-// Two lines per class, at most 19 characters each (they sit right of the portrait).
+// Two lines per class, at most 21 characters each (they sit right of the portrait): the class
+// features (src/abilities.h).
 static const char *const blurbs[3][2] = {
-    { "STARK UND ZÄH,",      "SCHWERE RÜSTUNG." },
-    { "FLINK UND GESCHICKT,", "TRIFFT PRÄZISE." },
-    { "SCHWACH IM NAHKAMPF,", "ZAUBERT GESCHOSSE." },
+    { "ERHOLEN, SPALTEN,",    "NIEDERWERFEN. RK 17." },
+    { "HINTERHÄLTIG, FLINK,", "VERSTECKEN, EXPERTISE" },
+    { "FEUERPFEIL, SCHLAF,",  "MAGISCHES GESCHOSS." },
 };
 
 #define PORTRAIT_X 40      // px: the bust, left half of the screen

@@ -5,6 +5,8 @@
 #include "figures.h"
 #include "dungeon_view.h"
 #include "dungeon_objects.h"
+#include "skill_check.h"
+#include "party.h"
 #include "game.h"
 
 // Every text line must fit the textbox: at most 27 characters on screen (an umlaut counts as one),
@@ -114,7 +116,26 @@ static void onOrnateChest(RoomObject *obj)
     }
     if (!inventory_hasItem(ITEM_GOLD_KEY))
     {
-        say("Eine verzierte Truhe.", "Sie ist verschlossen.", NULL);
+        // A Schurke picks the lock (GES, with Expertise); anyone else needs the key.
+        if (party.members[0].cls != CLASS_ROGUE)
+        {
+            say("Eine verzierte Truhe.", "Sie ist verschlossen.", NULL);
+            return;
+        }
+        const char *lines[2] = { "Eine verzierte Truhe.", "Sie ist verschlossen." };
+        const char *options[2] = { "Schloss knacken [GES]", "Weggehen" };
+        if (textbox_show(lines, 2, options, 2)) return;
+        if (!skillCheck_run(&party.members[0], ATTR_DEX, 15))
+        {
+            say("Der Dietrich rutscht ab.", NULL, NULL);
+            return;
+        }
+        obj->flags |= OBJFLAG_TRIGGERED;
+        inventory_giveItem(ITEM_SCROLL);
+        inventory_addGold(25);
+        inventory_addGem(1);
+        uiPanel_drawInventory();
+        say("Klick! Das Schloss gibt", "nach. Darin: 25 Gold, eine", "Schriftrolle und ein Onyx.");
         return;
     }
     obj->flags |= OBJFLAG_TRIGGERED;

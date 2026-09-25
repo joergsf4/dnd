@@ -127,8 +127,8 @@ tools/
 
 ## Current state
 
-Boots into the hero creation screen: class (Kämpfer/Schurke/Magier) with up/down, one of three
-portraits per class with left/right, Start confirms. That creates the one starting party member,
+Boots into the hero creation screen: class (Kämpfer/Schurke/Magier, their features listed) with
+up/down, one of three portraits per class with left/right, Start confirms. That creates the one starting party member,
 auto-named after the class — then into Room 1, the Klonkammer (6x5): the
 hero wakes in front of the open clone pod standing in the room (two intro boxes on
 first entry, `RoomDef.onEnter`). In the room: the larva pool (reach in: BOOM, -3 KP and the pool
@@ -172,8 +172,8 @@ The gate north to the bridge stays shut until Room 6 exists; the passage east le
 the lab: a dead cleric carrying the Eldritch rune and an ornate key, an ornate chest the key opens
 (gold, a scroll, an onyx), and a woman in a pod next to the transformation switch -- "Auslösen"
 turns her into a mind flayer before the party's eyes (the view flickers purple), "Vernichten"
-switches the pod off. With the rune in the socket, Schattenherz is free and joins (she heals in
-combat). Key items show in the panel while carried.
+switches the pod off. With the rune in the socket, Schattenherz is free and joins (the party's
+paladin, she heals with Heilende Hände). Key items show in the panel while carried.
 
 ## Combat
 
@@ -188,9 +188,41 @@ Turn-based menu fights in the first-person view, like *Shining in the Darkness*:
   when it's shown -- only one kind of figure is ever on screen at a time.
 - Everyone acts in initiative order (d20 + DEX, rolled once per fight). The player picks every
   party member's action in the message area: Angriff (d20 + atk vs. AC, 20 = critical: damage
-  die twice), Geschoss (Magier, 2 ZP, never misses), Heilen (Schattenherz, 2 ZP), Heiltrank (any member, revives the fallen),
-  Abwehr (+2 AC until their next turn). Picking a target moves a marker over that enemy
-  (`textbox_setCursorHook`).
+  die twice; the Magier has Zaubertrick instead), Fähigkeit / Zauber (the class features below),
+  Heiltrank (2W4+2, any member, revives the fallen), Abwehr (+2 AC until their next turn).
+  Picking a target moves a marker over that enemy (`textbox_setCursorHook`). Advantage and
+  disadvantage roll two d20 ("Vort." / "Nacht." in the roll line).
+- An intact acid tank within 3 cells is a target too: once hit it bursts, 2d6 to every enemy.
+- Won: gold, fallen members come to with 1 KP. Everyone down: game over, restart.
+
+### Class features (D&D 5e / BG3, level 1)
+
+No feats at level 1, so the classes are their features (`src/abilities.h` has the overview,
+`src/combat.c` the fight side). Hit points and AC follow the level-1 rules (`src/party.c`).
+
+- **Kämpfer** (the hero, and Lae'zel): *Erholen* (Second Wind, a bonus action: 1W10+1 KP, once
+  per fight -- the turn goes on), *Spalten* (Cleave: one swing at up to three enemies, half
+  damage), *Niederwerfen* (Topple: on a hit the target lies prone -- advantage against it, and it
+  spends its next turn getting up); both once per fight. Fighting style: the hero Verteidigung
+  (+1 AC, in the AC of 17), Lae'zel Großwaffen (damage dice of 1 and 2 are rerolled).
+- **Schurke**: *Hinterhältiger Angriff* (+1W6 when attacking with advantage or while an ally is in
+  the fight), *Verstecken* (GES + Expertise vs. 11: enemies can't target the rogue, the next attack
+  has advantage), *Expertise* (+2 on every GES check, e.g. Myrnath, and *Schloss knacken* on Room
+  5's ornate chest without the key).
+- **Magier**: two spell slots per rest (ZP in the panel). Cantrips *Feuerpfeil* (1W10, sets the
+  acid tank off) and *Kältestrahl* (1W8, the target's next attack has disadvantage); spells
+  *Magisches Geschoss* (3x 1W4+1, never misses, leftover darts fly on), *Schlaf* (5W8 hit points of
+  enemies fall asleep, weakest first: they skip their turns until hurt, attacks against them
+  have advantage), *Magierrüstung* (AC 13 + GES for the rest of the game), and *Schild* as a
+  reaction (when a hit is coming that +5 AC would stop, the game asks). *Magierhand* sets Room
+  1's larva pool off from a safe distance.
+- **Paladin** (Schattenherz -- a cleric in BG3, a paladin here): heavy armour (AC 18),
+  *Heilende Hände* (Lay on Hands: a pool of 5 KP, spent freely, revives the fallen; HH in the
+  panel), *Göttlicher Sinn* (in a fight: the enemies' hit points; in the dungeon: fiends in the
+  room and their direction, hidden ones too).
+
+The restoration stations are the long rest: full KP, ZP and HH. **B** in the dungeon opens the
+party menu: Heiltrank, Magierrüstung, Heilende Hände, Göttlicher Sinn.
 - An intact acid tank within 3 cells is a target too: once hit it bursts, 2d6 to every enemy.
 - Won: gold, fallen members come to with 1 KP. Everyone down: game over, restart.
 

@@ -13,6 +13,7 @@
 #include "room5.h"
 #include "figures.h"
 #include "encounter.h"
+#include "abilities.h"
 #include "text.h"
 
 // Sprite tiles are reserved just below the font; the default 420 would collide with the view's two
@@ -87,6 +88,13 @@ int main(bool hardReset)
         else if (pressed & BUTTON_RIGHT) { player_turn(&player, 1); moved = TRUE; }
 
         if (moved) redrawWorld(&player);
+
+        if (pressed & BUTTON_B)
+        {
+            ab_partyMenu(&player);
+            redrawWorld(&player);
+            uiPanel_redrawChrome();
+        }
 
         if (pressed & BUTTON_A)
         {
