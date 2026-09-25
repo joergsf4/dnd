@@ -10,6 +10,7 @@ is needed (and none is available in this sandbox).
     python3 tools/emutest.py room1               # Room 1: interact with every object
     python3 tools/emutest.py room2               # through the door: Room 2, Myrnath, back to Room 1
     python3 tools/emutest.py room3               # on to Room 3: Lae'zel joins, fight against 3 imps
+    python3 tools/emutest.py room45              # through Room 3 to Rooms 4 and 5: rune, Schattenherz
     python3 tools/emutest.py look --class 2       # any scenario, but pick Mage instead of Fighter
 
 Screenshots go to out/emutest/ (gitignored). Needs a built out/rom.bin (./build.sh).
@@ -143,6 +144,26 @@ def start_game(b, cls_down=0):
     act(b, "gamepads.1.a")
 
 
+def to_room3(b, cls_down=0):
+    """New game, straight through Rooms 1 and 2 (Myrnath left alone) to Room 3's door."""
+    start_game(b, cls_down)
+    act(b, "gamepads.1.right")                 # south -> west
+    walk(b, 2)                                 # (1,3)
+    act(b, "gamepads.1.right")                 # west -> north
+    walk(b, 2)                                 # (1,1)
+    act(b, "gamepads.1.left")                  # north -> west, door to Room 2
+    act(b, "gamepads.1.a", 20)
+    act(b, "gamepads.1.a")                     # Room 2 intro
+    act(b, "gamepads.1.right")                 # north -> east
+    walk(b, 1)                                 # (5,6)
+    act(b, "gamepads.1.left")                  # east -> north
+    walk(b, 5)                                 # (5,1)
+    act(b, "gamepads.1.left")                  # north -> west
+    walk(b, 1)                                 # (4,1)
+    act(b, "gamepads.1.right")                 # west -> north, door to Room 3
+    act(b, "gamepads.1.a", 20)
+
+
 def walk(b, n):
     for _ in range(n):
         act(b, "gamepads.1.up")
@@ -150,7 +171,7 @@ def walk(b, n):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("scenario", choices=["create", "look", "tour", "room1", "room2", "room3"])
+    ap.add_argument("scenario", choices=["create", "look", "tour", "room1", "room2", "room3", "room45"])
     ap.add_argument("--class", dest="cls", type=int, default=0, choices=[0, 1, 2],
                      help="0 fighter (default), 1 rogue, 2 mage")
     args = ap.parse_args()
@@ -408,6 +429,109 @@ def main():
                 if i % 3 == 2:
                     b.shot(f"r3_fight_{i:02d}")
             b.shot("r3_after")
+
+        if args.scenario == "room45":
+            # Straight through Rooms 1-3 (fight by pressing A), then Room 4: button 3, the empty
+            # socket, Schattenherz knocking; Room 5: cleric (rune + key), chest, the
+            # transformation; back to Room 4 to free Schattenherz.
+            to_room3(b, args.cls)
+            for _ in range(7):                 # Lae'zel's scene
+                act(b, "gamepads.1.a", 40)
+            b.frames(150)                      # imps close in
+            for _ in range(40):                # the fight
+                act(b, "gamepads.1.a", 45)
+            b.shot("r45_after_fight")
+            walk(b, 7)                         # (2,1)
+            act(b, "gamepads.1.a", 20)         # door to Room 4
+            b.shot("r4_arrive")
+            act(b, "gamepads.1.a")
+            b.shot("r4_view")
+
+            walk(b, 2)                         # (4,5), button console ahead
+            act(b, "gamepads.1.a", 10)
+            b.shot("r4_buttons")
+            act(b, "gamepads.1.down", 6)
+            act(b, "gamepads.1.down", 6)       # Taste 3
+            act(b, "gamepads.1.a", 20)
+            b.shot("r4_button3")
+            act(b, "gamepads.1.a")
+
+            act(b, "gamepads.1.left")          # north -> west
+            walk(b, 1)                         # (3,5)
+            act(b, "gamepads.1.right")         # west -> north
+            walk(b, 2)                         # (3,3)
+            act(b, "gamepads.1.left")          # north -> west, pod console
+            act(b, "gamepads.1.a")
+            b.shot("r4_socket_empty")
+            act(b, "gamepads.1.a")
+            act(b, "gamepads.1.right")         # west -> north
+            walk(b, 1)                         # (3,2)
+            act(b, "gamepads.1.left")          # north -> west
+            walk(b, 2)                         # (1,2)
+            act(b, "gamepads.1.left")          # west -> south, Schattenherz's pod
+            act(b, "gamepads.1.a", 30)
+            b.shot("r4_shadowheart_pod")
+            act(b, "gamepads.1.a")
+            act(b, "gamepads.1.a")
+
+            act(b, "gamepads.1.left")          # south -> east
+            walk(b, 6)                         # (7,2)
+            act(b, "gamepads.1.right")         # east -> south
+            walk(b, 2)                         # (7,4)
+            act(b, "gamepads.1.left")          # south -> east, passage to Room 5
+            act(b, "gamepads.1.a", 20)
+            b.shot("r5_arrive")
+            act(b, "gamepads.1.a")
+            act(b, "gamepads.1.a")
+            b.shot("r5_view")
+
+            walk(b, 1)                         # (2,2)
+            act(b, "gamepads.1.right")         # east -> south
+            walk(b, 1)                         # (2,3)
+            act(b, "gamepads.1.left")          # south -> east, the cleric
+            act(b, "gamepads.1.a")
+            b.shot("r5_cleric")                # rune + key, panel shows both
+            act(b, "gamepads.1.a")
+            act(b, "gamepads.1.left")          # east -> north
+            walk(b, 1)                         # (2,2)
+            act(b, "gamepads.1.right")         # north -> east
+            walk(b, 2)                         # (4,2), the chest ahead
+            act(b, "gamepads.1.a")
+            b.shot("r5_chest")
+            act(b, "gamepads.1.a")
+            b.shot("r5_chest_open")
+            act(b, "gamepads.1.left")          # east -> north, the switch
+            act(b, "gamepads.1.a")
+            b.shot("r5_switch")
+            act(b, "gamepads.1.a", 20)         # Taste 1: Auslösen
+            act(b, "gamepads.1.a", 180)        # "Lila Nebel..." -> transformation (~2 s)
+            b.shot("r5_transformed")
+            act(b, "gamepads.1.a")
+            act(b, "gamepads.1.left")          # north -> west
+            b.shot("r5_pod_flayer_side")
+            walk(b, 1)                         # (3,2)
+            act(b, "gamepads.1.right")         # west -> north, the pod
+            b.shot("r5_pod_flayer")
+            act(b, "gamepads.1.left")          # north -> west
+            walk(b, 2)                         # (1,2)
+            act(b, "gamepads.1.a", 20)         # door back to Room 4 -> (7,4) facing west
+            b.shot("r4_back")
+
+            act(b, "gamepads.1.right")         # west -> north
+            walk(b, 1)                         # (7,3)
+            act(b, "gamepads.1.left")          # north -> west
+            walk(b, 4)                         # (3,3), past the button console at (4,4)
+            act(b, "gamepads.1.a")
+            b.shot("r4_socket_menu")
+            act(b, "gamepads.1.a", 20)         # Rune einsetzen
+            b.shot("r4_pod_opens")
+            act(b, "gamepads.1.a", 30)
+            b.shot("r4_shadowheart")
+            act(b, "gamepads.1.a")
+            act(b, "gamepads.1.a")
+            b.shot("r4_joined")
+            act(b, "gamepads.1.a")
+            b.shot("r45_final")
     finally:
         b.close()
 

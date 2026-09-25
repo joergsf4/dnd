@@ -46,6 +46,7 @@ void uiPanel_initSprites(void)
         {
             case CLASS_WIR:    def = &avatar_wir_sprite; break;
             case CLASS_LAEZEL: def = &avatar_laezel_sprite; break;
+            case CLASS_SHADOWHEART: def = &avatar_shadowheart_sprite; break;
             default:           def = &avatar_sprite; break;
         }
         avatars[i] = SPR_addSprite(def, UI_PANEL_COL * 8, row * 8, TILE_ATTR(PAL1, FALSE, FALSE, FALSE));
@@ -64,6 +65,12 @@ void uiPanel_drawInventory(void)
     sprintf(text, "TRÄNKE:  %2d", inventory.healingPotions);
     text_draw(text, UI_PANEL_COL, 16);
     text_draw(inventory.hasBasicGear ? "AUSRÜST.: JA" : "AUSRÜST.: - ", UI_PANEL_COL, 17);
+    for (u8 i = 0; i < ITEM_COUNT; i++)   // key items, one per row, only while carried
+    {
+        text_draw("            ", UI_PANEL_COL, 18 + i);
+        if (inventory_hasItem((ItemId) i))
+            text_draw(inventory_itemName((ItemId) i), UI_PANEL_COL, 18 + i);
+    }
 }
 
 void uiPanel_redrawChrome(void)
@@ -73,9 +80,9 @@ void uiPanel_redrawChrome(void)
 
     uiPanel_drawInventory();
 
-    text_draw("STEUERKREUZ:", UI_PANEL_COL, 19);
-    text_draw("GEHEN/DREHEN", UI_PANEL_COL, 20);
-    text_draw("A: BENUTZEN", UI_PANEL_COL, 21);
+    text_draw("STEUERKREUZ:", UI_PANEL_COL, 22);
+    text_draw("GEHEN/DREHEN", UI_PANEL_COL, 23);
+    text_draw("A: BENUTZEN", UI_PANEL_COL, 24);
 }
 
 void uiPanel_drawStatus(const Player *p)

@@ -39,15 +39,17 @@ together in Room 1 (the "Klonkammer" — see `BeschreibungInhaltVerticalSlice.md
       breach, the fight, an acid tank to burst, a restoration station before the door to Room 4.
       Verified via `tools/emutest.py room3`.
 
+- [x] Key items (`ITEM_RUNE`, `ITEM_GOLD_KEY`, `ITEM_SCROLL` in `src/inventory.h`), shown in the
+      panel while carried.
+- [x] Room 4 (Kapselsaal): Schattenherz knocking in her pod, the socket console (rune from Room 5
+      frees her; she joins, heals in combat), the console with three buttons — it stands in
+      Room 4, decided with the user; the doc's Szene 5 had it in the lab — (1 nothing, 2 two imps
+      break out and attack, 3 the inmates die), gate to Room 6, passage to Room 5.
+- [x] Room 5 (Labor): dead cleric (rune + key), ornate chest (key: 25 gold, scroll, onyx), the
+      transformation switch (the woman turns into a mind flayer, or the pod goes dark).
+      Rooms 4/5 verified via `tools/emutest.py room45`.
+
 ## Room-by-room roadmap (light — detailed planning happens per room, not now)
-- [ ] **Order: Room 5 before Room 4** — Room 4's console needs the rune from Room 5. The doc is
-      inconsistent about where the 3-button console stands (Room 4 in the overview, the lab in
-      Szene 5); decide when planning those rooms.
-- [ ] **Room 4** (locked door + console): needs an identified-item inventory (`hasItem[]`, see
-      below) and uses `RoomObject`'s already-reserved `param0`/`param1` fields (target room +
-      required item) — no struct changes needed. Multi-button console is just another `ObjectKind`.
-- [ ] **Room 5** (transformation reveal): a sequence of no-choice `textbox_show()` calls, no new
-      system needed. The morph itself is a sprite-frame swap, art not mechanics.
 - [ ] **Room 6** (timed boss): a persistent countdown on the panel. With combat in place, "rounds"
       can be combat rounds plus steps outside fights; bigger figures (Zhalk 48x64 in the doc, far
       larger on our screen) may need drawing into the view instead of hardware sprites (sprite
@@ -73,22 +75,19 @@ together in Room 1 (the "Klonkammer" — see `BeschreibungInhaltVerticalSlice.md
 ## Party & characters
 - [ ] Letter-grid name entry (D-pad-driven on-screen keyboard) if auto-naming ever feels wrong —
       explicitly deferred when this was built, not forgotten.
-- [ ] Recruiting the rest of the party — "Wir" (Room 2) and Lae'zel (Room 3) are in;
-      Schattenherz (Room 4) follows the same pattern (`party_addMember` + `uiPanel_initSprites`),
-      each with an avatar in `tools/make_avatar.py`. "Wir" is meant to be a temporary companion in
-      the doc; nothing removes it yet. What lobotomised changes beyond stats is open too.
+- [ ] "Wir" is meant to be a temporary companion in the doc; nothing removes it yet. What
+      lobotomised changes beyond stats is open too. Schattenherz shows as "SCHATTEN" in the
+      panel and combat texts (8 characters max).
 - [ ] D&D-derived stat block (STR/DEX/CON/INT/WIS/CHA, AC, saving throws) — the current model is
       class + HP/MP + three small (1-5) skill-check modifiers, not real ability scores. Decide how
       much of real D&D rules to keep vs. simplify.
-- [ ] Identified-item inventory (`ItemId` enum + `bool hasItem[]`, additive alongside
-      `src/inventory.c`'s stackable counts) — needed once Room 4/5 introduce key items (Eldritch
-      Rune, Gold Key).
+- [ ] The scroll from Room 5 has no use yet (a one-shot combat spell would fit).
 - [ ] Real inventory/equipment screen — the panel's item block is a live readout, not an
       interactive screen.
 
 ## Combat
-- [ ] Only one spell (Magier: Geschoss). Schattenherz (Room 4) brings healing; a spell list per
-      class is the natural next step.
+- [ ] Two spells so far (Magier: Geschoss, Schattenherz: Heilen); a spell list per class is the
+      natural next step.
 - [ ] No fleeing, no status effects, no XP/levels; enemies pick targets at random.
 - [ ] Balance is a first guess (5e-like level-1 values in `party.c`, `ENEMY_IMP` in combat.c).
 - [ ] Room 1's larva pool still never takes the hero below 1 KP (death only happens in combat).

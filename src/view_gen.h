@@ -33,7 +33,21 @@
 #define PROP_TANK 13
 #define PROP_TANK_BROKEN 14
 #define PROP_IMPS 15
-#define PROP_COUNT 16
+#define PROP_POD_SEALED 16
+#define PROP_POD_DEAD 17
+#define PROP_POD_SHADOWHEART 18
+#define PROP_POD_CONSOLE 19
+#define PROP_POD_CONSOLE_LIT 20
+#define PROP_BUTTON_CONSOLE 21
+#define PROP_POD_WOMAN 22
+#define PROP_POD_FLAYER 23
+#define PROP_POD_DARK 24
+#define PROP_SWITCH 25
+#define PROP_SWITCH_USED 26
+#define PROP_CLERIC 27
+#define PROP_ORNATE_CHEST 28
+#define PROP_ORNATE_CHEST_OPEN 29
+#define PROP_COUNT 30
 #define VIEW_HALF_K 56   // a wall at depth z is 2 * VIEW_HALF_K / z rows high
 #define VIEW_CY 80
 
@@ -922,7 +936,7 @@ static const ViewEvent viewEvents[866] = {
 
 // Props: record offset in viewProps per prop and distance (d = 1..VIEW_DMAX), and the column
 // pair of a prop's centre d cells ahead and l to the right (index l + VIEW_LMAX).
-static const u32 viewPropOffset[16][6] = {
+static const u32 viewPropOffset[30][6] = {
     { 0, 0, 5548, 6946, 7596, 7962 },
     { 0, 8208, 13446, 14800, 15428, 15776 },
     { 0, 16012, 20546, 21720, 22278, 22568 },
@@ -939,6 +953,20 @@ static const u32 viewPropOffset[16][6] = {
     { 0, 110894, 115154, 116272, 116776, 117082 },
     { 0, 117284, 120912, 121882, 122338, 122612 },
     { 0, 122784, 126444, 127432, 127884, 128172 },
+    { 0, 128358, 135366, 137144, 137958, 138450 },
+    { 0, 138768, 145776, 147554, 148368, 148860 },
+    { 0, 149178, 156186, 157964, 158778, 159270 },
+    { 0, 159588, 163390, 164368, 164790, 165064 },
+    { 0, 165250, 169052, 170030, 170452, 170726 },
+    { 0, 170912, 175588, 176824, 177404, 177758 },
+    { 0, 177970, 184978, 186756, 187570, 188062 },
+    { 0, 188380, 195388, 197166, 197980, 198472 },
+    { 0, 198790, 205798, 207576, 208390, 208882 },
+    { 0, 209200, 212334, 213190, 213574, 213804 },
+    { 0, 213948, 216276, 216904, 217202, 217366 },
+    { 0, 217484, 219762, 220356, 220644, 220822 },
+    { 0, 220936, 225798, 227064, 227652, 227974 },
+    { 0, 228184, 234276, 235842, 236576, 236986 },
 };
 static const s16 viewPropCenter[6][11] = {
     { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },

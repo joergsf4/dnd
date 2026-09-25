@@ -26,3 +26,25 @@ void inventory_grantBasicGear(void)
 {
     inventory.hasBasicGear = TRUE;
 }
+
+static const char *const itemNames[ITEM_COUNT] = { "RUNE", "SCHLÜSSEL", "SCHRIFTROLLE" };
+
+void inventory_giveItem(ItemId item)
+{
+    inventory.items[item] = TRUE;
+}
+
+void inventory_takeItem(ItemId item)
+{
+    inventory.items[item] = FALSE;
+}
+
+bool inventory_hasItem(ItemId item)
+{
+    return inventory.items[item];
+}
+
+const char *inventory_itemName(ItemId item)
+{
+    return itemNames[item];
+}

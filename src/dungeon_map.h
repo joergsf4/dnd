@@ -57,6 +57,14 @@ typedef enum
     OBJ_ACID_TANK,         // explosive acid tank: a combat target that hurts all enemies
     OBJ_FIRE,              // burning wreckage (scenery)
     OBJ_BREACH,            // Room 3: tear in the hull on a wall, the sky of Avernus beyond
+    OBJ_POD_SEALED,        // Room 4: sealed pod with an inmate (TRIGGERED: released, MARKED: dead)
+    OBJ_SHADOWHEART_POD,   // Room 4: Schattenherz's pod (TRIGGERED: she's free)
+    OBJ_POD_CONSOLE,       // Room 4: console by her pod, a socket for the rune
+    OBJ_BUTTON_CONSOLE,    // Room 4: console with three buttons (TRIGGERED: button 2 or 3 used)
+    OBJ_WOMAN_POD,         // Room 5: pod with a woman (TRIGGERED: transformed, BROKEN: switched off)
+    OBJ_SWITCH,            // Room 5: transformation switch (TRIGGERED: used)
+    OBJ_CLERIC,            // Room 5: dead cleric carrying rune and key (TRIGGERED: searched)
+    OBJ_ORNATE_CHEST,      // Room 5: locked chest, opens with the key (TRIGGERED: opened)
     OBJ_KIND_COUNT
 } ObjectKind;
 

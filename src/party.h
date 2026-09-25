@@ -11,7 +11,8 @@ typedef enum
     CLASS_ROGUE = 1,
     CLASS_MAGE = 2,
     CLASS_WIR = 3,      // "Wir", the intellect devourer companion from Room 2 (not selectable)
-    CLASS_LAEZEL = 4    // Lae'zel, githyanki warrior, joins in Room 3 (not selectable)
+    CLASS_LAEZEL = 4,   // Lae'zel, githyanki warrior, joins in Room 3 (not selectable)
+    CLASS_SHADOWHEART = 5 // Schattenherz, cleric, joins in Room 4 (not selectable)
 } CharClass;
 
 typedef struct

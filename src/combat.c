@@ -235,7 +235,33 @@ static void drinkPotion(Character *c)
     pause(90);
 }
 
-typedef enum { ACT_ATTACK, ACT_SPELL, ACT_POTION, ACT_DEFEND } Action;
+// Schattenherz's healing spell: 1d8 + 3 KP to any member, revives the fallen.
+static void healSpell(Character *c)
+{
+    const char *options[PARTY_MAX];
+    u8 who[PARTY_MAX], n = 0;
+    for (u8 i = 0; i < PARTY_MAX; i++)
+    {
+        if (!party.members[i].active) continue;
+        who[n] = i;
+        options[n++] = party.members[i].name;
+    }
+    const char *lines[1] = { "Wen heilen?" };
+    Character *t = &party.members[who[textbox_show(lines, 1, options, n)]];
+
+    c->mp -= SPELL_COST;
+    u8 heal = roll(8) + 3;
+    t->hp = t->hp + heal > t->hpMax ? t->hpMax : t->hp + heal;
+    uiPanel_redrawChrome();
+
+    char l0[32], l1[32];
+    sprintf(l0, "%s wirkt Heilen:", c->name);
+    sprintf(l1, "%s erhält %d KP.", t->name, heal);
+    show(l0, l1, NULL);
+    pause(90);
+}
+
+typedef enum { ACT_ATTACK, ACT_SPELL, ACT_HEAL, ACT_POTION, ACT_DEFEND } Action;
 
 static void partyTurn(u8 m)
 {
@@ -250,6 +276,10 @@ static void partyTurn(u8 m)
     {
         options[n] = "Geschoss (2 ZP)"; acts[n++] = ACT_SPELL;
     }
+    if (c->cls == CLASS_SHADOWHEART && c->mp >= SPELL_COST)
+    {
+        options[n] = "Heilen (2 ZP)"; acts[n++] = ACT_HEAL;
+    }
     if (inventory.healingPotions)
     {
         options[n] = "Heiltrank";   acts[n++] = ACT_POTION;
@@ -263,6 +293,7 @@ static void partyTurn(u8 m)
     {
         case ACT_ATTACK: attack(c, chooseTarget(), FALSE); break;
         case ACT_SPELL:  attack(c, chooseTarget(), TRUE); break;
+        case ACT_HEAL:   healSpell(c); break;
         case ACT_POTION: drinkPotion(c); break;
         default:
             defending[m] = TRUE;                     // +2 AC until this member's next turn

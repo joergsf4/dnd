@@ -11,6 +11,7 @@
 typedef enum
 {
     ENC_IMPS3 = 0,   // Room 3: three imps through the hull breach
+    ENC_IMPS2,       // Room 4: two imps released from the pods (button 2)
 } EncounterId;
 
 // Moves every visible enemy group within reach one step towards the player (called on a timer

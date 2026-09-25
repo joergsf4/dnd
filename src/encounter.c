@@ -11,6 +11,7 @@ typedef struct
 
 static const Encounter encounters[] = {
     [ENC_IMPS3] = { 3, { &ENEMY_IMP, &ENEMY_IMP, &ENEMY_IMP }, 6 },
+    [ENC_IMPS2] = { 2, { &ENEMY_IMP, &ENEMY_IMP }, 4 },
 };
 
 #define CHASE_RANGE 6   // cells (not diagonal); groups farther away stay put

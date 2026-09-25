@@ -5,6 +5,7 @@ the sprite's transparent color on real hardware):
     res/gfx/avatar.png      the generic hooded hero, shared by all three starting classes
     res/gfx/avatar_wir.png  "Wir", the intellect devourer from Room 2: a brain on four legs
     res/gfx/avatar_laezel.png  Lae'zel (Room 3): githyanki, yellow-green skin, bronze armour
+    res/gfx/avatar_shadowheart.png  Schattenherz (Room 4): black hair, fringe, grey chain
 
 Both use the same palette, since all avatars share PAL1 (loaded from avatar_sprite in main.c).
 """
@@ -116,3 +117,31 @@ for y in range(2, 22):                               # sword hilt over the shoul
     set_px(20 + (y > 12), y, STEEL if y < 14 else HAIR)
 img.save("res/gfx/avatar_laezel.png")
 print("wrote res/gfx/avatar_laezel.png", img.size)
+
+# ---- Schattenherz: pale face, straight black fringe, braid, grey chain shirt, shield rim
+img = Image.new("P", (SIZE, SIZE), 0)
+img.putpalette(flat_palette)
+for y in range(15, SIZE):                            # chain shirt
+    half = 7 + min(3, (y - 15))
+    for x in range(CX - half, CX + half + 1):
+        set_px(x, y, STEEL if (x + y) % 2 else CLOTH_SHADOW)
+for y in range(3, 15):                               # face
+    for x in range(6, 19):
+        if ((x - CX) / 5.5) ** 2 + ((y - 9) / 6.5) ** 2 <= 1:
+            set_px(x, y, SKIN)
+for x in range(6, 19):                               # black hair, straight fringe
+    for y in range(1, 7):
+        if ((x - CX) / 6.5) ** 2 + ((y - 6) / 5) ** 2 <= 1:
+            set_px(x, y, EYE)
+for y in range(6, 16):                               # hair falling at the sides, braid
+    set_px(6, y, EYE)
+    set_px(18, y, EYE)
+    set_px(19, y + 3, EYE)
+set_px(5, 8, SKIN)                                   # ears
+set_px(19, 8, SKIN)
+for x in (9, 10, 14, 15):
+    set_px(x, 9, EYE)
+for x in range(11, 14):
+    set_px(x, 13, BRAIN_FOLD)                        # mouth
+img.save("res/gfx/avatar_shadowheart.png")
+print("wrote res/gfx/avatar_shadowheart.png", img.size)

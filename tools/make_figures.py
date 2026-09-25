@@ -5,6 +5,7 @@ share one palette, since they all use PAL2 (loaded from fig_imp_sprite in src/fi
 
     res/gfx/fig_imp.png      Niederer Kobold (imp), 32x48, 3 frames of wing beat side by side
     res/gfx/fig_laezel.png   Lae'zel, 48x96
+    res/gfx/fig_shadowheart.png  Schattenherz, 48x96
     res/gfx/fig_arrow.png    8x8 target marker for combat menus
 
 Sizes are what's shown on screen: a figure one cell ahead is about as tall as the wall there
@@ -34,11 +35,11 @@ PALETTE = [
     (0x70, 0x50, 0x28),   # 11 BRONZE_D
     (0x98, 0x38, 0x28),   # 12 RUST (leather)
     (0x50, 0x38, 0x28),   # 13 HAIR
-    (0x2C, 0x24, 0x20),   # 14 BOOT
+    (0xE8, 0xC8, 0xB8),   # 14 SKIN (pale)
     (0xF8, 0xF8, 0xF0),   # 15 WHITE
 ]
 (TR, OUTLINE, RED, RED_D, WING, YELLOW, STEEL, STEEL_L, GITH, GITH_D, BRONZE, BRONZE_D, RUST,
- HAIR, BOOT, WHITE) = range(16)
+ HAIR, SKIN, WHITE) = range(16)
 
 
 class Canvas:
@@ -140,8 +141,8 @@ def laezel():
     c = Canvas(48, 96)
     c.rect(19, 62, 23, 90, RUST)                          # legs in leather
     c.rect(26, 62, 30, 90, RUST)
-    c.rect(18, 86, 24, 95, BOOT)                          # iron-shod boots
-    c.rect(25, 86, 31, 95, BOOT)
+    c.rect(18, 86, 24, 95, HAIR)                          # iron-shod boots
+    c.rect(25, 86, 31, 95, HAIR)
     c.rect(18, 90, 24, 91, STEEL)
     c.rect(25, 90, 31, 91, STEEL)
     c.poly([(15, 34), (33, 34), (31, 64), (17, 64)], BRONZE)   # breastplate
@@ -181,6 +182,47 @@ def laezel():
     return c
 
 
+def shadowheart():
+    """Schattenherz: pale half-elf cleric, black hair with a straight fringe and a long braid,
+    slate-grey chain armour, mace in the right hand, round shield with Shar's disc on the left."""
+    c = Canvas(48, 96)
+    for y in range(8, 70):                                # long braid down the back
+        c.rect(31, y, 34, y + 1, OUTLINE if y % 4 else WING)
+    c.rect(19, 62, 23, 90, WING)                          # legs, dark cloth
+    c.rect(26, 62, 30, 90, WING)
+    c.rect(18, 86, 24, 95, OUTLINE)
+    c.rect(25, 86, 31, 95, OUTLINE)
+    c.poly([(16, 32), (32, 32), (33, 70), (15, 70)], STEEL)   # chain shirt down to the thighs
+    for y in range(34, 70, 3):
+        for x in range(16 + (y // 3) % 2, 33, 2):
+            c.set(x, y, STEEL_L)
+    c.rect(16, 50, 32, 52, OUTLINE)                       # belt
+    c.rect(11, 34, 15, 56, STEEL)                         # arms
+    c.rect(33, 34, 37, 56, STEEL)
+    c.rect(35, 55, 40, 59, SKIN)                          # right hand...
+    c.rect(38, 42, 40, 60, HAIR)                          # ...with the mace, held out
+    c.ellipse(39, 39, 4, 4, STEEL_L)
+    c.set(34, 38, WHITE); c.set(43, 38, WHITE); c.set(39, 34, WHITE)
+    c.ellipse(11, 50, 9, 10, STEEL)                       # round shield on the left arm
+    c.ellipse(11, 50, 7, 8, OUTLINE)
+    c.ellipse(11, 50, 4, 5, STEEL)                        # Shar's disc
+    c.ellipse(11, 50, 2, 3, OUTLINE)
+    c.rect(21, 26, 27, 32, SKIN)                          # neck
+    c.ellipse(24, 18, 7, 9, SKIN)                         # head
+    c.poly([(16, 16), (13, 13), (17, 20)], SKIN)          # subtly pointed ears
+    c.poly([(32, 16), (35, 13), (31, 20)], SKIN)
+    c.ellipse(24, 12, 8, 6, OUTLINE)                      # black hair...
+    c.rect(17, 12, 32, 16, OUTLINE)                       # ...with a straight fringe
+    c.rect(16, 12, 18, 24, OUTLINE)
+    c.rect(30, 12, 32, 22, OUTLINE)
+    c.rect(29, 10, 33, 12, STEEL_L)                       # silver clasp
+    c.rect(20, 19, 22, 20, OUTLINE)                       # eyes
+    c.rect(26, 19, 28, 20, OUTLINE)
+    c.rect(22, 25, 26, 26, RED_D)                         # mouth
+    c.outline()
+    return c
+
+
 def arrow():
     c = Canvas(8, 8)
     c.poly([(0, 1), (8, 1), (4, 7)], YELLOW)
@@ -191,4 +233,5 @@ def arrow():
 if __name__ == "__main__":
     save([imp(0), imp(1), imp(2)], "fig_imp.png")
     save([laezel()], "fig_laezel.png")
+    save([shadowheart()], "fig_shadowheart.png")
     save([arrow()], "fig_arrow.png")

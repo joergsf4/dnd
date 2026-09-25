@@ -9,6 +9,8 @@
 #include "room1.h"
 #include "room2.h"
 #include "room3.h"
+#include "room4.h"
+#include "room5.h"
 #include "figures.h"
 #include "encounter.h"
 #include "text.h"
@@ -64,6 +66,8 @@ int main(bool hardReset)
     map_registerRoom(&ROOM1);
     map_registerRoom(&ROOM2);
     map_registerRoom(&ROOM3);
+    map_registerRoom(&ROOM4);
+    map_registerRoom(&ROOM5);
     Player player;
     map_loadRoom(&ROOM1, &player);
     redrawWorld(&player);

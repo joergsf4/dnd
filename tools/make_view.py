@@ -623,12 +623,193 @@ def prop_imps():
     return t
 
 
+def pod_shell(t):
+    """The clone pod's body (see prop_pod): ridged red flesh egg with a dark inside."""
+    shadow(t, 24)
+    ellipse(t, 32, 33, 20, 30, MEM0)
+    for y in range(4, 63, 4):
+        for x in range(TEX):
+            if t[y][x] == MEM0:
+                t[y][x] = MEM1
+    shade_body(t, 17, 47, MEM1, MEM2, MEM0)
+    ellipse(t, 32, 35, 13, 22, BLACK)
+
+
+def pod_claws(t):
+    for x, bend in ((13, 7), (17, 10), (47, -10), (51, -7)):
+        claw(t, x, 30, 63, bend)
+    ellipse(t, 32, 61, 16, 2, CH1)
+
+
+def prop_pod_sealed(who, glass=TEAL):
+    """A sealed pod, someone floating inside behind the glass: 'shape' (a dark silhouette),
+    'shadowheart' (hands raised against the glass), 'woman', 'flayer'; glass colour tells the
+    state (TEAL alive, MEM0 inmates dead, CH1 switched off)."""
+    t = blank(T)
+    pod_shell(t)
+    for y in range(TEX):                                   # glass, lightly dithered
+        for x in range(TEX):
+            if in_ellipse(x, y, 32, 35, 13, 22):
+                t[y][x] = glass if (x + y) % 3 else (CH0 if glass != TEAL else BLUE)
+    dark = CH0
+    if who == "shape":
+        ellipse(t, 32, 24, 4, 5, dark)
+        ellipse(t, 32, 40, 7, 13, dark)
+    elif who == "shadowheart":
+        ellipse(t, 32, 40, 7, 13, CH1)                     # body in dark armour
+        ellipse(t, 32, 24, 5, 6, BONE)                     # pale face
+        rect(t, 27, 18, 38, 22, BLACK)                     # black hair, fringe
+        rect(t, 27, 18, 29, 29, BLACK)
+        rect(t, 35, 18, 37, 29, BLACK)
+        t[24][30] = t[24][34] = CH0
+        for x0, dx in ((24, -1), (40, 1)):                 # hands raised against the glass
+            for i in range(10):
+                t[32 - i][x0 + dx * (i // 4)] = BONE
+            rect(t, x0 + dx * 2 - 1, 18, x0 + dx * 2 + 2, 22, BONE)
+    elif who == "woman":
+        ellipse(t, 32, 42, 7, 13, FL2)                     # torn clothes
+        rect(t, 27, 44, 37, 46, FL0)
+        ellipse(t, 32, 25, 5, 6, BONE)
+        ellipse(t, 32, 21, 6, 3, FL0)                      # hair
+        t[25][30] = t[25][34] = CH0
+    elif who == "flayer":
+        ellipse(t, 32, 42, 8, 14, CH1)                     # robe
+        ellipse(t, 32, 24, 7, 8, FLESH)                    # octopus head
+        for dx in (-4, -1, 2, 5):
+            rect(t, 31 + dx, 29, 32 + dx, 40, FLESH)
+        t[23][29] = t[23][35] = GLINT
+    if glass == TEAL:
+        for i in range(14):                                # reflection on the glass
+            t[22 + i][24 + i // 5] = GLINT
+    pod_claws(t)
+    return t
+
+
+def stalk(t, y0, rng_seed=0):
+    """A twisted chitin stalk with roots, from y0 down to the floor."""
+    shadow(t, 16)
+    for dx, bend in ((-8, -5), (8, 5)):
+        claw(t, 32 + dx // 2, 54, 63, -bend, CH1, CH1)
+    for y in range(y0, 60):
+        x0 = 28 + int(2 * math.sin(y / 3 + rng_seed))
+        rect(t, x0, y, x0 + 8, y + 1, CH2)
+        t[y][x0] = CH3
+        t[y][x0 + 7] = CH0
+
+
+def prop_pod_console(lit):
+    """The console by Schattenherz's pod: a stalk carrying a chitin knob with a round socket
+    (lit: the rune sits in it and glows)."""
+    t = blank(T)
+    stalk(t, 36)
+    ellipse(t, 32, 30, 14, 10, CH2)
+    ellipse(t, 30, 27, 8, 4, CH3)
+    ellipse(t, 32, 31, 6, 5, CH0)                          # the socket
+    if lit:
+        ellipse(t, 32, 31, 4, 4, BLUE)
+        t[31][32] = t[30][31] = t[32][33] = GLINT
+    else:
+        ellipse(t, 32, 31, 4, 3, BLACK)
+    return t
+
+
+def prop_button_console():
+    """The console with three buttons, pulsing with the pods."""
+    t = blank(T)
+    stalk(t, 38, 1)
+    for y in range(24, 40):                                # tilted chitin plate
+        w = 22 - (y - 24) // 3
+        rect(t, 32 - w, y, 32 + w, y + 1, CH1)
+        t[y][32 - w] = CH3
+    rect(t, 10, 24, 54, 25, CH3)
+    for cx, c in ((20, MEM2), (32, BLUE), (44, TEAL)):     # three glowing buttons
+        ellipse(t, cx, 31, 4, 3, CH0)
+        ellipse(t, cx, 30, 3, 2, c)
+        t[29][cx - 1] = GLINT
+    for i in range(6):                                     # veins running into it
+        vein(t, random.Random(40 + i), 12 + i * 8, 40, 8, MEM0)
+    return t
+
+
+def prop_switch(used):
+    """The transformation switch: a cartilage lever on a stalk, knob of flesh (used: pulled down,
+    dead)."""
+    t = blank(T)
+    stalk(t, 40, 2)
+    ellipse(t, 32, 40, 9, 5, CH2)
+    ellipse(t, 32, 39, 6, 3, CH3)
+    if used:
+        for i in range(18):
+            rect(t, 34 + i, 40 + i // 3, 36 + i, 42 + i // 3, BONE)
+        ellipse(t, 52, 47, 4, 4, FL0)
+    else:
+        for i in range(20):
+            rect(t, 33 + i // 2, 38 - i, 36 + i // 2, 39 - i, BONE)
+        ellipse(t, 43, 18, 5, 5, FLESH)
+        t[16][41] = GLINT
+    return t
+
+
+def prop_cleric():
+    """A dead cleric lying on the floor: robe, a holy symbol on her chest, hair spread out."""
+    t = blank(T)
+    ellipse(t, 32, 60, 30, 3, BLACK)
+    ellipse(t, 36, 55, 22, 6, MEM0)                        # robe
+    ellipse(t, 36, 54, 20, 4, MEM1)
+    rect(t, 18, 57, 56, 61, MEM0)
+    ellipse(t, 12, 54, 6, 5, BONE)                         # head
+    ellipse(t, 9, 55, 5, 6, FL0)                           # hair spread out
+    rect(t, 18, 50, 22, 52, BONE)                          # arm, hand fallen open
+    ellipse(t, 30, 52, 3, 3, BONE)                         # holy symbol: a sun disc
+    t[52][30] = GLINT
+    ellipse(t, 58, 58, 4, 2, CH1)                          # boots
+    return t
+
+
+def prop_ornate_chest(opened):
+    """An ornate chest of dark chitin, bone scrollwork, a blue gem on the lock (opened: lid up,
+    gold glinting inside)."""
+    t = blank(T)
+    shadow(t, 26)
+    if opened:
+        rect(t, 11, 20, 53, 36, CH1)                       # lid, inside facing us
+        rect(t, 11, 20, 53, 22, BONE)
+        rect(t, 10, 34, 54, 40, CH2)
+        rect(t, 13, 35, 51, 39, BLACK)
+        for x in range(15, 50, 4):
+            t[37][x] = BONE                                # gold inside
+            t[36][x + 2] = GLINT
+    else:
+        ellipse(t, 32, 36, 23, 7, CH2)                     # domed lid
+        ellipse(t, 32, 35, 20, 4, CH3)
+    rect(t, 10, 40, 54, 62, CH1)                           # body
+    rect(t, 10, 40, 54, 41, CH3)
+    for x0 in (14, 40):                                    # bone scrollwork
+        for i in range(10):
+            a = i * 0.7
+            t[50 + int(4 * math.sin(a))][x0 + i] = BONE
+    rect(t, 10, 58, 54, 60, BONE)
+    if not opened:
+        ellipse(t, 32, 44, 4, 4, BONE)                     # lock with a blue gem
+        ellipse(t, 32, 44, 2, 2, BLUE)
+    return t
+
+
 PROPS = [prop_pool(False), prop_pool(True), prop_chest(False), prop_chest(True), prop_corpse(),
          prop_shrine(), prop_pod(False), prop_pod(True), prop_myrnath(False), prop_myrnath(True),
-         prop_op_table(), prop_lectern(), prop_fire(), prop_tank(False), prop_tank(True), prop_imps()]
+         prop_op_table(), prop_lectern(), prop_fire(), prop_tank(False), prop_tank(True), prop_imps(),
+         prop_pod_sealed("shape"), prop_pod_sealed("shape", MEM0), prop_pod_sealed("shadowheart"),
+         prop_pod_console(False), prop_pod_console(True), prop_button_console(),
+         prop_pod_sealed("woman"), prop_pod_sealed("flayer"), prop_pod_sealed("woman", CH1),
+         prop_switch(False), prop_switch(True), prop_cleric(), prop_ornate_chest(False),
+         prop_ornate_chest(True)]
 PROP_NAMES = ["PROP_POOL", "PROP_POOL_BROKEN", "PROP_CHEST", "PROP_CHEST_OPEN", "PROP_CORPSE",
               "PROP_SHRINE", "PROP_POD_OPEN", "PROP_POD_BROKEN", "PROP_MYRNATH", "PROP_MYRNATH_DEAD",
-              "PROP_OP_TABLE", "PROP_LECTERN", "PROP_FIRE", "PROP_TANK", "PROP_TANK_BROKEN", "PROP_IMPS"]
+              "PROP_OP_TABLE", "PROP_LECTERN", "PROP_FIRE", "PROP_TANK", "PROP_TANK_BROKEN", "PROP_IMPS",
+              "PROP_POD_SEALED", "PROP_POD_DEAD", "PROP_POD_SHADOWHEART", "PROP_POD_CONSOLE",
+              "PROP_POD_CONSOLE_LIT", "PROP_BUTTON_CONSOLE", "PROP_POD_WOMAN", "PROP_POD_FLAYER",
+              "PROP_POD_DARK", "PROP_SWITCH", "PROP_SWITCH_USED", "PROP_CLERIC", "PROP_ORNATE_CHEST",
+              "PROP_ORNATE_CHEST_OPEN"]
 
 
 def bake_prop(sprite, d):

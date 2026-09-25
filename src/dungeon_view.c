@@ -65,6 +65,16 @@ static u8 objectProp(const RoomObject *o)
         case OBJ_ENEMY_GROUP:        return PROP_IMPS;   // the only enemies so far
         case OBJ_ACID_TANK:          return (o->flags & OBJFLAG_BROKEN) ? PROP_TANK_BROKEN : PROP_TANK;
         case OBJ_FIRE:               return PROP_FIRE;
+        case OBJ_POD_SEALED:
+            return (o->flags & OBJFLAG_TRIGGERED) ? PROP_POD_BROKEN : (o->flags & OBJFLAG_MARKED) ? PROP_POD_DEAD : PROP_POD_SEALED;
+        case OBJ_SHADOWHEART_POD:    return (o->flags & OBJFLAG_TRIGGERED) ? PROP_POD_OPEN : PROP_POD_SHADOWHEART;
+        case OBJ_POD_CONSOLE:        return (o->flags & OBJFLAG_TRIGGERED) ? PROP_POD_CONSOLE_LIT : PROP_POD_CONSOLE;
+        case OBJ_BUTTON_CONSOLE:     return PROP_BUTTON_CONSOLE;
+        case OBJ_WOMAN_POD:
+            return (o->flags & OBJFLAG_BROKEN) ? PROP_POD_DARK : (o->flags & OBJFLAG_TRIGGERED) ? PROP_POD_FLAYER : PROP_POD_WOMAN;
+        case OBJ_SWITCH:             return (o->flags & OBJFLAG_TRIGGERED) ? PROP_SWITCH_USED : PROP_SWITCH;
+        case OBJ_CLERIC:             return PROP_CLERIC;
+        case OBJ_ORNATE_CHEST:       return (o->flags & OBJFLAG_TRIGGERED) ? PROP_ORNATE_CHEST_OPEN : PROP_ORNATE_CHEST;
         default:                     return PROP_POD_BROKEN;
     }
 }
