@@ -15,7 +15,7 @@
 
 // Sprite tiles are reserved just below the font; the default 420 would collide with the view's two
 // 560-tile buffers (dungeon_view.c). Avatars take 9 tiles each, a fight up to 3 imps x 24 + the
-// marker, Lae's figure 72 -- 256 covers that with room to spare.
+// marker, Lae'zel's figure 72 -- 256 covers that with room to spare.
 #define SPRITE_VRAM_TILES 256
 
 #define ENEMY_STEP_FRAMES 45
