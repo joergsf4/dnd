@@ -2,11 +2,19 @@
 #include "dungeon_map.h"
 #include "dungeon_view.h"
 #include "ui_panel.h"
+#include "party.h"
+#include "char_create.h"
 
 int main(bool hardReset)
 {
     VDP_setScreenWidth320();
     VDP_setScreenHeight224();
+    SPR_init();
+    PAL_setPalette(PAL1, avatar_sprite.palette->data, DMA);
+
+    CharClass heroClass = charCreate_run();
+    party_init();
+    party_addMember(heroClass);
 
     dungeonView_init();
     uiPanel_init();
@@ -35,6 +43,7 @@ int main(bool hardReset)
         }
 
         prevJoy = joy;
+        SPR_update();
         SYS_doVBlankProcess();
     }
 

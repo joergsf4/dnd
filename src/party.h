@@ -1,0 +1,41 @@
+#ifndef _PARTY_H_
+#define _PARTY_H_
+
+#include <genesis.h>
+
+#define PARTY_MAX 4
+
+typedef enum
+{
+    CLASS_FIGHTER = 0,
+    CLASS_ROGUE = 1,
+    CLASS_MAGE = 2
+} CharClass;
+
+typedef struct
+{
+    CharClass cls;
+    const char *name;   // auto-assigned: just the class name (see TODO.md for real name entry)
+    u8 hp, hpMax;
+    u8 mp, mpMax;       // 0/0 for classes without mana
+    bool active;        // FALSE = empty slot, not yet recruited
+} Character;
+
+typedef struct
+{
+    Character members[PARTY_MAX];
+    u8 count;
+} Party;
+
+extern Party party;
+
+const char *class_name(CharClass cls);
+
+// Clears the party to all-empty slots.
+void party_init(void);
+
+// Appends a new character of the given class with that class's default stats.
+// No-op if the party is already full.
+void party_addMember(CharClass cls);
+
+#endif
