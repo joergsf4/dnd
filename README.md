@@ -14,6 +14,11 @@ Same setup as the other Mega Drive projects in this workspace:
 - `./build.sh` — builds `out/rom.bin` in the container (`./build.sh clean` to clean).
 - `./run.sh` — runs the last build in BlastEm.
 - `.vscode/tasks.json` — the same two as build/run tasks (Cmd+Shift+B to build).
+- `tools/emutest.py` — drives BlastEm's debugger (`-d`) to play the ROM headlessly and save
+  screenshots (`python3 tools/emutest.py look`; screenshots land in `out/emutest/`, gitignored).
+  Same technique as the Wanderburg project's `tools/emutest.py`: BlastEm's own `ui.screenshot`
+  binding writes the PNG, so no OS-level screen capture is needed — use this instead of trying to
+  read pixels off the live window.
 
 ## Rendering approach
 

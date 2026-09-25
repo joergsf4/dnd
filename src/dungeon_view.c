@@ -15,11 +15,17 @@ typedef struct { u8 x, y, w, h; } Rect;
 // are the UI panel, see ui_panel.h), rects[1..2] the mid/far apertures, rects[3] the
 // vanishing-point cap. Square viewport -> the mid rect ends up taller than wide, which is
 // the correct consequence of that (not a mistake to "fix" back to landscape).
+//
+// Per ring, the side-wall band width must be >= the ceiling/floor band height, or a 1-wide
+// corridor (walls on both sides at every depth) reads as a stack of ceiling/floor blocks
+// instead of a hallway -- confirmed by rendering a screenshot with a distinct color per tile
+// slot (tools/emutest.py) and comparing it against these rects: the ring1 margins were
+// inverted (top/bottom band 5 tiles > side band 4 tiles), which is what that looked like.
 static const Rect rects[4] = {
     { 0, 0, 28, 28 },
     { 7, 6, 14, 16 },
-    { 11, 11, 6, 6 },
-    { 13, 13, 2, 2 },
+    { 12, 10, 4, 8 },
+    { 13, 12, 2, 4 },
 };
 
 static u16 tileAt(u8 slot)
