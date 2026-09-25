@@ -5,13 +5,15 @@
 
 // Figures: characters and monsters shown in front of the first-person view during dialogue
 // scenes and combat, as hardware sprites on PAL2 (tools/make_figures.py). Unlike props they're
-// never occluded or scaled -- they only ever stand right in front of the player.
-
-// Loads the shared figure palette into PAL2. Call once at boot.
-void figures_init(void);
+// never occluded or scaled -- they only ever stand right in front of the player. Every figure has
+// its own palette, loaded into PAL2 when it's added, so only one kind of figure can be on screen
+// at a time (several of the same kind are fine: the imps in a fight).
 
 // Adds a figure centred at screen x `cx` with its feet at screen y `bottom` (view coordinates).
 Sprite *figures_add(const SpriteDefinition *def, s16 cx, s16 bottom);
+
+// A companion's close-up while they speak: the bust sits on the bottom edge of the view.
+Sprite *figures_addBust(const SpriteDefinition *def);
 
 // Blinks a figure `times` times (a hit), blocking.
 void figures_blink(Sprite *s, u8 times);

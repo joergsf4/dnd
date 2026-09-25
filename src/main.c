@@ -51,7 +51,6 @@ int main(bool hardReset)
     SPR_initEx(SPRITE_VRAM_TILES);
     PAL_setPalette(PAL1, avatar_sprite.palette->data, DMA);
     text_init();
-    figures_init();
 
     CharClass heroClass = charCreate_run();
     party_init();

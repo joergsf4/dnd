@@ -372,7 +372,8 @@ void combat_run(const Player *p, const EnemyDef *const enemies[], u8 count, Room
         else
             strcpy(e->name, e->def->name);
     }
-    arrow = figures_add(&fig_arrow_sprite, 0, 0);
+    // The marker uses colour 15 of whatever figure palette is loaded (its own isn't loaded).
+    arrow = SPR_addSprite(&fig_arrow_sprite, 0, 0, TILE_ATTR(PAL2, FALSE, FALSE, FALSE));
     SPR_setVisibility(arrow, HIDDEN);
 
     char l0[32];

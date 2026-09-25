@@ -59,7 +59,9 @@ static void freeShadowheart(Player *p, RoomObject *console)
     say("Puff! Die Kapsel öffnet", "sich zischend.", NULL);
 
     Sprite *s = figures_add(&fig_shadowheart_sprite, 112, 138);
-    figures_wait(20);
+    figures_wait(40);
+    SPR_releaseSprite(s);                         // she steps up close: the bust while she speaks
+    s = figures_addBust(&fig_shadowheart_bust_sprite);
     say("SCHATTEN: \"Danke. Ich", "dachte schon, das wäre", "mein Ende.\"");
     say("\"Lass uns diesen", "Höllenort verlassen!\"", NULL);
     SPR_releaseSprite(s);

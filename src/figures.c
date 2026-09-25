@@ -1,14 +1,18 @@
 #include "figures.h"
 #include "game.h"
 
-void figures_init(void)
-{
-    PAL_setPalette(PAL2, fig_imp_sprite.palette->data, DMA);
-}
+#define VIEW_W 224
+#define VIEW_H 160
 
 Sprite *figures_add(const SpriteDefinition *def, s16 cx, s16 bottom)
 {
+    PAL_setPalette(PAL2, def->palette->data, DMA);
     return SPR_addSprite(def, cx - def->w / 2, bottom - def->h, TILE_ATTR(PAL2, FALSE, FALSE, FALSE));
+}
+
+Sprite *figures_addBust(const SpriteDefinition *def)
+{
+    return figures_add(def, VIEW_W / 2, VIEW_H);
 }
 
 void figures_wait(u16 n)

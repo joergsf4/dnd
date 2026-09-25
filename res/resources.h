@@ -14,6 +14,8 @@ extern const SpriteDefinition avatar_shadowheart_sprite;
 extern const SpriteDefinition fig_imp_sprite;
 extern const SpriteDefinition fig_laezel_sprite;
 extern const SpriteDefinition fig_shadowheart_sprite;
+extern const SpriteDefinition fig_laezel_bust_sprite;
+extern const SpriteDefinition fig_shadowheart_bust_sprite;
 extern const SpriteDefinition fig_arrow_sprite;
 extern const TileSet font_de;
 

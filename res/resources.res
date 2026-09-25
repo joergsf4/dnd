@@ -6,12 +6,15 @@ SPRITE avatar_wir_sprite "gfx/avatar_wir.png" 3 3
 SPRITE avatar_laezel_sprite "gfx/avatar_laezel.png" 3 3
 SPRITE avatar_shadowheart_sprite "gfx/avatar_shadowheart.png" 3 3
 
-// Figures shown in front of the view in dialogue scenes and combat (tools/make_figures.py), all
-// on PAL2 with one shared palette (loaded from fig_imp_sprite in src/figures.c). The imp's three
-// frames are its wing beat, advanced every 6 frames.
+// Figures shown in front of the view in dialogue scenes and combat (tools/make_figures.py), on
+// PAL2, each with its own palette (src/figures.c loads it when the figure is shown). The imp's
+// three frames are its wing beat, advanced every 6 frames. Busts are the close-ups while a
+// companion speaks.
 SPRITE fig_imp_sprite "gfx/fig_imp.png" 4 6 NONE 6
 SPRITE fig_laezel_sprite "gfx/fig_laezel.png" 6 12 NONE 0
 SPRITE fig_shadowheart_sprite "gfx/fig_shadowheart.png" 6 12 NONE 0
+SPRITE fig_laezel_bust_sprite "gfx/fig_laezel_bust.png" 10 12 NONE 0
+SPRITE fig_shadowheart_bust_sprite "gfx/fig_shadowheart_bust.png" 10 12 NONE 0
 SPRITE fig_arrow_sprite "gfx/fig_arrow.png" 1 1 NONE 0
 
 // SGDK's default font with German umlauts in 7 unused ASCII slots (tools/make_font.py, used via

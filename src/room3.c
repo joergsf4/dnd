@@ -43,6 +43,9 @@ static void onEnter(Player *p)
     say("Da! Über dir bewegt sich", "etwas...", NULL);
 
     Sprite *laezel = laezelLands();
+    figures_wait(30);
+    SPR_releaseSprite(laezel);                    // she steps up close: the bust while she speaks
+    laezel = figures_addBust(&fig_laezel_bust_sprite);
     say("LAE'ZEL: \"Ein Überlebender!", "Halt still... Dein Kopf", "pulsiert.\"");
     const char *lines[2] = { "\"Du bist infiziert -", "genau wie ich!\"" };
     const char *options[2] = { "\"Gemeinsam kämpfen!\"", "\"Wer bist du überhaupt?\"" };

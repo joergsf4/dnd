@@ -9,6 +9,8 @@ the sprite's transparent color on real hardware):
 
 Both use the same palette, since all avatars share PAL1 (loaded from avatar_sprite in main.c).
 """
+import os
+
 from PIL import Image
 
 SIZE = 24
@@ -24,13 +26,15 @@ BRAIN = (0xE8, 0x90, 0xA0)
 BRAIN_FOLD = (0x90, 0x30, 0x40)
 HORN = (0xD8, 0xC8, 0xA0)
 GLOW = (0xB0, 0x60, 0xE0)
-GITH = (0xB8, 0xC8, 0x70)
-BRONZE = (0xB8, 0x88, 0x40)
-HAIR = (0x50, 0x38, 0x28)
+GITH = (0xB0, 0xB0, 0x58)
+BRONZE = (0xF0, 0xB0, 0x38)      # amber eyes, gold
+HAIR = (0x84, 0x40, 0x28)        # Lae'zel's reddish brown
 STEEL = (0xB0, 0xB8, 0xC8)
+STEEL_H = (0xF0, 0xF2, 0xF8)
+GITH_D = (0x74, 0x74, 0x34)
 
 palette = [TRANSPARENT, SKIN, EYE, CLOTH, CLOTH_SHADOW, BELT, BRAIN, BRAIN_FOLD, HORN, GLOW,
-           GITH, BRONZE, HAIR, STEEL]
+           GITH, BRONZE, HAIR, STEEL, STEEL_H, GITH_D]
 color_index = {c: i for i, c in enumerate(palette)}
 
 img = Image.new("P", (SIZE, SIZE), 0)
@@ -43,24 +47,31 @@ def set_px(x, y, color):
         img.putpixel((x, y), color_index[color])
 
 
-# head: a small filled circle
-for y in range(1, 8):
-    for x in range(8, 17):
-        if (x - CX) ** 2 + (y - 4) ** 2 <= 9:
-            set_px(x, y, SKIN)
-set_px(10, 4, EYE)
-set_px(14, 4, EYE)
-
-# body: a tapering cloak trapezoid, narrow at the shoulders, wide at the hem,
-# with a simple left-light/right-shadow split and a belt band
-for y in range(7, SIZE):
-    half = 5 + (y - 7) * (10 - 5) // (SIZE - 1 - 7)
-    is_belt = 15 <= y <= 16
+# The hero: head and shoulders of a hooded adventurer -- the hood throws the face into shadow,
+# only the lower face and a glint of the eyes catch the light; cloak over the shoulders, a gold
+# clasp, a leather strap across the chest. Shared by all three classes.
+for y in range(12, SIZE):                            # cloak over the shoulders
+    half = 6 + min(6, (y - 12) * 2 // 2)
     for x in range(CX - half, CX + half + 1):
-        if is_belt:
-            set_px(x, y, BELT)
-        else:
-            set_px(x, y, CLOTH_SHADOW if x >= CX else CLOTH)
+        set_px(x, y, CLOTH if x < CX - 2 else CLOTH_SHADOW)
+for i in range(10):                                  # leather strap across the chest
+    set_px(CX - 4 + i, 14 + i, BELT)
+    set_px(CX - 3 + i, 14 + i, BELT)
+for y in range(1, 15):                               # hood
+    for x in range(3, 22):
+        if ((x + 0.5 - CX) / 8.5) ** 2 + ((y + 0.5 - 8) / 7.5) ** 2 <= 1:
+            set_px(x, y, CLOTH if x < CX - 1 or y < 4 else CLOTH_SHADOW)
+for y in range(5, 15):                               # the opening, face in shadow
+    for x in range(7, 18):
+        if ((x + 0.5 - CX) / 5) ** 2 + ((y + 0.5 - 10) / 5) ** 2 <= 1:
+            set_px(x, y, EYE if y < 9 else SKIN if x < CX + 2 else HORN if y > 12 else SKIN)
+set_px(10, 8, STEEL_H)                               # eyes glinting under the hood
+set_px(14, 8, STEEL_H)
+for x in range(11, 14):
+    set_px(x, 12, CLOTH_SHADOW)                      # a faint mouth
+set_px(CX, 15, BRONZE)                               # gold clasp
+set_px(CX - 1, 15, BRONZE)
+set_px(CX, 16, BRONZE)
 
 img.save("res/gfx/avatar.png")
 print("wrote res/gfx/avatar.png", img.size, "colors:", len(palette))
@@ -86,62 +97,28 @@ for x0, dx in ((5, -1), (9, 0), (14, 0), (18, 1)):   # legs, the outer ones spla
 img.save("res/gfx/avatar_wir.png")
 print("wrote res/gfx/avatar_wir.png", img.size)
 
-# ---- Lae'zel: head and shoulders -- sharp bronze pauldrons, green face, hair pulled back
-img = Image.new("P", (SIZE, SIZE), 0)
-img.putpalette(flat_palette)
-for y in range(15, SIZE):                            # armour, widening into pauldrons
-    half = 7 + min(4, (y - 15))
-    for x in range(CX - half, CX + half + 1):
-        set_px(x, y, BRONZE if abs(x - CX) > 2 or y > 18 else BELT)
-set_px(CX - 11, 16, BRONZE)
-set_px(CX + 11, 16, BRONZE)
-for y in range(3, 15):                               # face
-    for x in range(6, 19):
-        if ((x - CX) / 5.5) ** 2 + ((y - 9) / 6.5) ** 2 <= 1:
-            set_px(x, y, GITH)
-for x in range(6, 19):                               # hair, tight to the skull
-    for y in range(2, 6):
-        if ((x - CX) / 6) ** 2 + ((y - 6) / 4) ** 2 <= 1:
-            set_px(x, y, HAIR)
-set_px(5, 8, GITH)                                   # pointed ears
-set_px(4, 7, GITH)
-set_px(19, 8, GITH)
-set_px(20, 7, GITH)
-for x in (9, 10, 14, 15):                            # almond eyes
-    set_px(x, 9, EYE)
-set_px(11, 11, BELT)                                 # nostrils
-set_px(13, 11, BELT)
-for x in range(10, 15):
-    set_px(x, 13, BELT)                              # stern mouth
-for y in range(2, 22):                               # sword hilt over the shoulder
-    set_px(20 + (y > 12), y, STEEL if y < 14 else HAIR)
-img.save("res/gfx/avatar_laezel.png")
-print("wrote res/gfx/avatar_laezel.png", img.size)
+# ---- Lae'zel and Schattenherz: scaled down from their dialogue busts (tools/make_figures.py),
+# so panel and close-up look like the same person; mapped onto the shared avatar palette.
+import sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import make_figures as figs
 
-# ---- Schattenherz: pale face, straight black fringe, braid, grey chain shirt, shield rim
-img = Image.new("P", (SIZE, SIZE), 0)
-img.putpalette(flat_palette)
-for y in range(15, SIZE):                            # chain shirt
-    half = 7 + min(3, (y - 15))
-    for x in range(CX - half, CX + half + 1):
-        set_px(x, y, STEEL if (x + y) % 2 else CLOTH_SHADOW)
-for y in range(3, 15):                               # face
-    for x in range(6, 19):
-        if ((x - CX) / 5.5) ** 2 + ((y - 9) / 6.5) ** 2 <= 1:
-            set_px(x, y, SKIN)
-for x in range(6, 19):                               # black hair, straight fringe
-    for y in range(1, 7):
-        if ((x - CX) / 6.5) ** 2 + ((y - 6) / 5) ** 2 <= 1:
-            set_px(x, y, EYE)
-for y in range(6, 16):                               # hair falling at the sides, braid
-    set_px(6, y, EYE)
-    set_px(18, y, EYE)
-    set_px(19, y + 3, EYE)
-set_px(5, 8, SKIN)                                   # ears
-set_px(19, 8, SKIN)
-for x in (9, 10, 14, 15):
-    set_px(x, 9, EYE)
-for x in range(11, 14):
-    set_px(x, 13, BRAIN_FOLD)                        # mouth
-img.save("res/gfx/avatar_shadowheart.png")
-print("wrote res/gfx/avatar_shadowheart.png", img.size)
+
+def from_bust(canvas, fig_palette, crop, path):
+    src = figs.to_rgba(canvas, fig_palette).crop(crop).resize((SIZE, SIZE), Image.BOX)
+    out = Image.new("P", (SIZE, SIZE), 0)
+    out.putpalette(flat_palette)
+    for y in range(SIZE):
+        for x in range(SIZE):
+            r, g, b, a = src.getpixel((x, y))
+            if a < 140:
+                continue
+            best = min(range(1, len(palette)),
+                       key=lambda i: sum((u - v) ** 2 for u, v in zip((r, g, b), palette[i])))
+            out.putpixel((x, y), best)
+    out.save(path)
+    print("wrote", path, out.size)
+
+
+from_bust(figs.laezel_bust(), figs.LZ_PAL, (10, 6, 70, 66), "res/gfx/avatar_laezel.png")
+from_bust(figs.shadowheart_bust(), figs.SH_PAL, (12, 10, 68, 66), "res/gfx/avatar_shadowheart.png")

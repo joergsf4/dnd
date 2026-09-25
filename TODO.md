@@ -111,7 +111,10 @@ together in Room 1 (the "Klonkammer" — see `BeschreibungInhaltVerticalSlice.md
 - [x] Props (larva pool + burst, corpse, chest + open, shrine, clone pod open/broken) and the
       sphincter door texture — placeholders in
       `tools/make_view.py`.
-- [ ] Monster/companion sprites for Room 2+ (see "Monsters/NPCs in the view" above).
+- [x] Companion looks after the BG3 designs (reference artworks in screenso/, drawn from scratch):
+      busts while Lae'zel/Schattenherz speak, full figures, avatars derived from the busts.
+- [ ] "Wir" has no figure/bust yet (it only speaks through Myrnath's skull); Myrnath and the
+      mind flayers could get busts the same way.
 - [ ] Title screen.
 
 ## Audio
