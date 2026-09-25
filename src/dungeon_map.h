@@ -37,6 +37,7 @@ typedef enum
 #define OBJFLAG_TRIGGERED 0x01 // a one-shot object has fired (loot taken, chest opened)
 #define OBJFLAG_BROKEN    0x02 // destroyed for good (the larva pool after it burst)
 #define OBJFLAG_MARKED    0x04 // a skill check revealed it (the larva pool's unstable shell)
+#define OBJFLAG_HIDDEN    0x08 // not there (yet): not drawn, not blocking -- a script reveals it
 
 typedef enum
 {
@@ -52,6 +53,10 @@ typedef enum
     OBJ_OP_TABLE,          // Room 2: vivisection table (scenery; param0 picks the text)
     OBJ_LECTERN,           // Room 2: lectern grown from the floor, notes on it (lore)
     OBJ_TABLET,            // Room 2: cartilage tablet on a wall (lore; param0 picks the text)
+    OBJ_ENEMY_GROUP,       // enemies roaming the room (param0 = encounter id, src/encounter.c)
+    OBJ_ACID_TANK,         // explosive acid tank: a combat target that hurts all enemies
+    OBJ_FIRE,              // burning wreckage (scenery)
+    OBJ_BREACH,            // Room 3: tear in the hull on a wall, the sky of Avernus beyond
     OBJ_KIND_COUNT
 } ObjectKind;
 
@@ -99,8 +104,12 @@ void map_enterRoom(const RoomDef *room, Player *p, RoomId from);
 void map_registerRoom(const RoomDef *room);
 const RoomDef *map_findRoom(RoomId id); // NULL if that room hasn't been registered yet
 
-// NULL if there's no object at (x,y) in the current room.
+// NULL if there's no (visible) object at (x,y) in the current room.
 RoomObject *map_objectAt(s16 x, s16 y);
+
+// The current room's objects in RAM (count via *count), hidden ones included -- for scripts that
+// reveal or move objects, and for enemy movement.
+RoomObject *map_roomObjects(u8 *count);
 
 bool map_isWall(s16 x, s16 y);
 void map_forward(Facing f, s16 *dx, s16 *dy);

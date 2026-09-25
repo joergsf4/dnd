@@ -230,8 +230,37 @@ def tex_tablet():
     return t
 
 
-TEXTURES = [tex_wall(), tex_door(), tex_tablet()]
-TEX_NAMES = ["TEX_WALL", "TEX_DOOR", "TEX_TABLET"]
+def tex_breach():
+    """A tear in the hull (Room 3): ragged chitin edges, and outside the burning sky of Avernus --
+    glowing red haze, black rocks drifting in it, a dragon's silhouette far away."""
+    rng = random.Random(12)
+    t = organic_wall(12)
+    edge = []
+    for y in range(TEX):                                   # ragged outline of the hole
+        w = 22 + int(6 * math.sin(y / 5.0)) + rng.randint(-2, 2)
+        if y < 5 or y > 58:
+            w = max(0, w - (5 - y if y < 5 else y - 58) * 6)
+        edge.append(w)
+    for y in range(TEX):
+        for x in range(TEX):
+            if abs(x - 32) < edge[y]:
+                v = y + ((x * 5 + y * 3) % 7) - 3 + rng.randint(-3, 3)   # dithered bands
+                c = MEM2 if v > 42 else MEM1 if v > 20 else MEM0   # sky: hotter towards below
+                t[y][x] = c
+            elif abs(x - 32) < edge[y] + 2:
+                t[y][x] = CH3                              # torn, lit edge
+    for cx, cy, r in ((20, 20, 4), (41, 30, 3), (29, 48, 5), (46, 50, 2)):   # drifting rocks
+        for y in range(TEX):
+            for x in range(TEX):
+                if abs(x - 32) < edge[y] and (x - cx) ** 2 + ((y - cy) * 1.3) ** 2 < r * r:
+                    t[y][x] = BLACK
+    for dx, dy in ((0, 0), (1, 0), (2, 0), (-1, -1), (-2, -2), (3, -1), (4, -2), (1, 1)):
+        t[14 + dy][36 + dx] = BLACK                        # a dragon, wings spread
+    return t
+
+
+TEXTURES = [tex_wall(), tex_door(), tex_tablet(), tex_breach()]
+TEX_NAMES = ["TEX_WALL", "TEX_DOOR", "TEX_TABLET", "TEX_BREACH"]
 
 # ---------------------------------------------------------------- props (free-standing objects)
 # A prop stands in the middle of a floor cell, drawn as an upright billboard one cell wide and one
@@ -518,12 +547,88 @@ def prop_lectern():
     return t
 
 
+def prop_fire():
+    """Burning wreckage on the floor: charred chitin, flames licking up from it."""
+    rng = random.Random(13)
+    t = blank(T)
+    shadow(t, 26)
+    for x0, x1, y0 in ((8, 30, 52), (26, 56, 55), (14, 44, 58)):   # charred debris
+        rect(t, x0, y0, x1, y0 + 5, CH0)
+        rect(t, x0, y0, x1, y0 + 1, CH1)
+    for _ in range(9):                                     # flames: tapering tongues
+        x, h = rng.randint(12, 50), rng.randint(14, 34)
+        for i in range(h):
+            y = 58 - i
+            w = max(0, int(4 * (1 - i / h)) + 1)
+            k = i / h
+            c = BONE if k < 0.3 else MEM2 if k < 0.7 else MEM1
+            xx = x + int(2 * math.sin(i / 3.0 + x))
+            rect(t, xx - w, y, xx + w, y + 1, c)
+    for _ in range(10):
+        t[rng.randint(8, 30)][rng.randint(12, 52)] = MEM2  # embers
+    return t
+
+
+def prop_tank(broken):
+    """Nautiloid acid tank: a cartilage barrel filled with purple acid, veins over it (burst:
+    torn open, acid spilled)."""
+    rng = random.Random(14)
+    t = blank(T)
+    shadow(t, 20)
+    if broken:
+        ellipse(t, 32, 61, 30, 3, FLESH)                   # spilled acid
+    for y in range(22, 62):
+        for x in range(TEX):
+            if in_ellipse(x, y, 32, 42, 16, 21):
+                t[y][x] = FLESH
+    shade_body(t, 22, 42, FLESH, FL2, FL0)
+    for y in (26, 40, 54):                                 # cartilage hoops
+        for x in range(TEX):
+            if t[y][x] != T:
+                t[y][x] = BONE
+                t[y + 1][x] = FL1
+    for _ in range(4):
+        vein(t, rng, rng.randint(20, 44), 28, 10, MEM0)
+    if broken:
+        ellipse(t, 32, 26, 13, 6, T)                       # the top blown away
+        for _ in range(10):
+            x = rng.randint(18, 46)
+            rect(t, x - 1, 22, x + 1, 30 + rng.randint(0, 5), T)
+        for _ in range(5):
+            vein(t, rng, rng.randint(20, 44), 32, 20, FL2)
+    else:
+        ellipse(t, 32, 23, 14, 3, FL2)                     # lid
+        ellipse(t, 28, 34, 3, 5, GLINT)                    # glossy shine
+    return t
+
+
+def prop_imps():
+    """A troop of three imps hovering in the corridor, as seen before a fight."""
+    t = blank(T)
+    for cx, cy, s in ((16, 28, 1.1), (48, 26, 1.1), (32, 36, 1.4)):   # back to front
+        for side in (-1, 1):                               # wings
+            for i in range(int(10 * s)):
+                for j in range(int(7 * s) - i // 2):
+                    x = int(cx + side * (4 * s + i))
+                    y = int(cy - 6 * s + j + i // 3)
+                    if 0 <= x < TEX and 0 <= y < TEX:
+                        t[y][x] = CH0
+        ellipse(t, cx, cy, 4 * s, 6 * s, MEM1)             # body
+        ellipse(t, cx, cy - 9 * s, 4 * s, 4 * s, MEM1)     # head
+        t[int(cy - 9 * s)][int(cx - 2 * s)] = t[int(cy - 9 * s)][int(cx + 2 * s)] = BONE   # eyes
+        t[int(cy - 14 * s)][int(cx - 3 * s)] = t[int(cy - 14 * s)][int(cx + 3 * s)] = CH2  # horns
+        for i in range(int(12 * s)):                       # tail
+            t[int(cy + 5 * s + i)][int(cx + 2 * math.sin(i / 2.0))] = MEM0
+        rect(t, int(cx + 6 * s), int(cy - 16 * s), int(cx + 6 * s) + 1, int(cy + 8 * s), CH2)  # trident
+    return t
+
+
 PROPS = [prop_pool(False), prop_pool(True), prop_chest(False), prop_chest(True), prop_corpse(),
          prop_shrine(), prop_pod(False), prop_pod(True), prop_myrnath(False), prop_myrnath(True),
-         prop_op_table(), prop_lectern()]
+         prop_op_table(), prop_lectern(), prop_fire(), prop_tank(False), prop_tank(True), prop_imps()]
 PROP_NAMES = ["PROP_POOL", "PROP_POOL_BROKEN", "PROP_CHEST", "PROP_CHEST_OPEN", "PROP_CORPSE",
               "PROP_SHRINE", "PROP_POD_OPEN", "PROP_POD_BROKEN", "PROP_MYRNATH", "PROP_MYRNATH_DEAD",
-              "PROP_OP_TABLE", "PROP_LECTERN"]
+              "PROP_OP_TABLE", "PROP_LECTERN", "PROP_FIRE", "PROP_TANK", "PROP_TANK_BROKEN", "PROP_IMPS"]
 
 
 def bake_prop(sprite, d):
@@ -850,6 +955,7 @@ def preview(bd, cols):
          os.path.join(outdir, "room.png"))
     save(render(bd, cols, room, {(1, 0): 6}), os.path.join(outdir, "adjacent_pod.png"))
     save(render(bd, cols, {(1, 0): 2}), os.path.join(outdir, "adjacent_tablet.png"))
+    save(render(bd, cols, {(1, 0): 3}), os.path.join(outdir, "adjacent_breach.png"))
     # every prop at distance 1 and 3, for judging the art
     sheet = Image.new("RGB", (VW * 4, VH * ((len(PROPS) + 3) // 4)))
     for i in range(len(PROPS)):

@@ -15,7 +15,8 @@
 #define TEX_WALL 0
 #define TEX_DOOR 1
 #define TEX_TABLET 2
-#define TEX_COUNT 3
+#define TEX_BREACH 3
+#define TEX_COUNT 4
 #define PROP_POOL 0
 #define PROP_POOL_BROKEN 1
 #define PROP_CHEST 2
@@ -28,7 +29,11 @@
 #define PROP_MYRNATH_DEAD 9
 #define PROP_OP_TABLE 10
 #define PROP_LECTERN 11
-#define PROP_COUNT 12
+#define PROP_FIRE 12
+#define PROP_TANK 13
+#define PROP_TANK_BROKEN 14
+#define PROP_IMPS 15
+#define PROP_COUNT 16
 #define VIEW_HALF_K 56   // a wall at depth z is 2 * VIEW_HALF_K / z rows high
 #define VIEW_CY 80
 
@@ -917,7 +922,7 @@ static const ViewEvent viewEvents[866] = {
 
 // Props: record offset in viewProps per prop and distance (d = 1..VIEW_DMAX), and the column
 // pair of a prop's centre d cells ahead and l to the right (index l + VIEW_LMAX).
-static const u32 viewPropOffset[12][6] = {
+static const u32 viewPropOffset[16][6] = {
     { 0, 0, 5548, 6946, 7596, 7962 },
     { 0, 8208, 13446, 14800, 15428, 15776 },
     { 0, 16012, 20546, 21720, 22278, 22568 },
@@ -930,6 +935,10 @@ static const u32 viewPropOffset[12][6] = {
     { 0, 79752, 85884, 87490, 88240, 88672 },
     { 0, 88954, 94360, 95766, 96404, 96768 },
     { 0, 97014, 101964, 103250, 103842, 104204 },
+    { 0, 104424, 108840, 109986, 110478, 110748 },
+    { 0, 110894, 115154, 116272, 116776, 117082 },
+    { 0, 117284, 120912, 121882, 122338, 122612 },
+    { 0, 122784, 126444, 127432, 127884, 128172 },
 };
 static const s16 viewPropCenter[6][11] = {
     { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },

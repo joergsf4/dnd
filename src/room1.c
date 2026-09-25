@@ -91,20 +91,6 @@ static void onChest(RoomObject *obj)
     say("Eine Knorpelkiste. Darin:", "Grundausrüstung und", "ein Heiltrank.");
 }
 
-static void onShrine(void)
-{
-    for (u8 i = 0; i < PARTY_MAX; i++)
-    {
-        if (party.members[i].active)
-        {
-            party.members[i].hp = party.members[i].hpMax;
-            party.members[i].mp = party.members[i].mpMax;
-        }
-    }
-    uiPanel_redrawChrome();
-    say("Die Heilblase zieht sich", "zusammen - glitzernde", "Partikel heilen dich.");
-}
-
 static void room1_onInteract(Player *p, RoomObject *obj)
 {
     switch (obj->kind)
@@ -112,7 +98,7 @@ static void room1_onInteract(Player *p, RoomObject *obj)
         case OBJ_LARVA_TANK:         onLarvaPool(obj); break;
         case OBJ_MINDFLAYER_CORPSE:  onCorpse(obj); break;
         case OBJ_CARTILAGE_CHEST:    onChest(obj); break;
-        case OBJ_RESTORATION_SHRINE: onShrine(); break;
+        case OBJ_RESTORATION_SHRINE: dungeonObjects_useShrine(); break;
         case OBJ_POD_OPEN:
             say("Deine Kapsel. Glibbrige", "Reste kleben noch am Glas.", "Hier kamst du heraus.");
             break;

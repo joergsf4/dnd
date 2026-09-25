@@ -41,7 +41,13 @@ void uiPanel_initSprites(void)
     {
         if (!party.members[i].active || avatars[i]) continue;
         u16 row = i * SLOT_ROWS;
-        const SpriteDefinition *def = party.members[i].cls == CLASS_WIR ? &avatar_wir_sprite : &avatar_sprite;
+        const SpriteDefinition *def;
+        switch (party.members[i].cls)
+        {
+            case CLASS_WIR:    def = &avatar_wir_sprite; break;
+            case CLASS_LAEZEL: def = &avatar_laezel_sprite; break;
+            default:           def = &avatar_sprite; break;
+        }
         avatars[i] = SPR_addSprite(def, UI_PANEL_COL * 8, row * 8, TILE_ATTR(PAL1, FALSE, FALSE, FALSE));
     }
 }

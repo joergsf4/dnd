@@ -19,4 +19,16 @@
 u8 textbox_show(const char *const lines[], u8 lineCount,
                  const char *const options[], u8 optionCount);
 
+// Called with the cursor index whenever a menu opens or its cursor moves (NULL = none), so a
+// caller can show what the cursor points at -- combat marks the targeted enemy with it.
+void textbox_setCursorHook(void (*hook)(u8 cursor));
+
+// Clears the message area and shows up to TEXTBOX_BODY_LINES lines (NULL entries are skipped),
+// without waiting. The caller decides how long they stay up.
+void textbox_print(const char *const lines[], u8 lineCount);
+
+// Shows up to TEXTBOX_BODY_LINES lines without a prompt for `frames` frames (A skips ahead), then
+// clears. For running commentary that shouldn't need a button press per line (combat).
+void textbox_flash(const char *const lines[], u8 lineCount, u16 frames);
+
 #endif

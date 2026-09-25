@@ -8,11 +8,17 @@
 #include "char_create.h"
 #include "room1.h"
 #include "room2.h"
+#include "room3.h"
+#include "figures.h"
+#include "encounter.h"
 #include "text.h"
 
 // Sprite tiles are reserved just below the font; the default 420 would collide with the view's two
-// 560-tile buffers (dungeon_view.c). The avatar needs 9 tiles, so 256 leaves plenty for later.
+// 560-tile buffers (dungeon_view.c). Avatars take 9 tiles each, a fight up to 3 imps x 24 + the
+// marker, Lae's figure 72 -- 256 covers that with room to spare.
 #define SPRITE_VRAM_TILES 256
+
+#define ENEMY_STEP_FRAMES 45
 
 static const RoomDef *shownRoom;
 
@@ -43,6 +49,7 @@ int main(bool hardReset)
     SPR_initEx(SPRITE_VRAM_TILES);
     PAL_setPalette(PAL1, avatar_sprite.palette->data, DMA);
     text_init();
+    figures_init();
 
     CharClass heroClass = charCreate_run();
     party_init();
@@ -56,11 +63,13 @@ int main(bool hardReset)
 
     map_registerRoom(&ROOM1);
     map_registerRoom(&ROOM2);
+    map_registerRoom(&ROOM3);
     Player player;
     map_loadRoom(&ROOM1, &player);
     redrawWorld(&player);
 
     u16 prevJoy = JOY_readJoypad(JOY_1);
+    u16 enemyTimer = 0;
     while (TRUE)
     {
         u16 joy = JOY_readJoypad(JOY_1);
@@ -84,6 +93,22 @@ int main(bool hardReset)
                 redrawWorld(&player);
                 uiPanel_redrawChrome();
             }
+        }
+
+        // Enemies close in in real time, one cell every ENEMY_STEP_FRAMES; next to the party, the
+        // fight starts.
+        if (++enemyTimer >= ENEMY_STEP_FRAMES)
+        {
+            enemyTimer = 0;
+            if (encounter_tick(&player)) redrawWorld(&player);
+        }
+        RoomObject *foe = encounter_adjacent(&player);
+        if (foe)
+        {
+            encounter_fight(&player, foe);
+            redrawWorld(&player);
+            uiPanel_redrawChrome();
+            enemyTimer = 0;
         }
 
         prevJoy = joy;

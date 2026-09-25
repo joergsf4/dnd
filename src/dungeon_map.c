@@ -66,9 +66,16 @@ RoomObject *map_objectAt(s16 x, s16 y)
 
     RoomObject *objects = roomState[currentRoom->roomId];
     for (u8 i = 0; i < currentRoom->objectCount; i++)
-        if (objects[i].kind != OBJ_NONE && objects[i].x == x && objects[i].y == y)
+        if (objects[i].kind != OBJ_NONE && !(objects[i].flags & OBJFLAG_HIDDEN)
+            && objects[i].x == x && objects[i].y == y)
             return &objects[i];
     return NULL;
+}
+
+RoomObject *map_roomObjects(u8 *count)
+{
+    *count = currentRoom ? currentRoom->objectCount : 0;
+    return currentRoom ? roomState[currentRoom->roomId] : NULL;
 }
 
 bool map_isWall(s16 x, s16 y)

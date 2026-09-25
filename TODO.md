@@ -31,18 +31,27 @@ together in Room 1 (the "Klonkammer" — see `BeschreibungInhaltVerticalSlice.md
       joins with its own class and avatar, lore lectern/tablets, vivisection tables. Flat, no lift.
       Verified via `tools/emutest.py room2`.
 - [x] Room-to-room doors, both ways (`map_enterRoom`: arrive in front of the matching door).
+- [x] Combat (`src/combat.c`): turn-based menu fights in the first-person view, Shining in the
+      Darkness style — see README, "Combat". Enemy groups roam rooms and close in
+      (`src/encounter.c`).
+- [x] Room 3 (Außendeck): hull breaches onto Avernus, fires, Lae'zel lands in front of the
+      player and joins (dialogue per the doc's demake version), three imps come through the
+      breach, the fight, an acid tank to burst, a restoration station before the door to Room 4.
+      Verified via `tools/emutest.py room3`.
 
 ## Room-by-room roadmap (light — detailed planning happens per room, not now)
-- [ ] **Room 3** (Lae'zel ambush + first combat): needs an entry-triggered cutscene — `RoomDef`
-      has an `onEnter` hook (Room 1 uses it for its intro text). Combat itself is a new
-      subsystem (see Combat below), would plug in as another blocking sub-loop like `onInteract`.
+- [ ] **Order: Room 5 before Room 4** — Room 4's console needs the rune from Room 5. The doc is
+      inconsistent about where the 3-button console stands (Room 4 in the overview, the lab in
+      Szene 5); decide when planning those rooms.
 - [ ] **Room 4** (locked door + console): needs an identified-item inventory (`hasItem[]`, see
       below) and uses `RoomObject`'s already-reserved `param0`/`param1` fields (target room +
       required item) — no struct changes needed. Multi-button console is just another `ObjectKind`.
 - [ ] **Room 5** (transformation reveal): a sequence of no-choice `textbox_show()` calls, no new
       system needed. The morph itself is a sprite-frame swap, art not mechanics.
-- [ ] **Room 6** (timed boss): needs a persistent countdown on the panel and the combat system's
-      notion of "rounds" — unspecified until combat exists.
+- [ ] **Room 6** (timed boss): a persistent countdown on the panel. With combat in place, "rounds"
+      can be combat rounds plus steps outside fights; bigger figures (Zhalk 48x64 in the doc, far
+      larger on our screen) may need drawing into the view instead of hardware sprites (sprite
+      VRAM is 256 tiles, see main.c).
 
 ## Core loop
 - [ ] Secret doors, locked doors/keys — room-to-room doors work (`dungeonObjects_tryDoor`,
@@ -54,17 +63,18 @@ together in Room 1 (the "Klonkammer" — see `BeschreibungInhaltVerticalSlice.md
 - [ ] Doors *between* cells (EOB-style door frames in a corridor, open/closed state) — the room 1
       exit is a door texture on a border wall, which is enough for room-to-room exits but not for
       doors you walk through inside a level.
-- [ ] Monsters/NPCs in the view: the prop pipeline (pre-scaled per distance, masked, occluded
-      by walls) already does this for static objects; monsters need several frames per prop and
-      props in the player's own row that move. Redraw cost grows with prop size up close.
+- [ ] More enemy kinds in the world: `OBJ_ENEMY_GROUP` always draws the imp troop prop; other
+      groups need their own prop (`objectProp` in dungeon_view.c could key on the encounter).
+- [ ] Enemies only move towards the player, greedily (`encounter_tick`): no pathfinding round
+      obstacles, no line of sight, no wandering.
 - [ ] Strafing (classic EOB/DM control scheme uses a 3x3 or 4x4 button/D-pad layout; Mega Drive's
       3-button pad is cramped — decide on a control scheme early, maybe 6-button pad only).
 
 ## Party & characters
 - [ ] Letter-grid name entry (D-pad-driven on-screen keyboard) if auto-naming ever feels wrong —
       explicitly deferred when this was built, not forgotten.
-- [ ] Recruiting the rest of the party — "Wir" (Room 2) is in; Lae'zel (Room 3) and
-      Schattenherz (Room 4) follow the same pattern (`party_addMember` + `uiPanel_initSprites`),
+- [ ] Recruiting the rest of the party — "Wir" (Room 2) and Lae'zel (Room 3) are in;
+      Schattenherz (Room 4) follows the same pattern (`party_addMember` + `uiPanel_initSprites`),
       each with an avatar in `tools/make_avatar.py`. "Wir" is meant to be a temporary companion in
       the doc; nothing removes it yet. What lobotomised changes beyond stats is open too.
 - [ ] D&D-derived stat block (STR/DEX/CON/INT/WIS/CHA, AC, saving throws) — the current model is
@@ -77,11 +87,11 @@ together in Room 1 (the "Klonkammer" — see `BeschreibungInhaltVerticalSlice.md
       interactive screen.
 
 ## Combat
-- [ ] Death / game over — damage currently never takes the hero below 1 KP (Room 1's larva pool).
-- [ ] Turn-based or real-time-with-pause encounter system — would plug in as a blocking sub-loop
-      (`combat_run(...)`) the same way `onInteract`/`textbox_show` do. Needed starting Room 3.
-- [ ] Enemy placement in the dungeon grid, line-of-sight/engagement range.
-- [ ] Spellcasting (spell list, MP cost, targeting).
+- [ ] Only one spell (Magier: Geschoss). Schattenherz (Room 4) brings healing; a spell list per
+      class is the natural next step.
+- [ ] No fleeing, no status effects, no XP/levels; enemies pick targets at random.
+- [ ] Balance is a first guess (5e-like level-1 values in `party.c`, `ENEMY_IMP` in combat.c).
+- [ ] Room 1's larva pool still never takes the hero below 1 KP (death only happens in combat).
 
 ## UI/UX
 - [x] Screen layout: view top-left (28x20 tiles, BG_B), message area below it (rows 20-27),

@@ -3,8 +3,7 @@
 
 #include "dungeon_map.h"
 
-// Interactive objects sit on wall cells and are drawn by dungeon_view.c as that wall's texture,
-// so there's nothing to render here -- this module is just the interaction plumbing.
+// Interaction plumbing shared by all rooms; drawing objects is dungeon_view.c's job.
 
 // The object directly ahead of the player (one step, in the facing direction), or NULL.
 RoomObject *dungeonObjects_interactTarget(const Player *p);
@@ -13,5 +12,8 @@ RoomObject *dungeonObjects_interactTarget(const Player *p);
 // room if it's been registered (map_registerRoom), otherwise shows a "still sealed" stub -- every
 // room's exit door needs this same not-built-yet check before it's actually wired up.
 void dungeonObjects_tryDoor(Player *p, RoomObject *obj);
+
+// Restoration station: heals every party member's KP and ZP fully (reusable).
+void dungeonObjects_useShrine(void);
 
 #endif

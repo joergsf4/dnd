@@ -1,5 +1,7 @@
 #include "dungeon_objects.h"
 #include "textbox.h"
+#include "party.h"
+#include "ui_panel.h"
 
 RoomObject *dungeonObjects_interactTarget(const Player *p)
 {
@@ -18,4 +20,19 @@ void dungeonObjects_tryDoor(Player *p, RoomObject *obj)
         return;
     }
     map_enterRoom(target, p, map_currentRoom()->roomId);
+}
+
+void dungeonObjects_useShrine(void)
+{
+    for (u8 i = 0; i < PARTY_MAX; i++)
+    {
+        if (party.members[i].active)
+        {
+            party.members[i].hp = party.members[i].hpMax;
+            party.members[i].mp = party.members[i].mpMax;
+        }
+    }
+    uiPanel_redrawChrome();
+    const char *lines[3] = { "Die Heilblase zieht sich", "zusammen - glitzernde", "Partikel heilen euch." };
+    textbox_show(lines, 3, NULL, 0);
 }

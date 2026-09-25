@@ -4,6 +4,7 @@ the sprite's transparent color on real hardware):
 
     res/gfx/avatar.png      the generic hooded hero, shared by all three starting classes
     res/gfx/avatar_wir.png  "Wir", the intellect devourer from Room 2: a brain on four legs
+    res/gfx/avatar_laezel.png  Lae'zel (Room 3): githyanki, yellow-green skin, bronze armour
 
 Both use the same palette, since all avatars share PAL1 (loaded from avatar_sprite in main.c).
 """
@@ -22,8 +23,13 @@ BRAIN = (0xE8, 0x90, 0xA0)
 BRAIN_FOLD = (0x90, 0x30, 0x40)
 HORN = (0xD8, 0xC8, 0xA0)
 GLOW = (0xB0, 0x60, 0xE0)
+GITH = (0xB8, 0xC8, 0x70)
+BRONZE = (0xB8, 0x88, 0x40)
+HAIR = (0x50, 0x38, 0x28)
+STEEL = (0xB0, 0xB8, 0xC8)
 
-palette = [TRANSPARENT, SKIN, EYE, CLOTH, CLOTH_SHADOW, BELT, BRAIN, BRAIN_FOLD, HORN, GLOW]
+palette = [TRANSPARENT, SKIN, EYE, CLOTH, CLOTH_SHADOW, BELT, BRAIN, BRAIN_FOLD, HORN, GLOW,
+           GITH, BRONZE, HAIR, STEEL]
 color_index = {c: i for i, c in enumerate(palette)}
 
 img = Image.new("P", (SIZE, SIZE), 0)
@@ -78,3 +84,35 @@ for x0, dx in ((5, -1), (9, 0), (14, 0), (18, 1)):   # legs, the outer ones spla
         set_px(x0 + 1 + dx * (i // 2), y, HORN)
 img.save("res/gfx/avatar_wir.png")
 print("wrote res/gfx/avatar_wir.png", img.size)
+
+# ---- Lae'zel: head and shoulders -- sharp bronze pauldrons, green face, hair pulled back
+img = Image.new("P", (SIZE, SIZE), 0)
+img.putpalette(flat_palette)
+for y in range(15, SIZE):                            # armour, widening into pauldrons
+    half = 7 + min(4, (y - 15))
+    for x in range(CX - half, CX + half + 1):
+        set_px(x, y, BRONZE if abs(x - CX) > 2 or y > 18 else BELT)
+set_px(CX - 11, 16, BRONZE)
+set_px(CX + 11, 16, BRONZE)
+for y in range(3, 15):                               # face
+    for x in range(6, 19):
+        if ((x - CX) / 5.5) ** 2 + ((y - 9) / 6.5) ** 2 <= 1:
+            set_px(x, y, GITH)
+for x in range(6, 19):                               # hair, tight to the skull
+    for y in range(2, 6):
+        if ((x - CX) / 6) ** 2 + ((y - 6) / 4) ** 2 <= 1:
+            set_px(x, y, HAIR)
+set_px(5, 8, GITH)                                   # pointed ears
+set_px(4, 7, GITH)
+set_px(19, 8, GITH)
+set_px(20, 7, GITH)
+for x in (9, 10, 14, 15):                            # almond eyes
+    set_px(x, 9, EYE)
+set_px(11, 11, BELT)                                 # nostrils
+set_px(13, 11, BELT)
+for x in range(10, 15):
+    set_px(x, 13, BELT)                              # stern mouth
+for y in range(2, 22):                               # sword hilt over the shoulder
+    set_px(20 + (y > 12), y, STEEL if y < 14 else HAIR)
+img.save("res/gfx/avatar_laezel.png")
+print("wrote res/gfx/avatar_laezel.png", img.size)

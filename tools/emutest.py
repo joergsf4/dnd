@@ -9,6 +9,7 @@ is needed (and none is available in this sandbox).
     python3 tools/emutest.py tour                # Room 1: views from two opposite corners
     python3 tools/emutest.py room1               # Room 1: interact with every object
     python3 tools/emutest.py room2               # through the door: Room 2, Myrnath, back to Room 1
+    python3 tools/emutest.py room3               # on to Room 3: Lae'zel joins, fight against 3 imps
     python3 tools/emutest.py look --class 2       # any scenario, but pick Mage instead of Fighter
 
 Screenshots go to out/emutest/ (gitignored). Needs a built out/rom.bin (./build.sh).
@@ -149,7 +150,7 @@ def walk(b, n):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("scenario", choices=["create", "look", "tour", "room1", "room2"])
+    ap.add_argument("scenario", choices=["create", "look", "tour", "room1", "room2", "room3"])
     ap.add_argument("--class", dest="cls", type=int, default=0, choices=[0, 1, 2],
                      help="0 fighter (default), 1 rogue, 2 mage")
     args = ap.parse_args()
@@ -289,8 +290,8 @@ def main():
 
         if args.scenario == "room2":
             # Room 1 -> door -> Room 2: Myrnath (STR check; the path below assumes it succeeds,
-            # check r2_check_result), "Wir" joins, the lore objects, the shut exit to Room 3,
-            # then back through the door to Room 1.
+            # check r2_check_result), "Wir" joins, the lore objects, then back through the door
+            # to Room 1.
             start_game(b, args.cls)
             act(b, "gamepads.1.right")         # south -> west
             walk(b, 2)                         # (1,3)
@@ -349,15 +350,13 @@ def main():
             b.shot("r2_tablet")
             act(b, "gamepads.1.a")
 
-            # --- exit to Room 3, north wall (4,0) ---
+            # --- past the exit to Room 3, north wall (4,0) ---
             act(b, "gamepads.1.right")         # west -> north
             walk(b, 1)                         # (1,1)
             act(b, "gamepads.1.right")         # north -> east
             walk(b, 3)                         # (4,1)
             act(b, "gamepads.1.left")          # east -> north
-            act(b, "gamepads.1.a")
-            b.shot("r2_exit_shut")
-            act(b, "gamepads.1.a")
+            b.shot("r2_at_exit")               # the door to Room 3: see the "room3" scenario
 
             # --- back to Room 1 through the south door ---
             act(b, "gamepads.1.right")         # north -> east
@@ -370,6 +369,45 @@ def main():
             b.shot("r2_at_door_back")
             act(b, "gamepads.1.a", 20)
             b.shot("r2_back_in_room1")         # (1,1) facing east, no intro again
+
+        if args.scenario == "room3":
+            # Room 1 -> Room 2 (Myrnath left alone) -> Room 3: the ambush scene, Lae'zel joins,
+            # the imps close in, the fight. The fight is dice-driven: A is pressed repeatedly
+            # (Angriff, first target), screenshots show how it went.
+            start_game(b, args.cls)
+            act(b, "gamepads.1.right")         # south -> west
+            walk(b, 2)                         # (1,3)
+            act(b, "gamepads.1.right")         # west -> north
+            walk(b, 2)                         # (1,1)
+            act(b, "gamepads.1.left")          # north -> west, door to Room 2
+            act(b, "gamepads.1.a", 20)
+            act(b, "gamepads.1.a")             # Room 2 intro
+            act(b, "gamepads.1.right")         # north -> east
+            walk(b, 1)                         # (5,6)
+            act(b, "gamepads.1.left")          # east -> north
+            walk(b, 5)                         # (5,1)
+            act(b, "gamepads.1.left")          # north -> west
+            walk(b, 1)                         # (4,1)
+            act(b, "gamepads.1.right")         # west -> north, door to Room 3
+            act(b, "gamepads.1.a", 20)
+            b.shot("r3_arrive")                # "Wind heult durch einen Riss..."
+            act(b, "gamepads.1.a")
+            act(b, "gamepads.1.a", 40)         # "Da! Über dir..." -> Lae'zel lands
+            b.shot("r3_laezel")
+            act(b, "gamepads.1.a")
+            b.shot("r3_laezel_menu")
+            act(b, "gamepads.1.a")             # "Gemeinsam kämpfen!"
+            act(b, "gamepads.1.a")             # "Erst schlagen wir uns..."
+            b.shot("r3_joined")                # panel: LAE'ZEL
+            act(b, "gamepads.1.a")
+            b.shot("r3_imps")                  # imps revealed in the corridor
+            act(b, "gamepads.1.a", 150)        # they close in -> fight starts
+            b.shot("r3_fight_start")
+            for i in range(40):
+                act(b, "gamepads.1.a", 45)
+                if i % 3 == 2:
+                    b.shot(f"r3_fight_{i:02d}")
+            b.shot("r3_after")
     finally:
         b.close()
 
