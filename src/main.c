@@ -1,9 +1,12 @@
 #include "game.h"
 #include "dungeon_map.h"
 #include "dungeon_view.h"
+#include "dungeon_objects.h"
 #include "ui_panel.h"
 #include "party.h"
+#include "inventory.h"
 #include "char_create.h"
+#include "room1.h"
 
 int main(bool hardReset)
 {
@@ -15,12 +18,19 @@ int main(bool hardReset)
     CharClass heroClass = charCreate_run();
     party_init();
     party_addMember(heroClass);
+    inventory_init();
 
     dungeonView_init();
-    uiPanel_init();
+    dungeonObjects_init();
+    uiPanel_initSprites();
+    uiPanel_redrawChrome();
 
-    Player player = { 4, 10, FACE_NORTH };
+    map_registerRoom(&ROOM1);
+    Player player;
+    map_loadRoom(&ROOM1, &player);
+
     dungeonView_render(&player);
+    dungeonObjects_render(&player);
     uiPanel_drawStatus(&player);
 
     u16 prevJoy = 0;
@@ -39,7 +49,21 @@ int main(bool hardReset)
         if (moved)
         {
             dungeonView_render(&player);
+            dungeonObjects_render(&player);
             uiPanel_drawStatus(&player);
+        }
+
+        if (pressed & BUTTON_A)
+        {
+            RoomObject *target = dungeonObjects_interactTarget(&player);
+            if (target)
+            {
+                map_currentRoom()->onInteract(&player, target);
+                dungeonView_render(&player);
+                dungeonObjects_render(&player);
+                uiPanel_drawStatus(&player);
+                uiPanel_redrawChrome();
+            }
         }
 
         prevJoy = joy;

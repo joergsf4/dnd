@@ -3,9 +3,6 @@
 
 #include <genesis.h>
 
-#define MAP_W 8
-#define MAP_H 12
-
 // facing: 0=North 1=East 2=South 3=West (rotates clockwise)
 typedef enum
 {
@@ -20,6 +17,74 @@ typedef struct
     s16 x, y;
     Facing facing;
 } Player;
+
+// Every room in the vertical slice, in map-flow order (see BeschreibungInhaltVerticalSlice.md).
+// Only ROOM_1 has a RoomDef so far; the rest are reserved so door objects can already target
+// them (see room1.c's exit door) without a RoomDef existing yet -- adding one is a matter of
+// writing src/roomN.c and pointing a door's param0 at it, no struct/array resize needed.
+typedef enum
+{
+    ROOM_1 = 0,
+    ROOM_2,
+    ROOM_3,
+    ROOM_4,
+    ROOM_5,
+    ROOM_6,
+    ROOM_COUNT
+} RoomId;
+
+#define ROOM_MAX_OBJECTS 8
+#define OBJFLAG_TRIGGERED 0x01 // set once a one-shot object (loot, a resolved check) has fired
+
+typedef enum
+{
+    OBJ_NONE = 0,
+    OBJ_LARVA_TANK,
+    OBJ_MINDFLAYER_CORPSE,
+    OBJ_CARTILAGE_CHEST,
+    OBJ_RESTORATION_SHRINE,
+    OBJ_DOOR_EXIT,
+    OBJ_KIND_COUNT
+} ObjectKind;
+
+typedef struct
+{
+    s8 x, y;
+    ObjectKind kind;
+    u8 param0, param1; // kind-specific payload, e.g. OBJ_DOOR_EXIT: param0 = target RoomId
+    u8 flags;
+} RoomObject;
+
+typedef void (*RoomInteractFn)(Player *p, RoomObject *obj);
+typedef void (*RoomEnterFn)(Player *p); // may be NULL; reserved for entry-triggered cutscenes
+
+typedef struct
+{
+    RoomId roomId;
+    u8 w, h;
+    const char *const *grid;    // h strings of w chars, '1' = wall, '0' = floor
+    s8 startX, startY;
+    Facing startFacing;
+    u8 objectCount;
+    const RoomObject *objects;  // ROM template, copied to RAM state on first visit
+    RoomInteractFn onInteract;
+    RoomEnterFn onEnter;
+} RoomDef;
+
+// Enters a room: sets the player's position/facing from the RoomDef, and -- only on the very
+// first visit -- copies its object template into per-room RAM state (so objects can be looted/
+// flagged and, if the player ever backtracks, stay that way).
+void map_loadRoom(const RoomDef *room, Player *p);
+const RoomDef *map_currentRoom(void);
+
+// A tiny room registry so a door object can check whether its target room is actually built yet
+// (see dungeonObjects_tryDoor) without dungeon_map.c hardcoding a dependency on specific room
+// content files -- main.c registers each room it knows about at boot.
+void map_registerRoom(const RoomDef *room);
+const RoomDef *map_findRoom(RoomId id); // NULL if that room hasn't been registered yet
+
+// NULL if there's no object at (x,y) in the current room.
+RoomObject *map_objectAt(s16 x, s16 y);
 
 bool map_isWall(s16 x, s16 y);
 void map_forward(Facing f, s16 *dx, s16 *dy);

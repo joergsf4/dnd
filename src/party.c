@@ -4,11 +4,13 @@ Party party;
 
 static const char *const classNames[3] = { "FIGHTER", "ROGUE", "MAGE" };
 
-typedef struct { u8 hpMax, mpMax; } ClassStats;
+// Placeholder balance, not architecture: str/dex/int are small (1-5) skill-check modifiers
+// added to a d20 roll (see skill_check.c), not a full D&D ability score.
+typedef struct { u8 hpMax, mpMax, str, dex, intl; } ClassStats;
 static const ClassStats classStats[3] = {
-    { 20, 0 },  // CLASS_FIGHTER
-    { 16, 0 },  // CLASS_ROGUE
-    { 12, 12 }, // CLASS_MAGE
+    { 20, 0,  5, 3, 2 },  // CLASS_FIGHTER
+    { 16, 0,  3, 5, 3 },  // CLASS_ROGUE
+    { 12, 12, 1, 2, 5 },  // CLASS_MAGE
 };
 
 const char *class_name(CharClass cls)
@@ -30,6 +32,9 @@ void party_addMember(CharClass cls)
     c->name = class_name(cls);
     c->hpMax = c->hp = classStats[cls].hpMax;
     c->mpMax = c->mp = classStats[cls].mpMax;
+    c->str = classStats[cls].str;
+    c->dex = classStats[cls].dex;
+    c->intl = classStats[cls].intl;
     c->active = TRUE;
     party.count++;
 }

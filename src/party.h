@@ -18,6 +18,7 @@ typedef struct
     const char *name;   // auto-assigned: just the class name (see TODO.md for real name entry)
     u8 hp, hpMax;
     u8 mp, mpMax;       // 0/0 for classes without mana
+    u8 str, dex, intl;  // minimal attribute block for skill_check.c; WIS/CON/CHA not modeled yet
     bool active;        // FALSE = empty slot, not yet recruited
 } Character;
 

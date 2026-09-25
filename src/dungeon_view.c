@@ -85,6 +85,15 @@ void dungeonView_init(void)
     VDP_loadTileSet(&dungeon_tiles, TILE_USER_INDEX, DMA);
     PAL_setPalette(PAL0, dungeon_pal.data, DMA);
     VDP_setBackgroundColor(0);
+
+    // SGDK's default font renders with PAL0, indices 14/15 -- dungeon_pal only defines 14
+    // colors, so rescomp pads the rest with black, which made every VDP_drawText call
+    // invisible wherever BG_B has no content underneath it (i.e. the whole UI panel, columns
+    // 28+): black text on the black backdrop. Not a rendering bug, just missing contrast --
+    // took a long empirical bisection (removing dungeonView_init() entirely made text at
+    // column 30 render fine again) to trace it back to these two unset palette entries.
+    PAL_setColor((16 * PAL0) + 14, RGB24_TO_VDPCOLOR(0xFFFFFF));
+    PAL_setColor((16 * PAL0) + 15, RGB24_TO_VDPCOLOR(0xFFFFFF));
 }
 
 void dungeonView_render(const Player *p)
@@ -120,4 +129,12 @@ void dungeonView_render(const Player *p)
     }
 
     fillRect(rects[3], tileAt(T_MIST, FALSE));
+}
+
+void dungeonView_getObjectAnchor(s16 *px, s16 *py, s16 *pw, s16 *ph)
+{
+    *px = rects[1].x * 8;
+    *py = rects[1].y * 8;
+    *pw = rects[1].w * 8;
+    *ph = rects[1].h * 8;
 }

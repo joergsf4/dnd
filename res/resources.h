@@ -6,5 +6,6 @@
 extern const TileSet dungeon_tiles;
 extern const Palette dungeon_pal;
 extern const SpriteDefinition avatar_sprite;
+extern const SpriteDefinition dungeon_objects_sprite;
 
 #endif // _RES_RESOURCES_H_

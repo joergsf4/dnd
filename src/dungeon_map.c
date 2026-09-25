@@ -1,26 +1,58 @@
 #include "dungeon_map.h"
 
-// POC dungeon: a 1-cell-wide, 4-cell-long corridor opening into a 6x6 room.
-// 1 = wall, 0 = floor. Placeholder for the real level data format.
-static const char *const grid[MAP_H] = {
-    "11111111",   // y=0  room north wall
-    "10000001",   // y=1  room interior (x=1..6) starts here, 6x6
-    "10000001",   // y=2
-    "10000001",   // y=3
-    "10000001",   // y=4
-    "10000001",   // y=5
-    "10000001",   // y=6
-    "11110111",   // y=7  room south wall, doorway at x=4 = corridor cell 1
-    "11110111",   // y=8  corridor cell 2
-    "11110111",   // y=9  corridor cell 3
-    "11110111",   // y=10 corridor cell 4 = player start (x=4,y=10), facing north
-    "11111111",   // y=11 south wall (dead end behind the player)
-};
+static const RoomDef *currentRoom;
+static RoomObject roomState[ROOM_COUNT][ROOM_MAX_OBJECTS];
+static bool roomVisited[ROOM_COUNT];
+static const RoomDef *roomTable[ROOM_COUNT];
+
+void map_registerRoom(const RoomDef *room)
+{
+    roomTable[room->roomId] = room;
+}
+
+const RoomDef *map_findRoom(RoomId id)
+{
+    return roomTable[id];
+}
+
+void map_loadRoom(const RoomDef *room, Player *p)
+{
+    currentRoom = room;
+
+    if (!roomVisited[room->roomId])
+    {
+        for (u8 i = 0; i < room->objectCount; i++)
+            roomState[room->roomId][i] = room->objects[i];
+        roomVisited[room->roomId] = TRUE;
+    }
+
+    p->x = room->startX;
+    p->y = room->startY;
+    p->facing = room->startFacing;
+
+    if (room->onEnter) room->onEnter(p);
+}
+
+const RoomDef *map_currentRoom(void)
+{
+    return currentRoom;
+}
+
+RoomObject *map_objectAt(s16 x, s16 y)
+{
+    if (!currentRoom) return NULL;
+
+    RoomObject *objects = roomState[currentRoom->roomId];
+    for (u8 i = 0; i < currentRoom->objectCount; i++)
+        if (objects[i].kind != OBJ_NONE && objects[i].x == x && objects[i].y == y)
+            return &objects[i];
+    return NULL;
+}
 
 bool map_isWall(s16 x, s16 y)
 {
-    if (x < 0 || y < 0 || x >= MAP_W || y >= MAP_H) return TRUE;
-    return grid[y][x] == '1';
+    if (!currentRoom || x < 0 || y < 0 || x >= currentRoom->w || y >= currentRoom->h) return TRUE;
+    return currentRoom->grid[y][x] == '1';
 }
 
 void map_forward(Facing f, s16 *dx, s16 *dy)
