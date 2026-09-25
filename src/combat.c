@@ -6,6 +6,7 @@
 #include "abilities.h"
 #include "ui_panel.h"
 #include "dungeon_view.h"
+#include "sfx.h"
 #include "game.h"
 
 // Every text line must fit the message area: at most 27 characters (an umlaut counts as one),
@@ -192,6 +193,7 @@ static u8 chooseTarget(bool allowTank)
 static bool damageFoe(u8 f, u8 dmg)
 {
     Foe *e = &foes[f];
+    sfx_play(SFX_HIT);
     figures_blink(e->spr, 3);
     e->status &= ~FS_ASLEEP;
     e->hp = dmg >= e->hp ? 0 : e->hp - dmg;
@@ -212,6 +214,7 @@ static void announceFall(const char *l0, const char *l1, u8 f)
 static void burstTank(void)
 {
     tankObj->flags |= OBJFLAG_BROKEN;
+    sfx_play(SFX_EXPLOSION);
     dungeonView_render(viewer);
     figures_shakeView();
 
@@ -282,6 +285,7 @@ static void weaponAttack(u8 m, u8 t, Strike strike)
         sprintf(l0, "%s greift %s an.", c->name, e->name);
     sprintf(l1, "%s %d + %d = %d: %s", label, r, c->atk, total, r == 20 ? "Kritisch!" : hit ? "Treffer!" : "daneben.");
     show(l0, l1, NULL);
+    if (!hit) sfx_play(SFX_MISS);
     pause(40);
     if (!hit)
     {
@@ -343,6 +347,7 @@ static void secondWind(u8 m)
 {
     Character *c = &party.members[m];
     usedSecondWind[m] = TRUE;
+    sfx_play(SFX_HEAL);
     u8 amount = roll(10) + 1;
     if (c->hp + amount > c->hpMax) amount = c->hpMax - c->hp;
     c->hp += amount;
@@ -383,6 +388,7 @@ static void cantrip(u8 m, bool frost)
     }
     Foe *e = &foes[t];
     char l0[32], l1[32], l2[32];
+    sfx_play(frost ? SFX_SPELL : SFX_FIRE);
     const char *label;
     u8 r = d20((e->status & FS_ASLEEP) ? 1 : 0, &label);
     u8 total = r + c->intl;
@@ -419,6 +425,7 @@ static void magicMissile(u8 m)
     u8 t = chooseTarget(FALSE);
     c->mp--;
     uiPanel_redrawChrome();
+    sfx_play(SFX_SPELL);
     char l1[32], l2[32];
     for (u8 dart = 1; dart <= 3; dart++)
     {
@@ -445,6 +452,7 @@ static void sleepSpell(u8 m)
     Character *c = &party.members[m];
     c->mp--;
     uiPanel_redrawChrome();
+    sfx_play(SFX_SPELL);
     u8 pool = 0;
     for (u8 i = 0; i < SLEEP_DICE; i++) pool += roll(8);
 
@@ -486,6 +494,7 @@ static void burningHands(u8 m)
     inventory_takeItem(ITEM_SCROLL);
     uiPanel_drawInventory();
     char l0[32], l1[32];
+    sfx_play(SFX_FIRE);
     sprintf(l0, "%s liest die Rolle:", party.members[m].name);
     show(l0, "Brennende Hände!", NULL);
     pause(50);
@@ -505,6 +514,7 @@ static void burningHands(u8 m)
 static void mageArmor(u8 m)
 {
     Character *c = &party.members[m];
+    sfx_play(SFX_SPELL);
     ab_mageArmor(c);
     char l1[32];
     sprintf(l1, "%s: RK %d.", c->name, ab_armorClass(c));
@@ -518,6 +528,7 @@ static void layOnHands(u8 m)
 {
     Character *c = &party.members[m];
     Character *t = ab_pickMember("Wen heilen?");
+    sfx_play(SFX_HEAL);
     char l1[32], l2[32];
     sprintf(l1, "%s erhält %d KP.", t->name, ab_layOnHands(c, t));
     sprintf(l2, "(Noch %d im Pool.)", c->mp);
@@ -528,6 +539,7 @@ static void layOnHands(u8 m)
 // Göttlicher Sinn in a fight: the enemies are fiends, and she senses how hurt they are.
 static void divineSense(void)
 {
+    sfx_play(SFX_SPELL);
     char lines[3][32];
     const char *out[3] = { NULL, NULL, NULL };
     u8 n = 0;
@@ -645,6 +657,7 @@ static bool perform(u8 m, Action act)
         case ACT_POTION:
         {
             Character *t = ab_pickMember("Wer bekommt den Heiltrank?");
+            sfx_play(SFX_HEAL);
             char l1[32];
             sprintf(l0, "%s nutzt einen Trank:", c->name);
             sprintf(l1, "%s erhält %d KP.", t->name, ab_potion(t));
@@ -702,6 +715,7 @@ static bool offerShield(u8 m, u8 total)
     if (textbox_show(lines, 2, options, 2)) return FALSE;
     c->mp--;
     shielded[m] = TRUE;
+    sfx_play(SFX_SPELL);
     uiPanel_redrawChrome();
     return TRUE;
 }
@@ -732,6 +746,7 @@ static void foeAttack(u8 f)
     sprintf(l0, "%s greift %s an.", e->name, c->name);
     sprintf(l1, "%s %d + %d = %d: %s", label, r, e->def->atk, total, hit ? "Treffer!" : "daneben.");
     show(l0, l1, NULL);
+    if (!hit) sfx_play(SFX_MISS);
     pause(40);
     if (hit && r != 20 && offerShield(m, total))
     {
@@ -748,6 +763,7 @@ static void foeAttack(u8 f)
     if (e->def->fireDie) dmg += roll(e->def->fireDie);
     if (r == 20) dmg += roll(e->def->dmgDie);
     c->hp = dmg >= c->hp ? 0 : c->hp - dmg;
+    sfx_play(SFX_HURT);
     figures_shakeView();
     uiPanel_redrawChrome();
     sprintf(l2, c->hp ? "%d Schaden." : "%d Schaden. %s fällt!", dmg, c->name);
@@ -890,6 +906,7 @@ won:
     inventory_addGold(goldReward);
     uiPanel_redrawChrome();
 
+    sfx_play(SFX_VICTORY);
     char l1[32];
     sprintf(l1, "Beute: %d Gold.", goldReward);
     say("Sieg!", goldReward ? l1 : NULL, revived ? "Bewusstlose kommen zu sich." : NULL);

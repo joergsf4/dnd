@@ -7,6 +7,7 @@
 #include "ending.h"
 #include "dungeon_view.h"
 #include "dungeon_objects.h"
+#include "sfx.h"
 #include "game.h"
 
 // Every text line must fit the textbox: at most 27 characters on screen (an umlaut counts as one),
@@ -49,6 +50,7 @@ static void onEnter(Player *p)
     figures_release(s);
 
     s = figures_add(&fig_zhalk_sprite, 112, 150);
+    sfx_play(SFX_QUAKE);
     figures_shakeView();
     say("ZHALK: \"Niemand verlässt", "diese Ebene lebend!\"", NULL);
     figures_release(s);

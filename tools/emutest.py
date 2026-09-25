@@ -134,8 +134,9 @@ def act(b, key, settle=15):
 
 
 def skip_title(b):
-    """Past the title screen (START) onto the creation screen."""
-    b.frames(30)
+    """Past the title screen (START) onto the creation screen. Booting takes a while (the XGM2
+    sound driver loads first), so wait before pressing."""
+    b.frames(150)
     act(b, "gamepads.1.start", 30)
 
 
@@ -249,7 +250,7 @@ def main():
             return
 
         if args.scenario == "title":
-            b.frames(60)
+            b.frames(150)
             b.shot("title")
             act(b, "gamepads.1.start", 30)
             b.shot("title_to_create")

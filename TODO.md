@@ -133,8 +133,11 @@ together in Room 1 (the "Klonkammer" — see `BeschreibungInhaltVerticalSlice.md
 - [x] Title screen (`tools/make_title.py`, `src/title.c`).
 
 ## Audio
-- [ ] Music/SFX pipeline — the other projects use XGM2 (see `tools/generate_music.py` /
-      `tools/generate_sfx.py` in the Wanderburg project for the conversion approach).
+- [x] Music and effects via XGM2 (README, "Audio"); pipeline taken over from Wanderburg.
+- [ ] Replace the title theme (Baldur's Gate, from a fan MIDI) with an own composition before
+      anything is published.
+- [ ] Listen through on hardware/BlastEm: volumes, PCM priorities, whether music stutters while
+      the view redraws (DMA vs. the Z80).
 
 ## Gotchas worth remembering
 - rescomp keeps a PNG's padded palette: `VDP_drawImageEx(..., loadpal = TRUE)` then writes more than

@@ -2,6 +2,7 @@
 #include "textbox.h"
 #include "text.h"
 #include "abilities.h"
+#include "sfx.h"
 #include "game.h"
 
 static const char *const attrLabel[3] = { "STÄ", "GES", "INT" };
@@ -29,6 +30,7 @@ bool skillCheck_run(Character *actor, Attribute attr, u8 threshold)
 {
     char buf[48];
 
+    sfx_play(SFX_DICE);
     // a short flourish: a few flickering fake rolls before the real one settles
     for (u8 i = 0; i < 16; i++)
     {

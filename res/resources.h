@@ -3,10 +3,30 @@
 #ifndef _RES_RESOURCES_H_
 #define _RES_RESOURCES_H_
 
+extern const u8 sfx_hit[2048];
+extern const u8 sfx_miss[2560];
+extern const u8 sfx_hurt[3072];
+extern const u8 sfx_spell[4096];
+extern const u8 sfx_fire[4864];
+extern const u8 sfx_heal[6144];
+extern const u8 sfx_explosion[7424];
+extern const u8 sfx_door[4864];
+extern const u8 sfx_land[9472];
+extern const u8 sfx_dice[6912];
+extern const u8 sfx_victory[9472];
+extern const u8 sfx_gameover[22784];
+extern const u8 sfx_menu[512];
+extern const u8 sfx_quake[12032];
+extern const u8 sfx_item[2816];
 extern const u8 viewColumns[224880];
 extern const u8 viewBackdrops[35840];
 extern const u8 viewAdjacent[71680];
 extern const u8 viewProps[279378];
+extern const u8 music_title[2560];
+extern const u8 music_dungeon[1024];
+extern const u8 music_combat[1536];
+extern const u8 music_bridge[1536];
+extern const u8 music_ending[1024];
 extern const Image title_image;
 extern const SpriteDefinition avatar_wir_sprite;
 extern const SpriteDefinition avatar_laezel_sprite;

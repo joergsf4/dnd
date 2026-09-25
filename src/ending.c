@@ -6,6 +6,7 @@
 #include "inventory.h"
 #include "ui_panel.h"
 #include "text.h"
+#include "sfx.h"
 #include "game.h"
 
 static void say(const char *l0, const char *l1, const char *l2)
@@ -18,6 +19,7 @@ static void say(const char *l0, const char *l1, const char *l2)
 static void quake(u8 times)
 {
     static const u16 flashes[] = { 0x000E, 0x0EEE, 0x0006, 0x0000 };   // red, white, dark red, black
+    sfx_play(SFX_QUAKE);
     for (u8 i = 0; i < times; i++)
     {
         PAL_setColor(0, flashes[i % 4]);
@@ -36,6 +38,7 @@ void ending_run(void)
     say("... und zerschellt an der", "Schwertküste.", "Ihr lebt.");
 
     // The end screen: the view goes dark, the party lines up with its loot.
+    music_play(MUSIC_ENDING);
     VDP_clearPlane(BG_B, TRUE);
     VDP_clearPlane(BG_A, TRUE);
     text_draw("ENDE DES PROLOGS", 12, 2);

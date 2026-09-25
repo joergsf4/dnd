@@ -14,6 +14,7 @@
 #include "room6.h"
 #include "countdown.h"
 #include "title.h"
+#include "sfx.h"
 #include "figures.h"
 #include "encounter.h"
 #include "abilities.h"
@@ -41,6 +42,7 @@ static void redrawWorld(Player *p)
     if (room != shownRoom)
     {
         shownRoom = room;
+        music_playRoom(room->roomId);
         if (room->onEnter)
         {
             room->onEnter(p);
@@ -56,7 +58,9 @@ int main(bool hardReset)
     SPR_initEx(SPRITE_VRAM_TILES);
     PAL_setPalette(PAL1, avatar_wir_sprite.palette->data, DMA);   // the companions' avatars
     text_init();
+    sfx_init();
 
+    music_play(MUSIC_TITLE);   // also through the creation screen
     title_run();
     u8 portrait;
     CharClass heroClass = charCreate_run(&portrait);

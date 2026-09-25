@@ -2,6 +2,7 @@
 #include "textbox.h"
 #include "party.h"
 #include "ui_panel.h"
+#include "sfx.h"
 
 RoomObject *dungeonObjects_interactTarget(const Player *p)
 {
@@ -19,11 +20,13 @@ void dungeonObjects_tryDoor(Player *p, RoomObject *obj)
         textbox_show(lines, 2, NULL, 0);
         return;
     }
+    sfx_play(SFX_DOOR);
     map_enterRoom(target, p, map_currentRoom()->roomId);
 }
 
 void dungeonObjects_useShrine(void)
 {
+    sfx_play(SFX_HEAL);
     for (u8 i = 0; i < PARTY_MAX; i++)
     {
         if (party.members[i].active)

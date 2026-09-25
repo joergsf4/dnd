@@ -3,6 +3,7 @@
 #include "ui_panel.h"
 #include "abilities.h"
 #include "textbox.h"
+#include "sfx.h"
 
 typedef struct
 {
@@ -103,8 +104,10 @@ void encounter_fight(Player *p, RoomObject *group)
             tank = &objects[i];
 
     const Encounter *e = &encounters[group->param0];
+    music_play(MUSIC_COMBAT);
     combat_run(p, e->enemies, e->count, tank, e->gold);
     group->kind = OBJ_NONE;
+    music_playRoom(map_currentRoom()->roomId);
 
     if (group->param0 == ENC_ZHALK)
     {

@@ -6,6 +6,7 @@
 #include "dungeon_view.h"
 #include "dungeon_objects.h"
 #include "encounter.h"
+#include "sfx.h"
 #include "game.h"
 
 // Every text line must fit the textbox: at most 27 characters on screen (an umlaut counts as one),
@@ -27,6 +28,7 @@ static Sprite *laezelLands(void)
         figures_wait(1);
     }
     SPR_setPosition(s, 112 - 24, 138 - 96);
+    sfx_play(SFX_LAND);
     figures_shakeView();
     return s;
 }

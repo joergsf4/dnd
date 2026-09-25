@@ -57,3 +57,26 @@ SPRITE portrait_mage_2 "gfx/portrait_mage_2.png" 10 12 NONE 0
 SPRITE hero_mage_2 "gfx/hero_mage_2.png" 3 3 NONE 0
 SPRITE portrait_mage_3 "gfx/portrait_mage_3.png" 10 12 NONE 0
 SPRITE hero_mage_3 "gfx/hero_mage_3.png" 3 3 NONE 0
+
+// Audio (XGM2 driver): PSG songs from tools/generate_music.py, 8-bit PCM effects from
+// tools/generate_sfx.py.
+XGM2 music_title "music/title.vgm"
+XGM2 music_dungeon "music/dungeon.vgm"
+XGM2 music_combat "music/combat.vgm"
+XGM2 music_bridge "music/bridge.vgm"
+XGM2 music_ending "music/ending.vgm"
+WAV sfx_hit "sfx/sfx_hit.wav" XGM2
+WAV sfx_miss "sfx/sfx_miss.wav" XGM2
+WAV sfx_hurt "sfx/sfx_hurt.wav" XGM2
+WAV sfx_spell "sfx/sfx_spell.wav" XGM2
+WAV sfx_fire "sfx/sfx_fire.wav" XGM2
+WAV sfx_heal "sfx/sfx_heal.wav" XGM2
+WAV sfx_explosion "sfx/sfx_explosion.wav" XGM2
+WAV sfx_door "sfx/sfx_door.wav" XGM2
+WAV sfx_land "sfx/sfx_land.wav" XGM2
+WAV sfx_dice "sfx/sfx_dice.wav" XGM2
+WAV sfx_victory "sfx/sfx_victory.wav" XGM2
+WAV sfx_gameover "sfx/sfx_gameover.wav" XGM2
+WAV sfx_menu "sfx/sfx_menu.wav" XGM2
+WAV sfx_quake "sfx/sfx_quake.wav" XGM2
+WAV sfx_item "sfx/sfx_item.wav" XGM2

@@ -1,4 +1,5 @@
 #include "inventory.h"
+#include "sfx.h"
 
 Inventory inventory;
 
@@ -14,11 +15,13 @@ void inventory_addGold(u16 amount)
 
 void inventory_addGem(u8 amount)
 {
+    sfx_play(SFX_ITEM);
     inventory.gems += amount;
 }
 
 void inventory_addHealingPotion(u8 amount)
 {
+    sfx_play(SFX_ITEM);
     inventory.healingPotions += amount;
 }
 
@@ -31,6 +34,7 @@ static const char *const itemNames[ITEM_COUNT] = { "RUNE", "SCHLÜSSEL", "SCHRIF
 
 void inventory_giveItem(ItemId item)
 {
+    sfx_play(SFX_ITEM);
     inventory.items[item] = TRUE;
 }
 

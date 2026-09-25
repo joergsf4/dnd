@@ -1,5 +1,6 @@
 #include "textbox.h"
 #include "text.h"
+#include "sfx.h"
 
 static void (*cursorHook)(u8 cursor);
 
@@ -76,6 +77,7 @@ u8 textbox_show(const char *const lines[], u8 lineCount,
         if (pressed & BUTTON_DOWN) cursor = (cursor + 1) % optionCount;
         if (pressed & (BUTTON_UP | BUTTON_DOWN))
         {
+            sfx_play(SFX_MENU);
             drawOptions(options, optionCount, cursor);
             if (cursorHook) cursorHook(cursor);
         }

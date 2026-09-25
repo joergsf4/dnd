@@ -2,6 +2,7 @@
 #include "inventory.h"
 #include "textbox.h"
 #include "ui_panel.h"
+#include "sfx.h"
 
 // Every text line must fit the textbox: at most 27 characters on screen (an umlaut counts as one).
 
@@ -42,6 +43,7 @@ Character *ab_pickMember(const char *question)
 
 static u8 heal(Character *t, u8 amount)
 {
+    sfx_play(SFX_HEAL);
     if (t->hp + amount > t->hpMax) amount = t->hpMax - t->hp;
     t->hp += amount;
     uiPanel_redrawChrome();
@@ -66,6 +68,7 @@ void ab_mageArmor(Character *mage)
 {
     mage->mp--;
     mage->buffs |= BUFF_MAGE_ARMOR;
+    sfx_play(SFX_SPELL);
     uiPanel_redrawChrome();
 }
 
@@ -187,6 +190,8 @@ Character *ab_giveEverburn(void)
 
 void ab_gameOver(const char *l0, const char *l1, const char *l2)
 {
+    music_play(MUSIC_NONE);
+    sfx_play(SFX_GAMEOVER);
     const char *lines[3] = { l0, l1, l2 };
     const char *options[1] = { "Neu beginnen" };
     textbox_show(lines, 3, options, 1);
