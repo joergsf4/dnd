@@ -19,6 +19,9 @@ static void drawSlotText(u8 i)
         return;
     }
 
+    for (u8 r = 0; r < SLOT_ROWS; r++)   // the slot may still show "---LEER---" from before
+        text_draw("         ", TEXT_COL, row + r);
+
     char text[16];
     text_draw(c->name, TEXT_COL, row);
     sprintf(text, "KP %2d/%2d", c->hp, c->hpMax);
@@ -30,13 +33,16 @@ static void drawSlotText(u8 i)
     }
 }
 
+static Sprite *avatars[PARTY_MAX];
+
 void uiPanel_initSprites(void)
 {
     for (u8 i = 0; i < PARTY_MAX; i++)
     {
-        if (!party.members[i].active) continue;
+        if (!party.members[i].active || avatars[i]) continue;
         u16 row = i * SLOT_ROWS;
-        SPR_addSprite(&avatar_sprite, UI_PANEL_COL * 8, row * 8, TILE_ATTR(PAL1, FALSE, FALSE, FALSE));
+        const SpriteDefinition *def = party.members[i].cls == CLASS_WIR ? &avatar_wir_sprite : &avatar_sprite;
+        avatars[i] = SPR_addSprite(def, UI_PANEL_COL * 8, row * 8, TILE_ATTR(PAL1, FALSE, FALSE, FALSE));
     }
 }
 

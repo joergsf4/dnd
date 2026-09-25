@@ -19,7 +19,7 @@
 // per depth ring and side, which is why open rooms showed walls inconsistently and floor and
 // ceiling as flat colour.
 //
-// Doors are wall cells and render as that wall's texture. Other objects (pool, corpse, chest,
+// Doors and tablets are wall cells and render as that wall's texture. Other objects (pool, corpse, chest,
 // shrine, pods) are props: they stand free in the middle of a floor cell, drawn after the walls
 // as pre-scaled billboards (one image per distance, like the originals), far to near, and per
 // column only where the wall behind is farther away than the prop. Some have an image per
@@ -41,7 +41,12 @@ static Facing lastFacing;
 
 static u8 objectTexture(const RoomObject *o)
 {
-    return o->kind == OBJ_DOOR_EXIT ? TEX_DOOR : TEX_WALL;
+    switch (o->kind)
+    {
+        case OBJ_DOOR_EXIT: return TEX_DOOR;
+        case OBJ_TABLET:    return TEX_TABLET;
+        default:            return TEX_WALL;
+    }
 }
 
 static u8 objectProp(const RoomObject *o)
@@ -53,6 +58,9 @@ static u8 objectProp(const RoomObject *o)
         case OBJ_CARTILAGE_CHEST:    return (o->flags & OBJFLAG_TRIGGERED) ? PROP_CHEST_OPEN : PROP_CHEST;
         case OBJ_RESTORATION_SHRINE: return PROP_SHRINE;
         case OBJ_POD_OPEN:           return PROP_POD_OPEN;
+        case OBJ_MYRNATH:            return (o->flags & OBJFLAG_TRIGGERED) ? PROP_MYRNATH_DEAD : PROP_MYRNATH;
+        case OBJ_OP_TABLE:           return PROP_OP_TABLE;
+        case OBJ_DESK:               return PROP_DESK;
         default:                     return PROP_POD_BROKEN;
     }
 }

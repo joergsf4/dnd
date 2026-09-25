@@ -19,9 +19,9 @@ typedef struct
 } Player;
 
 // Every room in the vertical slice, in map-flow order (see BeschreibungInhaltVerticalSlice.md).
-// Only ROOM_1 has a RoomDef so far; the rest are reserved so door objects can already target
-// them (see room1.c's exit door) without a RoomDef existing yet -- adding one is a matter of
-// writing src/roomN.c and pointing a door's param0 at it, no struct/array resize needed.
+// Rooms without a RoomDef yet are still listed so door objects can already target them (a door
+// to an unbuilt room stays shut) -- adding one is a matter of writing src/roomN.c, registering
+// it in main.c and pointing a door's param0 at it, no struct/array resize needed.
 typedef enum
 {
     ROOM_1 = 0,
@@ -48,6 +48,10 @@ typedef enum
     OBJ_DOOR_EXIT,
     OBJ_POD_OPEN,          // the player's own clone pod, open and empty
     OBJ_POD_BROKEN,        // a shattered clone pod (scenery, flavour text only)
+    OBJ_MYRNATH,           // Room 2: the elf on the operating couch, "Wir" in his skull
+    OBJ_OP_TABLE,          // Room 2: vivisection table (scenery; param0 picks the text)
+    OBJ_DESK,              // Room 2: bone desk with notes (lore)
+    OBJ_TABLET,            // Room 2: cartilage tablet on a wall (lore; param0 picks the text)
     OBJ_KIND_COUNT
 } ObjectKind;
 
@@ -56,6 +60,7 @@ typedef struct
     s8 x, y;
     ObjectKind kind;
     u8 param0, param1; // kind-specific payload, e.g. OBJ_DOOR_EXIT: param0 = target RoomId
+                       // (the target room needs a door back to this room; see map_enterRoom)
     u8 flags;
 } RoomObject;
 
@@ -82,6 +87,11 @@ typedef struct
 // flagged and, if the player ever backtracks, stay that way). Does not run onEnter (see above).
 void map_loadRoom(const RoomDef *room, Player *p);
 const RoomDef *map_currentRoom(void);
+
+// Enters a room through a door: like map_loadRoom, but the player stands in front of the target
+// room's door that leads back to `from`, facing into the room. Falls back to the room's start if
+// it has no such door.
+void map_enterRoom(const RoomDef *room, Player *p, RoomId from);
 
 // A tiny room registry so a door object can check whether its target room is actually built yet
 // (see dungeonObjects_tryDoor) without dungeon_map.c hardcoding a dependency on specific room

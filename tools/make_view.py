@@ -163,8 +163,25 @@ def tex_door():
     return t
 
 
-TEXTURES = [tex_wall(), tex_door()]
-TEX_NAMES = ["TEX_WALL", "TEX_DOOR"]
+def tex_tablet():
+    """A cartilage tablet grown into the wall, glowing mind flayer diagrams on it (Room 2 lore)."""
+    rng = random.Random(10)
+    t = organic_wall(10)
+    rect(t, 9, 9, 55, 53, 12)                              # cartilage frame
+    rect(t, 12, 12, 52, 50, 1)                             # dark slate
+    ellipse(t, 32, 24, 9, 8, 13)                           # a head...
+    ellipse(t, 32, 24, 7, 6, 1)
+    for dx in (-6, -2, 2, 6):                              # ...with tentacles reaching round it
+        vein(t, rng, 32 + dx, 30, 10, 13)
+    for y in range(42, 49, 3):                             # rows of glyphs
+        for x in range(15, 50, 4):
+            if rng.random() < 0.8:
+                rect(t, x, y, x + 2, y + 1, 13)
+    return t
+
+
+TEXTURES = [tex_wall(), tex_door(), tex_tablet()]
+TEX_NAMES = ["TEX_WALL", "TEX_DOOR", "TEX_TABLET"]
 
 # ---------------------------------------------------------------- props (free-standing objects)
 # A prop stands in the middle of a floor cell, drawn as an upright billboard one cell wide and one
@@ -312,10 +329,82 @@ def prop_pod(broken):
     return t
 
 
+def prop_myrnath(dead):
+    """Myrnath: an elf sitting on a fleshy illithid couch, skull sawn open, the brain bulging out
+    (dead: slumped sideways, the skull empty)."""
+    t = blank(T)
+    ellipse(t, 32, 62, 30, 2, 1)
+    rect(t, 4, 44, 60, 58, 14)                             # couch: a fleshy slab...
+    rect(t, 4, 44, 60, 46, 4)
+    for x in (8, 22, 42, 56):
+        rect(t, x, 58, x + 3, 63, 2)                       # ...on sinewy legs
+    hx = 38 if dead else 32                                # head position (slumped when dead)
+    hy = 22 if dead else 18
+    rect(t, 24, 28, 41, 46, 12)                            # pale torso
+    for y in (32, 37):
+        rect(t, 24, y, 41, y + 2, 15)                      # bandages
+    rect(t, 19, 29, 24, 44, 12)                            # arms
+    rect(t, 41, 29, 46, 44, 12)
+    rect(t, 24, 42, 41, 46, 2)                             # torn tunic
+    rect(t, 25, 46, 31, 60, 2)                             # legs hanging over the edge
+    rect(t, 34, 46, 40, 60, 2)
+    ellipse(t, hx, hy, 7, 8, 12)                           # face
+    t[hy + 1][hx - 3] = t[hy + 1][hx + 3] = 1              # eyes
+    rect(t, hx - 2, hy + 5, hx + 3, hy + 6, 14)            # mouth, twisted with pain
+    t[hy - 2][hx - 8] = t[hy - 1][hx - 8] = 12             # pointed ears
+    t[hy - 2][hx + 8] = t[hy - 1][hx + 8] = 12
+    if dead:
+        ellipse(t, hx, hy - 6, 6, 3, 1)                    # the empty skull
+    else:
+        ellipse(t, hx, hy - 8, 8, 6, 4)                    # the brain, bulging out
+        for dx in (-5, -2, 1, 4):
+            rect(t, hx + dx, hy - 13, hx + dx + 1, hy - 4, 14)   # folds
+        t[hy - 12][hx - 3] = 15
+    return t
+
+
+def prop_op_table():
+    """A vivisection table: a chitin slab on a tentacle stalk, dissected remains on it."""
+    t = blank(T)
+    ellipse(t, 32, 62, 22, 2, 1)
+    rect(t, 27, 42, 37, 63, 2)                             # stalk
+    rect(t, 27, 42, 29, 63, 3)
+    ellipse(t, 32, 62, 12, 2, 14)                          # roots
+    rect(t, 4, 36, 60, 42, 3)                              # slab
+    rect(t, 4, 36, 60, 37, 4)
+    rect(t, 4, 41, 60, 42, 2)
+    ellipse(t, 22, 33, 10, 4, 14)                          # remains
+    ellipse(t, 40, 34, 7, 3, 12)
+    rect(t, 48, 33, 56, 35, 12)                            # a bone
+    rect(t, 10, 30, 12, 36, 15)                            # a surgical claw
+    return t
+
+
+def prop_desk():
+    """A desk grown from bone, notes and a skull on it."""
+    t = blank(T)
+    ellipse(t, 32, 62, 28, 2, 1)
+    rect(t, 6, 36, 58, 40, 12)                             # top
+    rect(t, 6, 36, 58, 37, 15)
+    rect(t, 8, 40, 56, 60, 2)                              # front
+    for x in (10, 34):
+        rect(t, x, 43, x + 20, 50, 3)                      # drawers
+        rect(t, x + 9, 46, x + 11, 47, 12)
+    rect(t, 8, 60, 13, 63, 12)                             # feet
+    rect(t, 51, 60, 56, 63, 12)
+    rect(t, 12, 32, 26, 36, 15)                            # notes
+    rect(t, 16, 31, 30, 35, 7)
+    ellipse(t, 45, 31, 5, 5, 12)                           # a skull
+    t[30][43] = t[30][47] = 1
+    return t
+
+
 PROPS = [prop_pool(False), prop_pool(True), prop_chest(False), prop_chest(True), prop_corpse(),
-         prop_shrine(), prop_pod(False), prop_pod(True)]
+         prop_shrine(), prop_pod(False), prop_pod(True), prop_myrnath(False), prop_myrnath(True),
+         prop_op_table(), prop_desk()]
 PROP_NAMES = ["PROP_POOL", "PROP_POOL_BROKEN", "PROP_CHEST", "PROP_CHEST_OPEN", "PROP_CORPSE",
-              "PROP_SHRINE", "PROP_POD_OPEN", "PROP_POD_BROKEN"]
+              "PROP_SHRINE", "PROP_POD_OPEN", "PROP_POD_BROKEN", "PROP_MYRNATH", "PROP_MYRNATH_DEAD",
+              "PROP_OP_TABLE", "PROP_DESK"]
 
 
 def bake_prop(sprite, d):
@@ -627,8 +716,9 @@ def preview(bd, cols):
     save(render(bd, cols, room, {(2, 0): 0, (1, -1): 6, (3, 2): 5, (3, -2): 7, (2, 1): 4, (1, 1): 3}),
          os.path.join(outdir, "room.png"))
     save(render(bd, cols, room, {(1, 0): 6}), os.path.join(outdir, "adjacent_pod.png"))
+    save(render(bd, cols, {(1, 0): 2}), os.path.join(outdir, "adjacent_tablet.png"))
     # every prop at distance 1 and 3, for judging the art
-    sheet = Image.new("RGB", (VW * len(PROPS) // 2, VH * 2))
+    sheet = Image.new("RGB", (VW * 4, VH * ((len(PROPS) + 3) // 4)))
     for i in range(len(PROPS)):
         im = Image.new("RGB", (VW, VH))
         im.putdata([RGB[c] for row in render(bd, cols, room, {(1, 0): i, (3, 1): i}) for c in row])

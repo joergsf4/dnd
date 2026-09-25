@@ -17,5 +17,5 @@ void dungeonObjects_tryDoor(Player *p, RoomObject *obj)
         textbox_show(lines, 2, NULL, 0);
         return;
     }
-    map_loadRoom(target, p);
+    map_enterRoom(target, p, map_currentRoom()->roomId);
 }

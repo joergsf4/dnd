@@ -1,6 +1,8 @@
 // Generic hero avatar (see tools/make_avatar.py), used on the character creation screen and
 // in the party panel. Carries its own palette (PAL1) via avatar_sprite.palette.
 SPRITE avatar_sprite "gfx/avatar.png" 3 3
+// "Wir", the Room 2 companion; same palette as avatar_sprite (both from tools/make_avatar.py).
+SPRITE avatar_wir_sprite "gfx/avatar_wir.png" 3 3
 
 // SGDK's default font with German umlauts in 7 unused ASCII slots (tools/make_font.py, used via
 // src/text.c). NONE/NONE: VDP_loadFont needs all 96 glyphs in order.

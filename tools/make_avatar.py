@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
-"""Generates the placeholder hero avatar (res/gfx/avatar.png): one generic hooded/cloaked
-adventurer icon, 24x24 px (3x3 tiles), reused for all three starting classes (Fighter/Rogue/
-Mage) -- per-class art is future work, this is the technical skeleton's stand-in. Saved as an
-indexed PNG (palette index 0 is the sprite's transparent color on real hardware).
+"""Generates the party avatars, 24x24 px (3x3 tiles) each, as indexed PNGs (palette index 0 is
+the sprite's transparent color on real hardware):
+
+    res/gfx/avatar.png      the generic hooded hero, shared by all three starting classes
+    res/gfx/avatar_wir.png  "Wir", the intellect devourer from Room 2: a brain on four legs
+
+Both use the same palette, since all avatars share PAL1 (loaded from avatar_sprite in main.c).
 """
 from PIL import Image
 
@@ -15,8 +18,12 @@ EYE = (0x1A, 0x14, 0x10)
 CLOTH = (0x5A, 0x3E, 0x78)
 CLOTH_SHADOW = (0x3E, 0x2A, 0x54)
 BELT = (0x2A, 0x1E, 0x14)
+BRAIN = (0xE8, 0x90, 0xA0)
+BRAIN_FOLD = (0x90, 0x30, 0x40)
+HORN = (0xD8, 0xC8, 0xA0)
+GLOW = (0xB0, 0x60, 0xE0)
 
-palette = [TRANSPARENT, SKIN, EYE, CLOTH, CLOTH_SHADOW, BELT]
+palette = [TRANSPARENT, SKIN, EYE, CLOTH, CLOTH_SHADOW, BELT, BRAIN, BRAIN_FOLD, HORN, GLOW]
 color_index = {c: i for i, c in enumerate(palette)}
 
 img = Image.new("P", (SIZE, SIZE), 0)
@@ -50,3 +57,24 @@ for y in range(7, SIZE):
 
 img.save("res/gfx/avatar.png")
 print("wrote res/gfx/avatar.png", img.size, "colors:", len(palette))
+
+# ---- "Wir": a wrinkled brain on four sinewy, clawed legs, with a faint psionic glow
+img = Image.new("P", (SIZE, SIZE), 0)
+img.putpalette(flat_palette)
+for y in range(3, 16):
+    for x in range(2, 22):
+        if ((x - 12) / 10) ** 2 + ((y - 10) / 7) ** 2 <= 1:
+            set_px(x, y, BRAIN)
+for x, y0 in ((6, 5), (10, 4), (14, 4), (18, 6)):   # folds
+    for y in range(y0, y0 + 8):
+        set_px(x + (y % 3 == 0), y, BRAIN_FOLD)
+for y in range(10, 16):
+    set_px(12, y, BRAIN_FOLD)                        # the fissure between the halves
+set_px(8, 6, GLOW)
+set_px(15, 7, GLOW)
+for x0, dx in ((5, -1), (9, 0), (14, 0), (18, 1)):   # legs, the outer ones splayed
+    for i, y in enumerate(range(15, 22)):
+        set_px(x0 + dx * (i // 2), y, HORN if y < 21 else BRAIN_FOLD)
+        set_px(x0 + 1 + dx * (i // 2), y, HORN)
+img.save("res/gfx/avatar_wir.png")
+print("wrote res/gfx/avatar_wir.png", img.size)

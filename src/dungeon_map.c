@@ -31,6 +31,30 @@ void map_loadRoom(const RoomDef *room, Player *p)
     p->facing = room->startFacing;
 }
 
+void map_enterRoom(const RoomDef *room, Player *p, RoomId from)
+{
+    map_loadRoom(room, p);
+
+    const RoomObject *objects = roomState[room->roomId];
+    for (u8 i = 0; i < room->objectCount; i++)
+    {
+        if (objects[i].kind != OBJ_DOOR_EXIT || objects[i].param0 != from) continue;
+        for (u8 f = 0; f < 4; f++)   // the floor cell next to the door; face away from it
+        {
+            s16 dx, dy;
+            map_forward((Facing) f, &dx, &dy);
+            s16 x = objects[i].x + dx, y = objects[i].y + dy;
+            if (!map_isWall(x, y) && !map_objectAt(x, y))
+            {
+                p->x = x;
+                p->y = y;
+                p->facing = (Facing) f;
+                return;
+            }
+        }
+    }
+}
+
 const RoomDef *map_currentRoom(void)
 {
     return currentRoom;

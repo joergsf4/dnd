@@ -9,7 +9,8 @@ typedef enum
 {
     CLASS_FIGHTER = 0,
     CLASS_ROGUE = 1,
-    CLASS_MAGE = 2
+    CLASS_MAGE = 2,
+    CLASS_WIR = 3       // "Wir", the intellect devourer companion from Room 2 (not selectable)
 } CharClass;
 
 typedef struct
@@ -36,7 +37,7 @@ const char *class_name(CharClass cls);
 void party_init(void);
 
 // Appends a new character of the given class with that class's default stats.
-// No-op if the party is already full.
-void party_addMember(CharClass cls);
+// Returns it, or NULL if the party is already full.
+Character *party_addMember(CharClass cls);
 
 #endif

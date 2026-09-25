@@ -7,6 +7,7 @@
 #include "inventory.h"
 #include "char_create.h"
 #include "room1.h"
+#include "room2.h"
 #include "text.h"
 
 // Sprite tiles are reserved just below the font; the default 420 would collide with the view's two
@@ -54,6 +55,7 @@ int main(bool hardReset)
     SPR_update();   // drops the creation screen's avatar sprite before the first view is drawn
 
     map_registerRoom(&ROOM1);
+    map_registerRoom(&ROOM2);
     Player player;
     map_loadRoom(&ROOM1, &player);
     redrawWorld(&player);

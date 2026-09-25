@@ -12,13 +12,13 @@
 #define UI_PANEL_COL 28
 #define UI_PANEL_W   12
 
-// Adds each active party member's avatar sprite. Call exactly once, after the party is set up --
-// calling it again would duplicate the sprites. Split out from the text chrome specifically so
-// a textbox interaction can refresh the text (HP changed, an item was found, ...) without
-// re-adding sprites; see uiPanel_redrawChrome.
+// Adds the avatar sprite of each active party member that doesn't have one yet: call after the
+// party is set up and again whenever someone joins. Split out from the text chrome so a textbox
+// interaction can refresh the text (HP changed, an item was found, ...) without touching
+// sprites; see uiPanel_redrawChrome.
 void uiPanel_initSprites(void);
 
-// (Re)draws all the panel's text: party name/HP/MP per slot ("---EMPTY---" for unjoined slots),
+// (Re)draws all the panel's text: party name/HP/MP per slot ("---LEER---" for unjoined slots),
 // the item block (via uiPanel_drawInventory), and the control hints. Safe to call as often as
 // needed -- call it after every textbox interaction closes, since a textbox may have covered the
 // panel's status row (see textbox.h).

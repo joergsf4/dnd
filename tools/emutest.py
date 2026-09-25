@@ -8,6 +8,7 @@ is needed (and none is available in this sandbox).
     python3 tools/emutest.py look                # Room 1: look around from the spawn point
     python3 tools/emutest.py tour                # Room 1: views from two opposite corners
     python3 tools/emutest.py room1               # Room 1: interact with every object
+    python3 tools/emutest.py room2               # through the door: Room 2, Myrnath, back to Room 1
     python3 tools/emutest.py look --class 2       # any scenario, but pick Mage instead of Fighter
 
 Screenshots go to out/emutest/ (gitignored). Needs a built out/rom.bin (./build.sh).
@@ -148,7 +149,7 @@ def walk(b, n):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("scenario", choices=["create", "look", "tour", "room1"])
+    ap.add_argument("scenario", choices=["create", "look", "tour", "room1", "room2"])
     ap.add_argument("--class", dest="cls", type=int, default=0, choices=[0, 1, 2],
                      help="0 fighter (default), 1 rogue, 2 mage")
     args = ap.parse_args()
@@ -288,6 +289,90 @@ def main():
             b.shot("r1_pod_open")
             act(b, "gamepads.1.a")
             b.shot("r1_final")
+
+        if args.scenario == "room2":
+            # Room 1 -> door -> Room 2: Myrnath (STR check; the path below assumes it succeeds,
+            # check r2_check_result), "Wir" joins, the lore objects, the shut exit to Room 3,
+            # then back through the door to Room 1.
+            start_game(b, args.cls)
+            act(b, "gamepads.1.right")         # south -> west
+            walk(b, 2)                         # (1,3)
+            act(b, "gamepads.1.right")         # west -> north
+            walk(b, 2)                         # (1,1)
+            act(b, "gamepads.1.left")          # north -> west, the door
+            act(b, "gamepads.1.a", 20)
+            b.shot("r2_intro")                 # Room 2, first-visit text
+            act(b, "gamepads.1.a")
+            b.shot("r2_arrive")                # (4,6) facing north, Myrnath in the middle
+
+            # --- Myrnath, (4,3) ---
+            walk(b, 2)                         # (4,4)
+            act(b, "gamepads.1.a", 10)
+            b.shot("r2_myrnath_menu")
+            act(b, "gamepads.1.a", 90)         # Schädel aufbrechen [STÄ]
+            b.frames(90)
+            b.shot("r2_check_result")          # "... auf vier Beinen!" (or the brain died)
+            act(b, "gamepads.1.a")
+            b.shot("r2_recruit_menu")
+            act(b, "gamepads.1.down", 6)       # Als Begleiter aufnehmen
+            act(b, "gamepads.1.a")
+            b.shot("r2_joined")                # panel: WIR in slot 2
+            act(b, "gamepads.1.a")
+            b.shot("r2_myrnath_dead")
+
+            # --- desk, (2,5) ---
+            act(b, "gamepads.1.left")          # north -> west
+            walk(b, 1)                         # (3,4)
+            act(b, "gamepads.1.left")          # west -> south
+            walk(b, 1)                         # (3,5)
+            act(b, "gamepads.1.right")         # south -> west
+            act(b, "gamepads.1.a")
+            b.shot("r2_desk")
+            act(b, "gamepads.1.a")
+            b.shot("r2_desk2")
+            act(b, "gamepads.1.a")
+
+            # --- vivisection table, (2,2) ---
+            act(b, "gamepads.1.right")         # west -> north
+            walk(b, 3)                         # (3,2)
+            act(b, "gamepads.1.left")          # north -> west
+            act(b, "gamepads.1.a")
+            b.shot("r2_table")
+            act(b, "gamepads.1.a")
+
+            # --- tablet, west wall (0,2) ---
+            act(b, "gamepads.1.right")         # west -> north
+            walk(b, 1)                         # (3,1)
+            act(b, "gamepads.1.left")          # north -> west
+            walk(b, 2)                         # (1,1)
+            act(b, "gamepads.1.left")          # west -> south
+            walk(b, 1)                         # (1,2)
+            act(b, "gamepads.1.right")         # south -> west
+            act(b, "gamepads.1.a")
+            b.shot("r2_tablet")
+            act(b, "gamepads.1.a")
+
+            # --- exit to Room 3, north wall (4,0) ---
+            act(b, "gamepads.1.right")         # west -> north
+            walk(b, 1)                         # (1,1)
+            act(b, "gamepads.1.right")         # north -> east
+            walk(b, 3)                         # (4,1)
+            act(b, "gamepads.1.left")          # east -> north
+            act(b, "gamepads.1.a")
+            b.shot("r2_exit_shut")
+            act(b, "gamepads.1.a")
+
+            # --- back to Room 1 through the south door ---
+            act(b, "gamepads.1.right")         # north -> east
+            walk(b, 1)                         # (5,1)
+            act(b, "gamepads.1.right")         # east -> south
+            walk(b, 5)                         # (5,6)
+            act(b, "gamepads.1.right")         # south -> west
+            walk(b, 1)                         # (4,6)
+            act(b, "gamepads.1.left")          # west -> south
+            b.shot("r2_at_door_back")
+            act(b, "gamepads.1.a", 20)
+            b.shot("r2_back_in_room1")         # (1,1) facing east, no intro again
     finally:
         b.close()
 

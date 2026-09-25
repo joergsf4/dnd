@@ -26,10 +26,13 @@ together in Room 1 (the "Klonkammer" — see `BeschreibungInhaltVerticalSlice.md
       chest, restoration station, open and broken clone pods, sphincter door. Verified via
       `tools/emutest.py room1`. Adaptations to the grid engine: see README, "Current state".
 
+- [x] Room 2 (Operationssaal): Myrnath with the two-stage menu from the doc's demake dialogue
+      (STÄ/GES to free the brain, failure kills it; lobotomise [GES 15] or take along), "Wir"
+      joins with its own class and avatar, lore desk/tablets, vivisection tables. Flat, no lift.
+      Verified via `tools/emutest.py room2`.
+- [x] Room-to-room doors, both ways (`map_enterRoom`: arrive in front of the matching door).
+
 ## Room-by-room roadmap (light — detailed planning happens per room, not now)
-- [ ] **Room 2** (Myrnath/"Wir"): multi-stage branching `onInteract`, no new engine needed;
-      `party_addMember()` is already "Wir joins". Doc's "Medizin" check doesn't map to STR/DEX/INT
-      — needs either a 4th attribute or a documented stand-in when this room is planned.
 - [ ] **Room 3** (Lae'zel ambush + first combat): needs an entry-triggered cutscene — `RoomDef`
       has an `onEnter` hook (Room 1 uses it for its intro text). Combat itself is a new
       subsystem (see Combat below), would plug in as another blocking sub-loop like `onInteract`.
@@ -42,9 +45,8 @@ together in Room 1 (the "Klonkammer" — see `BeschreibungInhaltVerticalSlice.md
       notion of "rounds" — unspecified until combat exists.
 
 ## Core loop
-- [ ] Doors, secret doors — `OBJ_DOOR_EXIT` + `dungeonObjects_tryDoor` exist and correctly stub
-      "not built yet" (see Room 1); an actual room-to-room transition is untested since Room 2
-      doesn't exist. Locked doors/keys: see the identified-item inventory item below.
+- [ ] Secret doors, locked doors/keys — room-to-room doors work (`dungeonObjects_tryDoor`,
+      a door to an unbuilt room stays shut); keys: see the identified-item inventory item below.
 - [ ] Wall decorations (levers, plaques, torches) — a new wall texture in `tools/make_view.py`
       plus an `ObjectKind`, same as the door. Limitation: a texture applies to every face of its wall
       cell; fine on room borders (only one face is ever visible), needs per-face textures for
@@ -61,12 +63,13 @@ together in Room 1 (the "Klonkammer" — see `BeschreibungInhaltVerticalSlice.md
 ## Party & characters
 - [ ] Letter-grid name entry (D-pad-driven on-screen keyboard) if auto-naming ever feels wrong —
       explicitly deferred when this was built, not forgotten.
-- [ ] Recruiting the other 3 party slots during play — `party_addMember()` exists and the panel
-      already renders empty slots as "---LEER---"; Room 2's "Wir" is the first real recruit, once
-      that room exists.
+- [ ] Recruiting the rest of the party — "Wir" (Room 2) is in; Lae'zel (Room 3) and
+      Schattenherz (Room 4) follow the same pattern (`party_addMember` + `uiPanel_initSprites`),
+      each with an avatar in `tools/make_avatar.py`. "Wir" is meant to be a temporary companion in
+      the doc; nothing removes it yet. What lobotomised changes beyond stats is open too.
 - [ ] D&D-derived stat block (STR/DEX/CON/INT/WIS/CHA, AC, saving throws) — the current model is
       class + HP/MP + three small (1-5) skill-check modifiers, not real ability scores. Decide how
-      much of real D&D rules to keep vs. simplify (Room 2's "Medizin" check will force this).
+      much of real D&D rules to keep vs. simplify.
 - [ ] Identified-item inventory (`ItemId` enum + `bool hasItem[]`, additive alongside
       `src/inventory.c`'s stackable counts) — needed once Room 4/5 introduce key items (Eldritch
       Rune, Gold Key).
