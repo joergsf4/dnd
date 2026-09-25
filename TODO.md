@@ -105,12 +105,12 @@ together in Room 1 (the "Klonkammer" — see `BeschreibungInhaltVerticalSlice.md
 - [ ] Real wall/floor/ceiling art — textures are procedural placeholders in `tools/make_view.py`
       (64x64, palette indices into the 16-colour view palette, organic Nautiloid look). Could load
       hand-drawn indexed PNGs there instead; the rest of the pipeline stays the same.
-- [x] Hero avatar (`res/gfx/avatar.png`, `tools/make_avatar.py`) — one generic 24x24 cloaked-figure
-      placeholder shared by all 3 classes. Replace with real art, and/or split into per-class
-      avatars, whenever that's worth the extra tile budget.
+- [x] Hero avatar: replaced by the class portraits (`tools/make_portraits.py`).
 - [x] Props (larva pool + burst, corpse, chest + open, shrine, clone pod open/broken) and the
       sphincter door texture — placeholders in
       `tools/make_view.py`.
+- [x] Hero portraits: three per class (veteran, blonde warrior, dwarf; hooded rogue, rogue with
+      gold earrings, elf; old wizard, sorceress, tiefling), chosen on the creation screen.
 - [x] Companion looks after the BG3 designs (reference artworks in screenso/, drawn from scratch):
       busts while Lae'zel/Schattenherz speak, full figures, avatars derived from the busts.
 - [ ] "Wir" has no figure/bust yet (it only speaks through Myrnath's skull); Myrnath and the

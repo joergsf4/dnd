@@ -1,6 +1,7 @@
 #include "ui_panel.h"
 #include "inventory.h"
 #include "text.h"
+#include "portraits.h"
 #include "game.h"
 
 static const char *const facingLetter[4] = { "N", "O", "S", "W" };
@@ -42,14 +43,19 @@ void uiPanel_initSprites(void)
         if (!party.members[i].active || avatars[i]) continue;
         u16 row = i * SLOT_ROWS;
         const SpriteDefinition *def;
+        u16 pal = PAL1;   // companions share PAL1's palette
         switch (party.members[i].cls)
         {
             case CLASS_WIR:    def = &avatar_wir_sprite; break;
             case CLASS_LAEZEL: def = &avatar_laezel_sprite; break;
             case CLASS_SHADOWHEART: def = &avatar_shadowheart_sprite; break;
-            default:           def = &avatar_sprite; break;
+            default:           // the hero: the chosen portrait, with its own palette in PAL3
+                def = portrait_avatar(party.members[i].cls, party.members[i].portrait);
+                PAL_setPalette(PAL3, def->palette->data, DMA);
+                pal = PAL3;
+                break;
         }
-        avatars[i] = SPR_addSprite(def, UI_PANEL_COL * 8, row * 8, TILE_ATTR(PAL1, FALSE, FALSE, FALSE));
+        avatars[i] = SPR_addSprite(def, UI_PANEL_COL * 8, row * 8, TILE_ATTR(pal, FALSE, FALSE, FALSE));
     }
 }
 

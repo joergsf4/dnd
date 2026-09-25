@@ -1,7 +1,5 @@
-// Generic hero avatar (see tools/make_avatar.py), used on the character creation screen and
-// in the party panel. Carries its own palette (PAL1) via avatar_sprite.palette.
-SPRITE avatar_sprite "gfx/avatar.png" 3 3
-// "Wir", the Room 2 companion; same palette as avatar_sprite (both from tools/make_avatar.py).
+// Companion avatars for the party panel (tools/make_avatar.py), all on PAL1 with one shared
+// palette (loaded from avatar_wir_sprite in main.c).
 SPRITE avatar_wir_sprite "gfx/avatar_wir.png" 3 3
 SPRITE avatar_laezel_sprite "gfx/avatar_laezel.png" 3 3
 SPRITE avatar_shadowheart_sprite "gfx/avatar_shadowheart.png" 3 3
@@ -30,3 +28,25 @@ BIN viewBackdrops "view/backdrops.bin" 4 4 0 NONE
 BIN viewAdjacent "view/adjacent.bin" 4 4 0 NONE
 // ...and the free-standing objects (props), pre-scaled per distance, with transparency masks.
 BIN viewProps "view/props.bin" 2 2 0 NONE
+
+// Hero portraits (tools/make_portraits.py): three per starting class, an 80x96 bust for the
+// creation screen and the 24x24 panel avatar scaled down from it. Each pair has its own palette,
+// loaded into PAL3 (the text palette -- the font only uses colour 15, which stays white).
+SPRITE portrait_fighter_1 "gfx/portrait_fighter_1.png" 10 12 NONE 0
+SPRITE hero_fighter_1 "gfx/hero_fighter_1.png" 3 3 NONE 0
+SPRITE portrait_fighter_2 "gfx/portrait_fighter_2.png" 10 12 NONE 0
+SPRITE hero_fighter_2 "gfx/hero_fighter_2.png" 3 3 NONE 0
+SPRITE portrait_fighter_3 "gfx/portrait_fighter_3.png" 10 12 NONE 0
+SPRITE hero_fighter_3 "gfx/hero_fighter_3.png" 3 3 NONE 0
+SPRITE portrait_rogue_1 "gfx/portrait_rogue_1.png" 10 12 NONE 0
+SPRITE hero_rogue_1 "gfx/hero_rogue_1.png" 3 3 NONE 0
+SPRITE portrait_rogue_2 "gfx/portrait_rogue_2.png" 10 12 NONE 0
+SPRITE hero_rogue_2 "gfx/hero_rogue_2.png" 3 3 NONE 0
+SPRITE portrait_rogue_3 "gfx/portrait_rogue_3.png" 10 12 NONE 0
+SPRITE hero_rogue_3 "gfx/hero_rogue_3.png" 3 3 NONE 0
+SPRITE portrait_mage_1 "gfx/portrait_mage_1.png" 10 12 NONE 0
+SPRITE hero_mage_1 "gfx/hero_mage_1.png" 3 3 NONE 0
+SPRITE portrait_mage_2 "gfx/portrait_mage_2.png" 10 12 NONE 0
+SPRITE hero_mage_2 "gfx/hero_mage_2.png" 3 3 NONE 0
+SPRITE portrait_mage_3 "gfx/portrait_mage_3.png" 10 12 NONE 0
+SPRITE hero_mage_3 "gfx/hero_mage_3.png" 3 3 NONE 0

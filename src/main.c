@@ -49,12 +49,13 @@ int main(bool hardReset)
     VDP_setScreenWidth320();
     VDP_setScreenHeight224();
     SPR_initEx(SPRITE_VRAM_TILES);
-    PAL_setPalette(PAL1, avatar_sprite.palette->data, DMA);
+    PAL_setPalette(PAL1, avatar_wir_sprite.palette->data, DMA);   // the companions' avatars
     text_init();
 
-    CharClass heroClass = charCreate_run();
+    u8 portrait;
+    CharClass heroClass = charCreate_run(&portrait);
     party_init();
-    party_addMember(heroClass);
+    party_addMember(heroClass)->portrait = portrait;
     inventory_init();
 
     dungeonView_init();

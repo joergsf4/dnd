@@ -25,6 +25,7 @@ typedef struct
     u8 ac;              // combat (src/combat.c): armour class an attack roll has to reach...
     u8 atk;             // ...d20 + atk...
     u8 dmgDie, dmgBonus; // ...and on a hit 1d(dmgDie) + dmgBonus damage
+    u8 portrait;        // the hero's portrait, 0..PORTRAITS_PER_CLASS-1 (src/portraits.c)
     bool active;        // FALSE = empty slot, not yet recruited
 } Character;
 
