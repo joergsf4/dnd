@@ -2,6 +2,9 @@
 #include "game.h"
 
 // Tile slots inside res/gfx/dungeon_tiles.png (see tools/make_dungeon_tiles.py for the layout).
+// The tileset only has 3 depth shades (near/mid/far); ring 3 (the 4th, added to see further into
+// open rooms -- see RENDER_RINGS) reuses the far shade rather than needing new art.
+#define MAX_SHADE   2
 #define T_CEIL(d)   (0 + (d))
 #define T_FLOOR(d)  (3 + (d))
 #define T_WALL(d)   (6 + (d))
@@ -12,14 +15,16 @@ typedef struct { u8 x, y, w, h; } Rect;
 
 // Concentric rectangles (in BG_B tiles) the corridor view is built from: rects[0] is the
 // full 28x28 viewport (the left 28 of the screen's 40 tile columns; the right 12 columns
-// are the UI panel, see ui_panel.h), rects[1..2] the mid/far apertures, rects[3] the
+// are the UI panel, see ui_panel.h), rects[1..3] the nearer/mid/far apertures, rects[4] the
 // vanishing-point cap. Square viewport -> the mid rect ends up taller than wide, which is
 // the correct consequence of that (not a mistake to "fix" back to landscape).
-static const Rect rects[4] = {
+#define RENDER_RINGS 4
+static const Rect rects[RENDER_RINGS + 1] = {
     { 0, 0, 28, 28 },
     { 7, 6, 14, 16 },
-    { 12, 10, 4, 8 },
-    { 13, 12, 2, 4 },
+    { 10, 9, 8, 10 },
+    { 12, 11, 4, 6 },
+    { 13, 13, 2, 2 },
 };
 
 static u16 tileAt(u8 slot, bool hflip)
@@ -45,11 +50,12 @@ static void fillRect(Rect r, u16 attr)
 // in the ring gets exactly one band.)
 static void renderRing(Rect outer, Rect inner, u8 depth, bool leftWall, bool rightWall)
 {
+    u8 shade = depth > MAX_SHADE ? MAX_SHADE : depth;
     s16 cx2 = outer.x * 2 + outer.w;   // 2x the ring's centre, so the per-tile midpoint stays integer
     s16 cy2 = outer.y * 2 + outer.h;
-    u16 ceilAttr = tileAt(T_CEIL(depth), FALSE);
-    u16 floorAttr = tileAt(T_FLOOR(depth), FALSE);
-    u16 wallAttr[2] = { tileAt(T_WALL(depth), FALSE), tileAt(T_WALL(depth), TRUE) }; // [onLeft]
+    u16 ceilAttr = tileAt(T_CEIL(shade), FALSE);
+    u16 floorAttr = tileAt(T_FLOOR(shade), FALSE);
+    u16 wallAttr[2] = { tileAt(T_WALL(shade), FALSE), tileAt(T_WALL(shade), TRUE) }; // [onLeft]
 
     for (s16 y = outer.y; y < outer.y + outer.h; y++)
     {
@@ -103,8 +109,8 @@ void dungeonView_render(const Player *p)
     map_left(p->facing, &lx, &ly);
     map_right(p->facing, &rx, &ry);
 
-    u8 renderDepth = 3; // 3 = open through all rendered rings, cap it with the vanishing mist
-    for (u8 d = 0; d < 3; d++)
+    u8 renderDepth = RENDER_RINGS; // = open through all rendered rings, cap it with the vanishing mist
+    for (u8 d = 0; d < RENDER_RINGS; d++)
     {
         if (map_isWall(p->x + dx * (d + 1), p->y + dy * (d + 1)))
         {
@@ -113,22 +119,29 @@ void dungeonView_render(const Player *p)
         }
     }
 
-    for (u8 r = 0; r < 3; r++)
+    for (u8 r = 0; r < RENDER_RINGS; r++)
     {
         if (r == renderDepth)
         {
-            fillRect(rects[r], tileAt(T_FRONT(r), FALSE));
+            fillRect(rects[r], tileAt(T_FRONT(r > MAX_SHADE ? MAX_SHADE : r), FALSE));
             return;
         }
 
         s16 ax = p->x + dx * (r + 1);
         s16 ay = p->y + dy * (r + 1);
-        bool leftWall = map_isWall(ax + lx, ay + ly);
-        bool rightWall = map_isWall(ax + rx, ay + ry);
+        // Check 2 cells to each side, not just the immediate neighbour: with only a 1-cell
+        // check, a room wider than a 1-wide corridor showed no side walls at all unless you
+        // were pressed right up against them -- the room read as empty/wall-less everywhere
+        // else, which is what prompted this widening (a real "you have to hug the wall" bug,
+        // not a stylistic choice). Not true 3D (a wall 2 cells over renders the same as one 1
+        // cell over, since a ring only has a single side-wall flag), but it means most of a
+        // room's walls are now actually visible instead of only right at its edges.
+        bool leftWall = map_isWall(ax + lx, ay + ly) || map_isWall(ax + lx * 2, ay + ly * 2);
+        bool rightWall = map_isWall(ax + rx, ay + ry) || map_isWall(ax + rx * 2, ay + ry * 2);
         renderRing(rects[r], rects[r + 1], r, leftWall, rightWall);
     }
 
-    fillRect(rects[3], tileAt(T_MIST, FALSE));
+    fillRect(rects[RENDER_RINGS], tileAt(T_MIST, FALSE));
 }
 
 void dungeonView_getObjectAnchor(s16 *px, s16 *py, s16 *pw, s16 *ph)
