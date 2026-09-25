@@ -15,12 +15,6 @@ typedef struct { u8 x, y, w, h; } Rect;
 // are the UI panel, see ui_panel.h), rects[1..2] the mid/far apertures, rects[3] the
 // vanishing-point cap. Square viewport -> the mid rect ends up taller than wide, which is
 // the correct consequence of that (not a mistake to "fix" back to landscape).
-//
-// Per ring, the side-wall band width must be >= the ceiling/floor band height, or a 1-wide
-// corridor (walls on both sides at every depth) reads as a stack of ceiling/floor blocks
-// instead of a hallway -- confirmed by rendering a screenshot with a distinct color per tile
-// slot (tools/emutest.py) and comparing it against these rects: the ring1 margins were
-// inverted (top/bottom band 5 tiles > side band 4 tiles), which is what that looked like.
 static const Rect rects[4] = {
     { 0, 0, 28, 28 },
     { 7, 6, 14, 16 },
@@ -33,34 +27,57 @@ static u16 tileAt(u8 slot, bool hflip)
     return TILE_ATTR_FULL(PAL0, FALSE, FALSE, hflip, TILE_USER_INDEX + slot);
 }
 
-static void fillArea(u16 x0, u16 y0, u16 x1, u16 y1, u16 attr)
+static void fillRect(Rect r, u16 attr)
 {
-    for (u16 y = y0; y < y1; y++)
-        for (u16 x = x0; x < x1; x++)
+    for (s16 y = r.y; y < r.y + r.h; y++)
+        for (s16 x = r.x; x < r.x + r.w; x++)
             VDP_setTileMapXY(BG_B, attr, x, y);
 }
 
-static void fillRect(Rect r, u16 attr)
+// Fills the ring between outer and inner (inner must be centered inside outer) so it reads as a
+// tunnel: every tile is classified, picture-frame-style, into the left/right wall band or the
+// ceiling/floor band by comparing how far off-centre it is horizontally vs. vertically -- the
+// two mitred diagonals this draws are what actually bounds the tunnel left/right and tapers it
+// into the distance, instead of a flat rectangle that just floats in front of the next ring in.
+// (An earlier version filled the wall and ceiling/floor trapezoids separately, column-wise and
+// row-wise; independent integer rounding left 1-tile gaps at the seam between them, confirmed by
+// screenshot -- see tools/emutest.py. This single per-tile classification can't gap: every tile
+// in the ring gets exactly one band.)
+static void renderRing(Rect outer, Rect inner, u8 depth, bool leftWall, bool rightWall)
 {
-    fillArea(r.x, r.y, r.x + r.w, r.y + r.h, attr);
-}
+    s16 cx2 = outer.x * 2 + outer.w;   // 2x the ring's centre, so the per-tile midpoint stays integer
+    s16 cy2 = outer.y * 2 + outer.h;
+    u16 ceilAttr = tileAt(T_CEIL(depth), FALSE);
+    u16 floorAttr = tileAt(T_FLOOR(depth), FALSE);
+    u16 wallAttr[2] = { tileAt(T_WALL(depth), FALSE), tileAt(T_WALL(depth), TRUE) }; // [onLeft]
 
-// Draws the left or right side of ring `depth` between the outer rect and the next-inner rect:
-// solid wall brick if that side is blocked, otherwise ceiling above / floor below (open passage).
-// The wall tile is diagonal, not horizontal (see tools/make_dungeon_tiles.py), and h-flipped on
-// the right side so both sides visually lean toward the vanishing point instead of matching.
-static void drawSide(Rect outer, Rect inner, bool onLeft, bool wall, u8 depth)
-{
-    u16 x0 = onLeft ? outer.x : inner.x + inner.w;
-    u16 x1 = onLeft ? inner.x : outer.x + outer.w;
-    if (wall)
+    for (s16 y = outer.y; y < outer.y + outer.h; y++)
     {
-        fillArea(x0, inner.y, x1, inner.y + inner.h, tileAt(T_WALL(depth), !onLeft));
-        return;
+        for (s16 x = outer.x; x < outer.x + outer.w; x++)
+        {
+            if (x >= inner.x && x < inner.x + inner.w && y >= inner.y && y < inner.y + inner.h)
+                continue; // inside the inner rect: the next ring (or the cap) owns this tile
+
+            s16 dx2 = x * 2 + 1 - cx2; // 2x the offset from centre to this tile's midpoint
+            s16 dy2 = y * 2 + 1 - cy2;
+            s16 adx = dx2 < 0 ? -dx2 : dx2;
+            s16 ady = dy2 < 0 ? -dy2 : dy2;
+            bool inSideBand = (s32) adx * outer.h >= (s32) ady * outer.w;
+
+            u16 attr;
+            if (inSideBand)
+            {
+                bool onLeft = dx2 < 0;
+                bool wall = onLeft ? leftWall : rightWall;
+                attr = wall ? wallAttr[onLeft] : (dy2 < 0 ? ceilAttr : floorAttr);
+            }
+            else
+            {
+                attr = dy2 < 0 ? ceilAttr : floorAttr;
+            }
+            VDP_setTileMapXY(BG_B, attr, x, y);
+        }
     }
-    u16 mid = inner.y + inner.h / 2;
-    fillArea(x0, inner.y, x1, mid, tileAt(T_CEIL(depth), FALSE));
-    fillArea(x0, mid, x1, inner.y + inner.h, tileAt(T_FLOOR(depth), FALSE));
 }
 
 void dungeonView_init(void)
@@ -89,24 +106,17 @@ void dungeonView_render(const Player *p)
 
     for (u8 r = 0; r < 3; r++)
     {
-        Rect outer = rects[r];
-        Rect inner = rects[r + 1];
-
         if (r == renderDepth)
         {
-            fillRect(outer, tileAt(T_FRONT(r), FALSE));
+            fillRect(rects[r], tileAt(T_FRONT(r), FALSE));
             return;
         }
-
-        fillArea(outer.x, outer.y, outer.x + outer.w, inner.y, tileAt(T_CEIL(r), FALSE));                         // top band
-        fillArea(outer.x, inner.y + inner.h, outer.x + outer.w, outer.y + outer.h, tileAt(T_FLOOR(r), FALSE));    // bottom band
 
         s16 ax = p->x + dx * (r + 1);
         s16 ay = p->y + dy * (r + 1);
         bool leftWall = map_isWall(ax + lx, ay + ly);
         bool rightWall = map_isWall(ax + rx, ay + ry);
-        drawSide(outer, inner, TRUE, leftWall, r);
-        drawSide(outer, inner, FALSE, rightWall, r);
+        renderRing(rects[r], rects[r + 1], r, leftWall, rightWall);
     }
 
     fillRect(rects[3], tileAt(T_MIST, FALSE));
