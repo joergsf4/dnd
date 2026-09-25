@@ -7,6 +7,7 @@ extern const u8 viewColumns[224880];
 extern const u8 viewBackdrops[35840];
 extern const u8 viewAdjacent[71680];
 extern const u8 viewProps[279378];
+extern const Image title_image;
 extern const SpriteDefinition avatar_wir_sprite;
 extern const SpriteDefinition avatar_laezel_sprite;
 extern const SpriteDefinition avatar_shadowheart_sprite;

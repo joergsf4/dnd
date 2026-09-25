@@ -7,6 +7,7 @@ is needed (and none is available in this sandbox).
     python3 tools/emutest.py create              # just the character creation screen
     python3 tools/emutest.py look                # Room 1: look around from the spawn point
     python3 tools/emutest.py tour                # Room 1: views from two opposite corners
+    python3 tools/emutest.py title               # title screen, then the creation screen
     python3 tools/emutest.py portraits           # creation screen: all 9 hero portraits, then in game
     python3 tools/emutest.py room1               # Room 1: interact with every object
     python3 tools/emutest.py room2               # through the door: Room 2, Myrnath, back to Room 1
@@ -132,10 +133,16 @@ def act(b, key, settle=15):
     b.frames(settle)
 
 
+def skip_title(b):
+    """Past the title screen (START) onto the creation screen."""
+    b.frames(30)
+    act(b, "gamepads.1.start", 30)
+
+
 def create_hero(b, cls_down=0):
     """Drives the character-creation screen: cursor starts on Fighter (index 0);
     cls_down Down-presses move it (1=Rogue, 2=Mage), then Start confirms."""
-    b.frames(30)
+    skip_title(b)
     for _ in range(cls_down):
         act(b, "gamepads.1.down", 6)
     act(b, "gamepads.1.start", 30)
@@ -224,7 +231,7 @@ def walk(b, n):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("scenario", choices=["create", "portraits", "look", "tour", "room1", "room2", "room3", "room45", "room6", "zhalk", "crash"])
+    ap.add_argument("scenario", choices=["title", "create", "portraits", "look", "tour", "room1", "room2", "room3", "room45", "room6", "zhalk", "crash"])
     ap.add_argument("--class", dest="cls", type=int, default=0, choices=[0, 1, 2],
                      help="0 fighter (default), 1 rogue, 2 mage")
     args = ap.parse_args()
@@ -235,16 +242,23 @@ def main():
     b = Blastem()
     try:
         if args.scenario == "create":
-            b.frames(30)
+            skip_title(b)
             b.shot("create_screen")
             create_hero(b, args.cls)
             b.shot("after_create")
             return
 
+        if args.scenario == "title":
+            b.frames(60)
+            b.shot("title")
+            act(b, "gamepads.1.start", 30)
+            b.shot("title_to_create")
+            return
+
         if args.scenario == "portraits":
             # Creation screen: every class with each of its three portraits (right cycles them),
             # then start as the last one (mage, portrait 3) to see its avatar in the panel.
-            b.frames(30)
+            skip_title(b)
             for cls in range(3):
                 for n in range(3):
                     b.shot(f"portrait_{cls}_{n}")

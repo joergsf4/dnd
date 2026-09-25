@@ -13,6 +13,7 @@
 #include "room5.h"
 #include "room6.h"
 #include "countdown.h"
+#include "title.h"
 #include "figures.h"
 #include "encounter.h"
 #include "abilities.h"
@@ -56,6 +57,7 @@ int main(bool hardReset)
     PAL_setPalette(PAL1, avatar_wir_sprite.palette->data, DMA);   // the companions' avatars
     text_init();
 
+    title_run();
     u8 portrait;
     CharClass heroClass = charCreate_run(&portrait);
     party_init();

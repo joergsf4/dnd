@@ -1,3 +1,6 @@
+// Title screen (tools/make_title.py), 16 colours on PAL0.
+IMAGE title_image "gfx/title.png" NONE
+
 // Companion avatars for the party panel (tools/make_avatar.py), all on PAL1 with one shared
 // palette (loaded from avatar_wir_sprite in main.c).
 SPRITE avatar_wir_sprite "gfx/avatar_wir.png" 3 3

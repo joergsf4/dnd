@@ -97,6 +97,7 @@ src/
   room5.c/.h             Room 5 ("Labor"): cleric, ornate chest, transformation
   room6.c/.h             Room 6 ("Brücke"): countdown, Zhalk, transponder
   countdown.c/.h         Room 6's rounds until the crash
+  title.c/.h             Title screen
   ending.c/.h            The escape sequence and the "ENDE DES PROLOGS" screen
   abilities.c/.h         Class features shared by combat and dungeon, party menu (B)
   combat.c/.h            Turn-based menu combat (see "Combat")
@@ -126,12 +127,14 @@ tools/
                            are scaled down from their busts)
   make_figures.py          Generates the figure sprites and busts (one palette per figure)
   make_portraits.py        Generates the nine hero portraits and their avatars
+  make_title.py            Generates the title screen image (gfx/title.png)
   emutest.py               Headless BlastEm test scenarios with screenshots
 ```
 
 ## Current state
 
-Boots into the hero creation screen: class (Kämpfer/Schurke/Magier, their features listed) with
+Boots into the title screen (`src/title.c`, image from `tools/make_title.py`: the Nautiloid
+before the burning sky of Avernus), START leads to the hero creation screen: class (Kämpfer/Schurke/Magier, their features listed) with
 up/down, one of three portraits per class with left/right, Start confirms. That creates the one starting party member,
 auto-named after the class — then into Room 1, the Klonkammer (6x5): the
 hero wakes in front of the open clone pod standing in the room (two intro boxes on

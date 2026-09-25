@@ -53,6 +53,7 @@ together in Room 1 (the "Klonkammer" — see `BeschreibungInhaltVerticalSlice.md
       lanes, Zhalk duelling the mind flayer (optional fight, Immerbrand-Klinge), cambions after
       round 5, transponder and ending screen. Verified via `tools/emutest.py room6`, `zhalk`,
       `crash`. The vertical slice is playable from start to end.
+- [x] Title screen and ending screen frame the slice.
 - [x] Schriftrolle usable (Brennende Hände), "Gegenstand" submenu in combat.
 - [x] Fixed: rooms with more than 12 objects overflowed their RAM state into the next room's
       (Room 4 had 13); now 20 per room, checked at compile time (`ROOM_OBJECTS_FIT`).
@@ -129,13 +130,18 @@ together in Room 1 (the "Klonkammer" — see `BeschreibungInhaltVerticalSlice.md
       busts while Lae'zel/Schattenherz speak, full figures, avatars derived from the busts.
 - [ ] "Wir" has no figure/bust yet (it only speaks through Myrnath's skull); Myrnath and the
       mind flayers could get busts the same way.
-- [ ] Title screen.
+- [x] Title screen (`tools/make_title.py`, `src/title.c`).
 
 ## Audio
 - [ ] Music/SFX pipeline — the other projects use XGM2 (see `tools/generate_music.py` /
       `tools/generate_sfx.py` in the Wanderburg project for the conversion approach).
 
 ## Gotchas worth remembering
+- rescomp keeps a PNG's padded palette: `VDP_drawImageEx(..., loadpal = TRUE)` then writes more than
+  16 colours (over PAL1-PAL3, the text went black). Load images' palettes by hand with
+  `PAL_setPalette` (16 colours), as src/title.c does.
+- A screen that starts right after another one must seed its `prevJoy` with the current joypad
+  state, or the button that closed the previous screen counts again (title -> creation did).
 - Text uses its own palette (PAL3, `VDP_setTextPalette` in `main.c`). SGDK's default is PAL0, and
   when PAL0 held a palette that left the font's colour slots black, all panel text was invisible on
   the black backdrop — not a rendering bug, just missing contrast. PAL0 now belongs to the view.

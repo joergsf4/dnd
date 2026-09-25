@@ -53,7 +53,7 @@ CharClass charCreate_run(u8 *portrait)
     Sprite *bust = showPortrait(NULL, cursor, pick);
     drawMenu(cursor, pick);
 
-    u16 prevJoy = 0;
+    u16 prevJoy = JOY_readJoypad(JOY_1);   // START from the title screen may still be held
     while (TRUE)
     {
         u16 joy = JOY_readJoypad(JOY_1);
