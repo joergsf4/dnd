@@ -33,8 +33,10 @@ typedef enum
     ROOM_COUNT
 } RoomId;
 
-#define ROOM_MAX_OBJECTS 8
-#define OBJFLAG_TRIGGERED 0x01 // set once a one-shot object (loot, a resolved check) has fired
+#define ROOM_MAX_OBJECTS 12
+#define OBJFLAG_TRIGGERED 0x01 // a one-shot object has fired (loot taken, chest opened)
+#define OBJFLAG_BROKEN    0x02 // destroyed for good (the larva pool after it burst)
+#define OBJFLAG_MARKED    0x04 // a skill check revealed it (the larva pool's unstable shell)
 
 typedef enum
 {
@@ -44,6 +46,8 @@ typedef enum
     OBJ_CARTILAGE_CHEST,
     OBJ_RESTORATION_SHRINE,
     OBJ_DOOR_EXIT,
+    OBJ_POD_OPEN,          // the player's own clone pod, open and empty
+    OBJ_POD_BROKEN,        // a shattered clone pod (scenery, flavour text only)
     OBJ_KIND_COUNT
 } ObjectKind;
 
@@ -56,7 +60,9 @@ typedef struct
 } RoomObject;
 
 typedef void (*RoomInteractFn)(Player *p, RoomObject *obj);
-typedef void (*RoomEnterFn)(Player *p); // may be NULL; reserved for entry-triggered cutscenes
+// Called by main.c each time the player arrives in the room, once its first view is on screen
+// (so a textbox shows over the room, not a blank view). May be NULL.
+typedef void (*RoomEnterFn)(Player *p);
 
 typedef struct
 {
@@ -73,7 +79,7 @@ typedef struct
 
 // Enters a room: sets the player's position/facing from the RoomDef, and -- only on the very
 // first visit -- copies its object template into per-room RAM state (so objects can be looted/
-// flagged and, if the player ever backtracks, stay that way).
+// flagged and, if the player ever backtracks, stay that way). Does not run onEnter (see above).
 void map_loadRoom(const RoomDef *room, Player *p);
 const RoomDef *map_currentRoom(void);
 

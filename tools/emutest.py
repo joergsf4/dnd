@@ -6,7 +6,7 @@ is needed (and none is available in this sandbox).
 
     python3 tools/emutest.py create              # just the character creation screen
     python3 tools/emutest.py look                # Room 1: look around from the spawn point
-    python3 tools/emutest.py tour                # Room 1: views from the middle and a corner
+    python3 tools/emutest.py tour                # Room 1: views from two opposite corners
     python3 tools/emutest.py room1               # Room 1: interact with every object
     python3 tools/emutest.py look --class 2       # any scenario, but pick Mage instead of Fighter
 
@@ -134,6 +134,18 @@ def create_hero(b, cls_down=0):
     act(b, "gamepads.1.start", 30)
 
 
+def start_game(b, cls_down=0):
+    """Creates the hero and dismisses Room 1's two intro textboxes."""
+    create_hero(b, cls_down)
+    act(b, "gamepads.1.a")
+    act(b, "gamepads.1.a")
+
+
+def walk(b, n):
+    for _ in range(n):
+        act(b, "gamepads.1.up")
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("scenario", choices=["create", "look", "tour", "room1"])
@@ -154,73 +166,113 @@ def main():
             return
 
         if args.scenario == "look":
-            # Room 1 (the Klonkammer, src/room1.c): spawn facing the larva tank, look around.
-            create_hero(b, args.cls)
-            b.shot("room1_spawn")              # (3,1) facing north, larva tank one step ahead
-            for name in ("east", "south", "west"):
+            # Room 1 (the Klonkammer, src/room1.c): spawn in front of the open pod, look around.
+            start_game(b, args.cls)
+            b.shot("room1_spawn")              # (3,4) facing south, larva pool two steps ahead
+            for name in ("west", "north", "east"):
                 act(b, "gamepads.1.right")     # turn clockwise
                 b.shot(f"room1_look_{name}")
             return
 
         if args.scenario == "tour":
-            # Views from the middle and the corners of Room 1 (interior x 1-6, y 1-4): every wall
+            # Views from two opposite corners of Room 1 (interior x 1-6, y 1-5): every wall
             # should be visible from everywhere, with side walls, corners and objects in place.
-            create_hero(b, args.cls)
-            act(b, "gamepads.1.down")          # back off the tank: (3,1) -> (3,2), still facing north
-            b.shot("tour_center_n")
-            for name in ("e", "s", "w"):
-                act(b, "gamepads.1.right")
-                b.shot(f"tour_center_{name}")
-            act(b, "gamepads.1.up")            # facing west: (3,2) -> (2,2)
-            act(b, "gamepads.1.left")          # west -> south
-            act(b, "gamepads.1.up")            # (2,3)
-            act(b, "gamepads.1.up")            # (2,4), south-west part of the room
+            start_game(b, args.cls)
+            act(b, "gamepads.1.right")         # south -> west
+            walk(b, 2)                         # (1,4)
+            act(b, "gamepads.1.right")         # west -> north
+            walk(b, 3)                         # (1,1), north-west corner
+            b.shot("tour_nw_n")
+            act(b, "gamepads.1.right")
+            b.shot("tour_nw_e")                # along the north wall: broken pods, chest
+            act(b, "gamepads.1.right")
+            b.shot("tour_nw_s")                # along the west wall, the pod pillar to the left
+            walk(b, 4)                         # (1,5)
             act(b, "gamepads.1.left")          # south -> east
-            b.shot("tour_sw_e")                # looking along the south wall
-            act(b, "gamepads.1.left")          # east -> north
-            b.shot("tour_sw_n")                # looking diagonally across towards the tank
+            walk(b, 5)                         # (6,5), south-east corner, facing the corpse
+            b.shot("tour_se_e")
+            act(b, "gamepads.1.left")
+            b.shot("tour_se_n")                # along the east wall: shrine
+            act(b, "gamepads.1.left")
+            b.shot("tour_se_w")                # across the room towards the door
             return
 
         if args.scenario == "room1":
-            # Walks up to and interacts with every object kind in Room 1: the larva tank's
-            # skill-check branch, a one-shot loot pickup, and a door whose target room isn't
-            # built yet (the "still sealed" stub).
+            # Plays through Room 1: intro, both larva-pool branches (INT check, then reaching
+            # in), corpse, shrine, chest, the still sealed door, a broken pod and the open pod.
             create_hero(b, args.cls)
+            b.shot("r1_intro1")
+            act(b, "gamepads.1.a")
+            b.shot("r1_intro2")
+            act(b, "gamepads.1.a")
             b.shot("r1_spawn")
 
-            # --- larva tank (north wall, one step ahead) ---
+            # --- larva pool (south wall, two steps ahead) ---
+            walk(b, 1)                         # (3,5)
             act(b, "gamepads.1.a", 10)
-            b.shot("r1_larva_menu")            # 3-option textbox: REACH IN / INVESTIGATE / LEAVE
-            act(b, "gamepads.1.down", 6)       # cursor -> INVESTIGATE [INT]
-            b.shot("r1_larva_cursor")
-            act(b, "gamepads.1.a", 90)         # confirm: runs the skill-check roll animation
-            b.shot("r1_larva_rolling")
+            b.shot("r1_pool_menu")             # Hineinfassen / Untersuchen [INT] / Weggehen
+            act(b, "gamepads.1.down", 6)       # cursor -> Untersuchen [INT]
+            act(b, "gamepads.1.a", 90)         # runs the skill-check roll animation
+            b.shot("r1_pool_rolling")
             b.frames(90)
-            b.shot("r1_larva_result")          # result textbox behind the roll's pause
-            act(b, "gamepads.1.a")             # dismiss
-            b.shot("r1_larva_done")
+            b.shot("r1_pool_result")           # "Gefahr erkannt" or "nichts Besonderes"
+            act(b, "gamepads.1.a")
+            act(b, "gamepads.1.a", 10)
+            b.shot("r1_pool_menu2")            # marked variant if the check succeeded
+            act(b, "gamepads.1.a")             # Hineinfassen
+            b.shot("r1_pool_boom")             # -3 KP, panel updated
+            act(b, "gamepads.1.a")
+            b.shot("r1_pool_broken")           # burst pool texture
 
-            # --- walk to the mindflayer corpse (west wall, (0,2)) ---
+            # --- corpse (east wall, (7,5)) ---
+            act(b, "gamepads.1.left")          # south -> east
+            walk(b, 3)                         # (6,5)
+            act(b, "gamepads.1.a")
+            b.shot("r1_corpse")
+            act(b, "gamepads.1.a")
+
+            # --- restoration station (east wall, (7,3)) ---
+            act(b, "gamepads.1.left")          # east -> north
+            walk(b, 2)                         # (6,3)
             act(b, "gamepads.1.right")         # north -> east
-            act(b, "gamepads.1.right")         # east -> south
-            act(b, "gamepads.1.up")            # step south: (3,1) -> (3,2)
-            act(b, "gamepads.1.right")         # south -> west
-            act(b, "gamepads.1.up")            # step west: (3,2) -> (2,2)
-            act(b, "gamepads.1.up")            # (2,2) -> (1,2), adjacent to the corpse
-            b.shot("r1_at_corpse")
+            b.shot("r1_at_shrine")
             act(b, "gamepads.1.a")
-            b.shot("r1_corpse_loot")           # loot textbox + panel should show GOLD/GEM updated
+            b.shot("r1_shrine")                # KP back to full
             act(b, "gamepads.1.a")
 
-            # --- walk to the door (west wall, (0,3)) ---
-            act(b, "gamepads.1.left")          # west -> south
-            act(b, "gamepads.1.up")            # step south: (1,2) -> (1,3)
-            act(b, "gamepads.1.right")         # south -> west
+            # --- chest (north wall, (6,0)) ---
+            act(b, "gamepads.1.left")          # east -> north
+            walk(b, 2)                         # (6,1)
+            act(b, "gamepads.1.a")
+            b.shot("r1_chest")
+            act(b, "gamepads.1.a")
+            b.shot("r1_chest_open")            # open-chest texture, panel: potion + gear
+
+            # --- door (west wall, (0,1)) ---
+            act(b, "gamepads.1.left")          # north -> west
+            walk(b, 5)                         # (1,1)
             b.shot("r1_at_door")
             act(b, "gamepads.1.a")
-            b.shot("r1_door_stub")             # "still sealed" -- ROOM_2 isn't registered yet
+            b.shot("r1_door")                  # still sealed: ROOM_2 isn't built yet
             act(b, "gamepads.1.a")
-            b.shot("r1_panel_final")           # final panel state: gold/gem up
+
+            # --- broken pod (west wall, (0,4)) ---
+            act(b, "gamepads.1.left")          # west -> south
+            walk(b, 3)                         # (1,4)
+            act(b, "gamepads.1.right")         # south -> west
+            act(b, "gamepads.1.a")
+            b.shot("r1_pod_broken")
+            act(b, "gamepads.1.a")
+
+            # --- the open pod in the middle, (3,3) ---
+            act(b, "gamepads.1.right")         # west -> north
+            walk(b, 1)                         # (1,3)
+            act(b, "gamepads.1.right")         # north -> east
+            walk(b, 1)                         # (2,3)
+            act(b, "gamepads.1.a")
+            b.shot("r1_pod_open")
+            act(b, "gamepads.1.a")
+            b.shot("r1_final")
     finally:
         b.close()
 

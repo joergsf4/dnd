@@ -1,8 +1,9 @@
 #include "ui_panel.h"
 #include "inventory.h"
+#include "text.h"
 #include "game.h"
 
-static const char facingLetter[4] = { 'N', 'E', 'S', 'W' };
+static const char *const facingLetter[4] = { "N", "O", "S", "W" };
 
 #define SLOT_ROWS 3                    // avatar height in tiles == rows per party slot
 #define TEXT_COL  (UI_PANEL_COL + 3)   // right of the 3-tile-wide avatar
@@ -14,19 +15,19 @@ static void drawSlotText(u8 i)
 
     if (!c->active)
     {
-        VDP_drawText("---EMPTY---", UI_PANEL_COL, row);
-        VDP_drawText("           ", UI_PANEL_COL, row + 1);
+        text_draw("---LEER---  ", UI_PANEL_COL, row);
         return;
     }
 
     char text[16];
-    sprintf(text, "%s", c->name);
-    VDP_drawText(text, TEXT_COL, row);
+    text_draw(c->name, TEXT_COL, row);
+    sprintf(text, "KP %2d/%2d", c->hp, c->hpMax);
+    text_draw(text, TEXT_COL, row + 1);
     if (c->mpMax > 0)
-        sprintf(text, "MP%2d/%2d", c->mp, c->mpMax);
-    else
-        sprintf(text, "HP%2d/%2d", c->hp, c->hpMax);
-    VDP_drawText(text, TEXT_COL, row + 1);
+    {
+        sprintf(text, "ZP %2d/%2d", c->mp, c->mpMax);
+        text_draw(text, TEXT_COL, row + 2);
+    }
 }
 
 void uiPanel_initSprites(void)
@@ -41,14 +42,16 @@ void uiPanel_initSprites(void)
 
 void uiPanel_drawInventory(void)
 {
-    char text[UI_PANEL_W + 1];
+    char text[24];
 
-    VDP_drawText("ITEMS", UI_PANEL_COL, 13);
-    sprintf(text, "GOLD:%3d", inventory.gold);
-    VDP_drawText(text, UI_PANEL_COL, 14);
-    sprintf(text, "G:%d P:%d", inventory.gems, inventory.healingPotions);
-    VDP_drawText(text, UI_PANEL_COL, 15);
-    VDP_drawText(inventory.hasBasicGear ? "GEAR: YES" : "GEAR: NO ", UI_PANEL_COL, 16);
+    text_draw("INVENTAR", UI_PANEL_COL, 13);
+    sprintf(text, "GOLD:   %3d", inventory.gold);
+    text_draw(text, UI_PANEL_COL, 14);
+    sprintf(text, "EDELST.: %2d", inventory.gems);
+    text_draw(text, UI_PANEL_COL, 15);
+    sprintf(text, "TRÄNKE:  %2d", inventory.healingPotions);
+    text_draw(text, UI_PANEL_COL, 16);
+    text_draw(inventory.hasBasicGear ? "AUSRÜST.: JA" : "AUSRÜST.: - ", UI_PANEL_COL, 17);
 }
 
 void uiPanel_redrawChrome(void)
@@ -58,13 +61,14 @@ void uiPanel_redrawChrome(void)
 
     uiPanel_drawInventory();
 
-    VDP_drawText("UP/DN WALK", UI_PANEL_COL, 17);
-    VDP_drawText("L/R TURN", UI_PANEL_COL, 18);
+    text_draw("STEUERKREUZ:", UI_PANEL_COL, 19);
+    text_draw("GEHEN/DREHEN", UI_PANEL_COL, 20);
+    text_draw("A: BENUTZEN", UI_PANEL_COL, 21);
 }
 
 void uiPanel_drawStatus(const Player *p)
 {
     char text[UI_PANEL_W + 1];
-    sprintf(text, "%c (%02d,%02d)", facingLetter[p->facing], p->x, p->y);
-    VDP_drawText(text, UI_PANEL_COL, 27);
+    sprintf(text, "%s (%02d,%02d)", facingLetter[p->facing], p->x, p->y);
+    text_draw(text, UI_PANEL_COL, 27);
 }

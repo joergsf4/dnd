@@ -1,4 +1,5 @@
 #include "textbox.h"
+#include "text.h"
 
 static void clearBox(void)
 {
@@ -6,23 +7,23 @@ static void clearBox(void)
     memset(blank, ' ', TEXTBOX_COLS);
     blank[TEXTBOX_COLS] = 0;
     for (u8 r = 0; r < TEXTBOX_H; r++)
-        VDP_drawText(blank, 0, TEXTBOX_ROW + r);
+        text_draw(blank, 0, TEXTBOX_ROW + r);
 }
 
 static void drawLines(const char *const lines[], u8 lineCount)
 {
     if (lineCount > TEXTBOX_BODY_LINES) lineCount = TEXTBOX_BODY_LINES;
     for (u8 i = 0; i < lineCount; i++)
-        VDP_drawText(lines[i], 1, TEXTBOX_ROW + i);
+        text_draw(lines[i], 1, TEXTBOX_ROW + i);
 }
 
 static void drawOptions(const char *const options[], u8 optionCount, u8 cursor)
 {
-    char buf[TEXTBOX_COLS];
+    char buf[48];   // UTF-8: umlauts take 2 bytes each
     for (u8 i = 0; i < optionCount; i++)
     {
         sprintf(buf, "%s %s", i == cursor ? ">" : " ", options[i]);
-        VDP_drawText(buf, 2, TEXTBOX_ROW + 4 + i);
+        text_draw(buf, 2, TEXTBOX_ROW + 4 + i);
     }
 }
 
@@ -40,7 +41,7 @@ u8 textbox_show(const char *const lines[], u8 lineCount,
 
     if (optionCount == 0)
     {
-        VDP_drawText("PRESS A", 2, TEXTBOX_ROW + TEXTBOX_H - 1);
+        text_draw("WEITER MIT A", 2, TEXTBOX_ROW + TEXTBOX_H - 1);
         while (TRUE)
         {
             u16 joy = JOY_readJoypad(JOY_1);

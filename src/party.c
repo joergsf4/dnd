@@ -2,7 +2,7 @@
 
 Party party;
 
-static const char *const classNames[3] = { "FIGHTER", "ROGUE", "MAGE" };
+static const char *const classNames[3] = { "KÄMPFER", "SCHURKE", "MAGIER" };
 
 // Placeholder balance, not architecture: str/dex/int are small (1-5) skill-check modifiers
 // added to a d20 roll (see skill_check.c), not a full D&D ability score.

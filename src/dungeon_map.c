@@ -29,8 +29,6 @@ void map_loadRoom(const RoomDef *room, Player *p)
     p->x = room->startX;
     p->y = room->startY;
     p->facing = room->startFacing;
-
-    if (room->onEnter) room->onEnter(p);
 }
 
 const RoomDef *map_currentRoom(void)

@@ -13,7 +13,7 @@ void dungeonObjects_tryDoor(Player *p, RoomObject *obj)
     const RoomDef *target = map_findRoom((RoomId) obj->param0);
     if (!target)
     {
-        const char *lines[2] = { "The passage beyond", "is still sealed..." };
+        const char *lines[2] = { "Die Sphinktertür zuckt,", "bleibt aber verschlossen." };
         textbox_show(lines, 2, NULL, 0);
         return;
     }

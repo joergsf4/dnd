@@ -1,8 +1,9 @@
 #include "skill_check.h"
 #include "textbox.h"
+#include "text.h"
 #include "game.h"
 
-static const char *const attrLabel[3] = { "STR", "DEX", "INT" };
+static const char *const attrLabel[3] = { "STÄ", "GES", "INT" };
 
 static u8 attrValue(const Character *c, Attribute attr)
 {
@@ -25,13 +26,13 @@ static void waitFrames(u16 n)
 
 bool skillCheck_run(Character *actor, Attribute attr, u8 threshold)
 {
-    char buf[40];
+    char buf[48];
 
     // a short flourish: a few flickering fake rolls before the real one settles
     for (u8 i = 0; i < 16; i++)
     {
-        sprintf(buf, "[%s CHECK] ROLLING... %2d", attrLabel[attr], (random() % 20) + 1);
-        VDP_drawText(buf, 1, TEXTBOX_ROW);
+        sprintf(buf, "[%s-PROBE] WÜRFELT... %2d", attrLabel[attr], (random() % 20) + 1);
+        text_draw(buf, 1, TEXTBOX_ROW);
         waitFrames(4);
     }
 
@@ -40,9 +41,9 @@ bool skillCheck_run(Character *actor, Attribute attr, u8 threshold)
     u8 total = roll + mod;
     bool success = total >= threshold;
 
-    sprintf(buf, "[%s CHECK] %2d +%d = %2d   ", attrLabel[attr], roll, mod, total);   // <= 27 chars
-    VDP_drawText(buf, 1, TEXTBOX_ROW);
-    VDP_drawText(success ? "SUCCESS!" : "FAILURE.", 1, TEXTBOX_ROW + 1);
+    sprintf(buf, "[%s-PROBE] %2d +%d = %2d     ", attrLabel[attr], roll, mod, total);   // <= 27 chars
+    text_draw(buf, 1, TEXTBOX_ROW);
+    text_draw(success ? "ERFOLG!" : "FEHLSCHLAG.", 1, TEXTBOX_ROW + 1);
 
     waitFrames(60); // let the result sit before the caller's own textbox_show() replaces it
 

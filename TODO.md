@@ -11,7 +11,7 @@ together in Room 1 (the "Klonkammer" — see `BeschreibungInhaltVerticalSlice.md
       future rooms). Object runtime state (looted/flagged) lives in per-room RAM, copied from the
       ROM template on first visit, so it survives backtracking once rooms link up to each other.
 - [x] Interactive objects in the first-person view — objects sit on wall cells and are drawn as
-      that wall's texture (`kindTexture` in `src/dungeon_view.c`), visible from any distance;
+      that wall's texture (`objectTexture()` in `src/dungeon_view.c`, with per-state variants), visible from any distance;
       `src/dungeon_objects.c` only does "what's straight ahead" and the shared door handler.
 - [x] Textbox/menu system (`src/textbox.c/.h`) — the message area below the view (rows 20-27,
       columns 0-27), 27 characters per line, pauses the world while open.
@@ -20,15 +20,17 @@ together in Room 1 (the "Klonkammer" — see `BeschreibungInhaltVerticalSlice.md
       per class, not real ability scores — see the D&D-fidelity item below).
 - [x] Minimal inventory (`src/inventory.c/.h`) — party-wide gold/gems/potions/basic-gear flag, shown
       live in the panel (`uiPanel_drawInventory`). Not a real item system yet, see below.
-- [x] Room 1 content wired end-to-end and verified via `tools/emutest.py room1` (screenshots of
-      every object interaction, including both larva-tank branches).
+- [x] Room 1 content from the design doc, German text with umlauts (`src/text.c`,
+      `tools/make_font.py`): intro on first entry, larva pool (burst/marked states), corpse,
+      chest, restoration station, open and broken clone pods, sphincter door. Verified via
+      `tools/emutest.py room1`. Adaptations to the grid engine: see README, "Current state".
 
 ## Room-by-room roadmap (light — detailed planning happens per room, not now)
 - [ ] **Room 2** (Myrnath/"Wir"): multi-stage branching `onInteract`, no new engine needed;
       `party_addMember()` is already "Wir joins". Doc's "Medizin" check doesn't map to STR/DEX/INT
       — needs either a 4th attribute or a documented stand-in when this room is planned.
 - [ ] **Room 3** (Lae'zel ambush + first combat): needs an entry-triggered cutscene — `RoomDef`
-      already has an `onEnter` hook reserved for this (`NULL` in Room 1). Combat itself is a new
+      has an `onEnter` hook (Room 1 uses it for its intro text). Combat itself is a new
       subsystem (see Combat below), would plug in as another blocking sub-loop like `onInteract`.
 - [ ] **Room 4** (locked door + console): needs an identified-item inventory (`hasItem[]`, see
       below) and uses `RoomObject`'s already-reserved `param0`/`param1` fields (target room +
@@ -58,7 +60,7 @@ together in Room 1 (the "Klonkammer" — see `BeschreibungInhaltVerticalSlice.md
 - [ ] Letter-grid name entry (D-pad-driven on-screen keyboard) if auto-naming ever feels wrong —
       explicitly deferred when this was built, not forgotten.
 - [ ] Recruiting the other 3 party slots during play — `party_addMember()` exists and the panel
-      already renders empty slots as "---EMPTY---"; Room 2's "Wir" is the first real recruit, once
+      already renders empty slots as "---LEER---"; Room 2's "Wir" is the first real recruit, once
       that room exists.
 - [ ] D&D-derived stat block (STR/DEX/CON/INT/WIS/CHA, AC, saving throws) — the current model is
       class + HP/MP + three small (1-5) skill-check modifiers, not real ability scores. Decide how
@@ -70,6 +72,7 @@ together in Room 1 (the "Klonkammer" — see `BeschreibungInhaltVerticalSlice.md
       interactive screen.
 
 ## Combat
+- [ ] Death / game over — damage currently never takes the hero below 1 KP (Room 1's larva pool).
 - [ ] Turn-based or real-time-with-pause encounter system — would plug in as a blocking sub-loop
       (`combat_run(...)`) the same way `onInteract`/`textbox_show` do. Needed starting Room 3.
 - [ ] Enemy placement in the dungeon grid, line-of-sight/engagement range.
@@ -86,13 +89,13 @@ together in Room 1 (the "Klonkammer" — see `BeschreibungInhaltVerticalSlice.md
 
 ## Art
 - [ ] Real wall/floor/ceiling art — textures are procedural placeholders in `tools/make_view.py`
-      (64x64, palette indices into the 16-colour view palette). Could load hand-drawn indexed PNGs
-      there instead; the rest of the pipeline stays the same. The Nautiloid rooms want an organic,
-      bio-mechanical look rather than plain stone.
+      (64x64, palette indices into the 16-colour view palette, organic Nautiloid look). Could load
+      hand-drawn indexed PNGs there instead; the rest of the pipeline stays the same.
 - [x] Hero avatar (`res/gfx/avatar.png`, `tools/make_avatar.py`) — one generic 24x24 cloaked-figure
       placeholder shared by all 3 classes. Replace with real art, and/or split into per-class
       avatars, whenever that's worth the extra tile budget.
-- [x] Object/door wall textures (larva tank, corpse, chest, shrine, door) — placeholders in
+- [x] Object/door wall textures (larva pool + burst, corpse, chest + open, shrine, sphincter door,
+      clone pod open/broken) — placeholders in
       `tools/make_view.py`.
 - [ ] Monster/companion sprites for Room 2+ (see "Monsters/NPCs in the view" above).
 - [ ] Title screen.

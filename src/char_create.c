@@ -1,4 +1,5 @@
 #include "char_create.h"
+#include "text.h"
 #include "game.h"
 
 static const CharClass classOrder[3] = { CLASS_FIGHTER, CLASS_ROGUE, CLASS_MAGE };
@@ -7,9 +8,9 @@ static void drawMenu(u8 cursor)
 {
     for (u8 i = 0; i < 3; i++)
     {
-        char line[16];
+        char line[20];
         sprintf(line, "%s %s", (i == cursor) ? ">" : " ", class_name(classOrder[i]));
-        VDP_drawText(line, 14, 14 + i * 2);
+        text_draw(line, 15, 14 + i * 2);
     }
 }
 
@@ -17,8 +18,8 @@ CharClass charCreate_run(void)
 {
     Sprite *avatar = SPR_addSprite(&avatar_sprite, 148, 60, TILE_ATTR(PAL1, FALSE, FALSE, FALSE));
 
-    VDP_drawText("CREATE YOUR HERO", 11, 4);
-    VDP_drawText("D-PAD SELECT, START CONFIRM", 6, 24);
+    text_draw("ERSCHAFFE DEINEN HELDEN", 8, 4);
+    text_draw("KREUZ: WÄHLEN   START: OK", 7, 24);
 
     u8 cursor = 0;
     drawMenu(cursor);

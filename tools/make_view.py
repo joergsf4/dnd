@@ -44,23 +44,25 @@ LMAX = 5                   # lateral cells visible either side
 DMAX = 5                   # depth cells visible
 
 # ---------------------------------------------------------------- palette (Mega Drive levels 0-7)
+# The Nautiloid (the mind flayers' ship the vertical slice takes place on) is organic throughout:
+# chitin-plated walls with sinews and veins, wet floors, ribbed ceilings.
 PAL = [
     (0, 0, 0),   # 0 black / darkness
-    (1, 1, 1),   # 1 stone, darkest (mortar)
-    (2, 2, 3),   # 2 stone
-    (3, 3, 4),   # 3 stone
-    (5, 5, 5),   # 4 stone, lightest
-    (1, 1, 0),   # 5 floor dark
-    (2, 2, 1),   # 6 floor mid
-    (3, 3, 2),   # 7 floor light
-    (0, 0, 1),   # 8 ceiling dark
-    (1, 1, 2),   # 9 ceiling light
-    (1, 3, 1),   # 10 green dark
-    (3, 6, 2),   # 11 green light
-    (4, 2, 5),   # 12 purple (mindflayer)
-    (6, 5, 4),   # 13 bone
-    (3, 5, 7),   # 14 blue glow
-    (5, 1, 2),   # 15 flesh red
+    (1, 0, 1),   # 1 wall darkest: sinew gaps, deep shadow
+    (2, 1, 2),   # 2 wall dark
+    (3, 2, 3),   # 3 wall: chitin plates
+    (5, 3, 4),   # 4 wall highlight
+    (1, 1, 1),   # 5 floor dark (wet)
+    (2, 2, 2),   # 6 floor
+    (3, 3, 4),   # 7 floor sheen
+    (4, 2, 5),   # 8 purple (mind flayer skin)
+    (1, 3, 1),   # 9 slime green dark
+    (3, 6, 2),   # 10 slime green light
+    (1, 5, 5),   # 11 turquoise pod glass
+    (6, 5, 4),   # 12 bone / cartilage
+    (3, 5, 7),   # 13 blue glow
+    (5, 1, 2),   # 14 flesh red
+    (7, 7, 6),   # 15 bright glint
 ]
 RGB = [tuple(round(c * 255 / 7) for c in p) for p in PAL]
 SHADE_F = [1.0, 0.72, 0.48, 0.3]   # per distance band
@@ -70,117 +72,224 @@ def band_of(z):
     return 0 if z < 1.5 else 1 if z < 2.5 else 2 if z < 3.5 else 3
 
 
-def nearest(rgb):
-    return min(range(16), key=lambda i: sum((a - b) ** 2 for a, b in zip(rgb, RGB[i])))
+def nearest(rgb, family=range(16)):
+    return min(family, key=lambda i: sum((a - b) ** 2 for a, b in zip(rgb, RGB[i])))
 
 
-SHADE = [[i if b == 0 else nearest(tuple(c * SHADE_F[b] for c in RGB[i])) for i in range(16)]
-         for b in range(4)]
+def family_of(i):
+    """Wall colours only darken into wall colours, floor into floor, so distance keeps the tint."""
+    return range(0, 5) if i <= 4 else (0, 5, 6, 7) if i <= 7 else range(16)
+
+
+SHADE = [[i if b == 0 else nearest(tuple(c * SHADE_F[b] for c in RGB[i]), family_of(i))
+          for i in range(16)] for b in range(4)]
 
 # ---------------------------------------------------------------- textures (64x64, palette indices)
-rng = random.Random(1234)
 
 
-def stone_base():
-    t = [[3] * TEX for _ in range(TEX)]
-    for y in range(TEX):
-        course = y // 16
-        for x in range(TEX):
-            bx = (x + (16 if course % 2 else 0)) % 32
-            by = y % 16
-            if by < 2 or bx < 2:
-                t[y][x] = 1                      # mortar
-            elif by == 2 or bx == 2:
-                t[y][x] = 4                      # lit top/left edge
-            elif by == 15 or bx == 31:
-                t[y][x] = 2                      # shadowed bottom/right edge
-            else:
-                r = rng.random()
-                t[y][x] = 2 if r < 0.12 else 4 if r < 0.16 else 3
-    return t
+def blank(c=0):
+    return [[c] * TEX for _ in range(TEX)]
 
 
 def rect(t, x0, y0, x1, y1, c):
-    for y in range(y0, y1):
-        for x in range(x0, x1):
+    for y in range(max(0, y0), min(TEX, y1)):
+        for x in range(max(0, x0), min(TEX, x1)):
             t[y][x] = c
 
 
-def disc(t, cx, cy, r, c):
+def ellipse(t, cx, cy, rx, ry, c):
     for y in range(TEX):
         for x in range(TEX):
-            if (x - cx) ** 2 + (y - cy) ** 2 <= r * r:
+            if ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 <= 1.0:
                 t[y][x] = c
 
 
-def tex_stone():
-    return stone_base()
+def in_ellipse(x, y, cx, cy, rx, ry):
+    return ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 <= 1.0
 
 
-def tex_tank():
-    t = stone_base()
-    rect(t, 14, 10, 50, 56, 1)                   # recess
-    rect(t, 16, 12, 48, 54, 2)                   # tank frame
-    rect(t, 19, 16, 45, 51, 10)                  # liquid
-    rect(t, 19, 16, 45, 20, 11)                  # surface glow
-    for _ in range(14):
-        disc(t, rng.randint(22, 42), rng.randint(24, 48), 1, 1)   # larvae
+def vein(t, rng, x, y, length, c):
+    """A thin wandering line, mostly downwards."""
+    for _ in range(length):
+        if 0 <= x < TEX and 0 <= y < TEX:
+            t[y][x] = c
+        y += 1
+        x += rng.choice((-1, 0, 0, 1))
+
+
+def organic_wall(seed):
+    """Chitin plates in columns, separated by dark sinew gaps, with segment joints and veins."""
+    rng = random.Random(seed)
+    t = blank(3)
+    joints = [rng.randint(8, 24) for _ in range(4)]        # joint height per plate column
+    for x in range(TEX):
+        col, px = x // 16, x % 16
+        for y in range(TEX):
+            jy = (y + joints[col]) % 22
+            if px < 2:
+                c = 1                                      # sinew gap between plates
+            elif jy < 2:
+                c = 2 if jy == 1 else 1                    # segment joint
+            elif px < 4 or jy == 2:
+                c = 4                                      # lit plate edge
+            elif px > 13:
+                c = 2                                      # plate curving away
+            else:
+                r = rng.random()
+                c = 2 if r < 0.10 else 4 if r < 0.13 else 3
+            t[y][x] = c
+    for _ in range(3):
+        vein(t, rng, rng.randint(4, 60), rng.randint(0, 30), rng.randint(14, 30), 14)
+    return t
+
+
+def tex_wall():
+    return organic_wall(1)
+
+
+def niche(t, x0, y0, x1, y1):
+    rect(t, x0, y0, x1, y1, 1)
+    rect(t, x0, y0, x1, y0 + 1, 2)                         # lit upper lip
+
+
+def tex_pool():
+    """Larva pool: a fleshy basin in the wall, full of green slime and tadpoles."""
+    rng = random.Random(2)
+    t = organic_wall(2)
+    ellipse(t, 32, 38, 27, 22, 14)                         # fleshy rim
+    ellipse(t, 32, 38, 23, 18, 2)
+    ellipse(t, 32, 40, 21, 15, 9)                          # slime
+    ellipse(t, 30, 34, 14, 6, 10)                          # glow on the surface
+    for _ in range(12):                                    # tadpoles: head + tail
+        x, y = rng.randint(16, 46), rng.randint(32, 50)
+        rect(t, x, y, x + 2, y + 2, 1)
+        t[y + 1][x + 2] = t[y][x + 3] = 1
     for _ in range(6):
-        t[rng.randint(21, 49)][rng.randint(21, 43)] = 11          # bubbles
+        t[rng.randint(28, 50)][rng.randint(16, 48)] = 15   # bubbles
+    return t
+
+
+def tex_pool_broken():
+    """The larva pool after it burst: torn rim, drained, acid dripping down the wall."""
+    rng = random.Random(3)
+    t = organic_wall(2)
+    ellipse(t, 32, 38, 27, 22, 14)
+    ellipse(t, 32, 38, 23, 18, 1)                          # empty, dark basin
+    for _ in range(16):                                    # torn rim
+        a = rng.random() * math.tau
+        x, y = int(32 + math.cos(a) * 25), int(38 + math.sin(a) * 20)
+        rect(t, x - 2, y - 2, x + 2, y + 2, 1)
+    for _ in range(7):
+        vein(t, rng, rng.randint(12, 52), rng.randint(40, 50), rng.randint(8, 20), 9)   # acid drips
+    rect(t, 20, 52, 44, 55, 9)                             # puddle at the bottom
     return t
 
 
 def tex_corpse():
-    t = stone_base()
-    rect(t, 12, 34, 54, 58, 6)                   # floor shadow in the alcove
-    disc(t, 24, 36, 7, 12)                       # head
-    for dx in (-4, -1, 2, 5):                    # tentacles
-        rect(t, 24 + dx, 40, 25 + dx, 48, 12)
-    rect(t, 20, 42, 52, 56, 1)                   # dark robe
-    rect(t, 22, 44, 50, 54, 2)
-    t[35][21] = t[35][27] = 13                   # dead eyes
+    """A dead mind flayer slumped in an alcove: purple head, tentacles, dark robe with trim."""
+    t = organic_wall(4)
+    niche(t, 8, 12, 56, 64)
+    ellipse(t, 32, 42, 18, 20, 2)                          # robe
+    rect(t, 14, 56, 50, 64, 2)
+    rect(t, 20, 40, 44, 42, 12)                            # collar trim
+    ellipse(t, 32, 28, 9, 10, 8)                           # head
+    for dx in (-5, -2, 2, 5):                              # tentacles
+        rect(t, 32 + dx, 33, 32 + dx + 1, 46, 8)
+    t[26][28] = t[26][35] = 15                             # dead white eyes
+    ellipse(t, 22, 58, 5, 3, 8)                            # three-fingered hand
     return t
 
 
-def tex_chest():
-    t = stone_base()
-    rect(t, 10, 24, 54, 60, 1)                   # niche
-    rect(t, 14, 36, 50, 58, 13)                  # chest body
-    rect(t, 14, 30, 50, 36, 7)                   # lid
-    for x in range(18, 50, 6):
-        rect(t, x, 36, x + 2, 58, 7)             # ribs
+def tex_chest(opened):
+    """A cartilage chest in a niche: ribbed, bone coloured; opened after it's been looted."""
+    t = organic_wall(5)
+    niche(t, 8, 22, 56, 64)
+    rect(t, 12, 38, 52, 60, 12)                            # body
+    for x in range(15, 52, 6):
+        rect(t, x, 38, x + 2, 60, 3)                       # cartilage ribs
+    if opened:
+        rect(t, 14, 40, 50, 46, 1)                         # dark, empty inside
+        rect(t, 12, 24, 52, 30, 12)                        # lid tipped up against the wall
+        rect(t, 12, 24, 52, 25, 15)
+    else:
+        rect(t, 11, 32, 53, 39, 12)                        # closed lid
+        rect(t, 11, 32, 53, 33, 15)
+        rect(t, 29, 38, 35, 43, 14)                        # fleshy clasp
     return t
 
 
 def tex_shrine():
-    t = stone_base()
-    rect(t, 24, 44, 40, 60, 2)                   # pedestal
-    rect(t, 26, 44, 38, 46, 4)
-    disc(t, 32, 28, 14, 1)                       # halo shadow
-    disc(t, 32, 28, 12, 14)                      # glowing bladder
-    disc(t, 30, 24, 5, 4)                        # highlight
+    """Restoration station: a big blue glowing tentacle bladder on a column."""
+    t = organic_wall(6)
+    niche(t, 10, 4, 54, 64)
+    rect(t, 26, 40, 38, 64, 3)                             # column
+    rect(t, 26, 40, 28, 64, 4)
+    rect(t, 36, 40, 38, 64, 2)
+    for dx, h in ((-14, 18), (-9, 24), (9, 24), (14, 18)):  # tentacles hanging from the bladder
+        rect(t, 32 + dx, 26, 32 + dx + 2, 26 + h, 13)
+    ellipse(t, 32, 24, 18, 16, 13)                         # bladder
+    ellipse(t, 28, 19, 7, 5, 15)                           # glow highlight
     return t
 
 
 def tex_door():
-    t = stone_base()
-    rect(t, 8, 4, 56, 64, 1)                     # frame
-    rect(t, 10, 6, 54, 64, 15)                   # flesh
-    for i in range(12):                          # radial folds of the sphincter
-        a = i * math.pi / 6
-        for rr in range(4, 24):
-            x = int(32 + math.cos(a) * rr)
-            y = int(34 + math.sin(a) * rr)
-            if 10 <= x < 54 and 6 <= y < 64:
-                t[y][x] = 12
-    disc(t, 32, 34, 4, 1)                        # the (closed) opening
+    """Sphincter door: a ring of flesh folded shut in a chitin frame."""
+    t = organic_wall(7)
+    rect(t, 6, 2, 58, 64, 1)                               # frame
+    ellipse(t, 32, 34, 24, 28, 14)
+    for i in range(14):                                    # folds of the sphincter
+        a = i * math.tau / 14
+        for rr in range(3, 26):
+            x = int(32 + math.cos(a) * rr * 0.95)
+            y = int(34 + math.sin(a) * rr * 1.1)
+            if in_ellipse(x, y, 32, 34, 24, 28):
+                t[y][x] = 2
+    ellipse(t, 32, 34, 3, 4, 1)                            # the closed opening
     return t
 
 
-TEXTURES = [tex_stone(), tex_tank(), tex_corpse(), tex_chest(), tex_shrine(), tex_door()]
-TEX_NAMES = ["TEX_STONE", "TEX_TANK", "TEX_CORPSE", "TEX_CHEST", "TEX_SHRINE", "TEX_DOOR"]
+def pod(seed, broken):
+    """Clone pod: an upright egg of chitin and sinew with a turquoise slime-glass front."""
+    rng = random.Random(seed)
+    t = organic_wall(seed)
+    ellipse(t, 32, 34, 22, 30, 2)                          # chitin shell
+    ellipse(t, 32, 34, 20, 28, 3)
+    ellipse(t, 32, 36, 15, 23, 1)                          # dark inside
+    if broken:
+        for y in range(TEX):                               # jagged remains of the glass
+            for x in range(TEX):
+                if in_ellipse(x, y, 32, 36, 15, 23) and not in_ellipse(x, y, 32, 36, 12, 20):
+                    if (x * 7 + y * 3) % 5 < 3:
+                        t[y][x] = 11
+        for _ in range(5):
+            x, y = rng.randint(22, 42), rng.randint(20, 50)
+            t[y][x] = 15                                   # glints on the shards
+        rect(t, 22, 52, 42, 56, 9)                         # spilled slime at the bottom
+    else:
+        rect(t, 17, 36, 21, 40, 12)                        # hinge; the glass front swung open
+        for y in range(TEX):
+            for x in range(TEX):
+                if in_ellipse(x, y, 32, 36, 15, 23) and x < 23:
+                    t[y][x] = 11                           # open glass half, seen edge-on
+        for _ in range(6):
+            vein(t, rng, rng.randint(26, 44), rng.randint(20, 40), rng.randint(6, 14), 10)  # slime
+    for dy in (6, 62):
+        rect(t, 20, dy - 2, 44, dy, 14)                    # sinews holding it in place
+    return t
+
+
+TEXTURES = [tex_wall(), tex_pool(), tex_pool_broken(), tex_corpse(), tex_chest(False),
+            tex_chest(True), tex_shrine(), tex_door(), pod(8, False), pod(9, True)]
+TEX_NAMES = ["TEX_WALL", "TEX_POOL", "TEX_POOL_BROKEN", "TEX_CORPSE", "TEX_CHEST",
+             "TEX_CHEST_OPEN", "TEX_SHRINE", "TEX_DOOR", "TEX_POD_OPEN", "TEX_POD_BROKEN"]
 
 # ---------------------------------------------------------------- backdrop (floor + ceiling)
+
+
+def hash01(a, b):
+    h = (a * 73856093) ^ (b * 19349663)
+    h = (h ^ (h >> 13)) * 1274126177
+    return ((h ^ (h >> 16)) & 0xFFFF) / 65536.0
 
 
 def backdrop_pixel(x, y):
@@ -196,13 +305,15 @@ def backdrop_pixel(x, y):
     lat = (x + 0.5 - CX) * z / F
     fl = (lat + 0.5) % 1.0
     fz = (z - 0.5) % 1.0
-    w = 0.035 * max(1.0, z)                      # grout lines stay visible in the distance
-    line = fl < w or fl > 1 - w or fz < w or fz > 1 - w
+    w = 0.035 * max(1.0, z)                      # lines stay visible in the distance
     if ceil:
-        beam = fz < 2 * w or fz > 1 - 2 * w      # cross beams only: lengthwise ones made an X
-        c = 8 if beam else 9
+        rib = fz < 2.5 * w or fz > 1 - 2.5 * w   # organic ribs across the corridor
+        c = 2 if rib else 1
     else:
-        c = 6 if line else 7                     # soft grout: a floor of flagstones, not a grid
+        seam = fl < w or fl > 1 - w or fz < w or fz > 1 - w
+        # wet, uneven floor: dark patches and glossy puddles, fixed in world space
+        n = hash01(math.floor(lat * 3), math.floor(z * 5))
+        c = 5 if seam else 7 if n < 0.12 else 5 if n < 0.35 else 6
     return SHADE[band_of(z)][c]
 
 

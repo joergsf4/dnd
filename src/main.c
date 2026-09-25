@@ -7,21 +7,32 @@
 #include "inventory.h"
 #include "char_create.h"
 #include "room1.h"
+#include "text.h"
 
 // Sprite tiles are reserved just below the font; the default 420 would collide with the view's two
 // 560-tile buffers (dungeon_view.c). The avatar needs 9 tiles, so 256 leaves plenty for later.
 #define SPRITE_VRAM_TILES 256
 
-// All text (VDP_drawText) renders with its own palette so PAL0 can be the view's full 16 colours.
-static const u16 textPalette[16] = {
-    0x0000, 0x0EEE, 0x0EEE, 0x0EEE, 0x0EEE, 0x0EEE, 0x0EEE, 0x0EEE,
-    0x0EEE, 0x0EEE, 0x0EEE, 0x0EEE, 0x0EEE, 0x0EEE, 0x0EEE, 0x0EEE,
-};
+static const RoomDef *shownRoom;
 
-static void redrawWorld(const Player *p)
+// Redraws the view and panel status. When the player has just arrived in a different room (game
+// start, or through a door), also runs that room's onEnter hook -- after the new view is on
+// screen, so an arrival text shows over the room rather than a blank view.
+static void redrawWorld(Player *p)
 {
     dungeonView_render(p);
     uiPanel_drawStatus(p);
+
+    const RoomDef *room = map_currentRoom();
+    if (room != shownRoom)
+    {
+        shownRoom = room;
+        if (room->onEnter)
+        {
+            room->onEnter(p);
+            uiPanel_redrawChrome();
+        }
+    }
 }
 
 int main(bool hardReset)
@@ -30,8 +41,7 @@ int main(bool hardReset)
     VDP_setScreenHeight224();
     SPR_initEx(SPRITE_VRAM_TILES);
     PAL_setPalette(PAL1, avatar_sprite.palette->data, DMA);
-    PAL_setPalette(PAL3, textPalette, DMA);
-    VDP_setTextPalette(PAL3);
+    text_init();
 
     CharClass heroClass = charCreate_run();
     party_init();

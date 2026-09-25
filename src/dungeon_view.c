@@ -19,8 +19,9 @@
 // per depth ring and side, which is why open rooms showed walls inconsistently and floor and
 // ceiling as flat colour.
 //
-// Interactive objects and doors are wall cells too: they render as that wall's texture (tank,
-// corpse, chest, shrine, door), so they're visible from any distance with correct perspective.
+// Interactive objects and doors are wall cells too: they render as that wall's texture (pool,
+// corpse, chest, shrine, door, pods; some with a variant per state, see objectTexture), so
+// they're visible from any distance with correct perspective.
 
 #define VIEW_TILE_BASE TILE_USER_INDEX   // two sets of VIEW_TILES tiles; see SPR_initEx in main.c
 
@@ -33,14 +34,20 @@ static bool mirror;
 static s16 lastX = -1, lastY = -1;
 static Facing lastFacing;
 
-static const u8 kindTexture[OBJ_KIND_COUNT] = {
-    TEX_STONE,   // OBJ_NONE (never looked up, plain walls use TEX_STONE directly)
-    TEX_TANK,    // OBJ_LARVA_TANK
-    TEX_CORPSE,  // OBJ_MINDFLAYER_CORPSE
-    TEX_CHEST,   // OBJ_CARTILAGE_CHEST
-    TEX_SHRINE,  // OBJ_RESTORATION_SHRINE
-    TEX_DOOR,    // OBJ_DOOR_EXIT
-};
+static u8 objectTexture(const RoomObject *o)
+{
+    switch (o->kind)
+    {
+        case OBJ_LARVA_TANK:         return (o->flags & OBJFLAG_BROKEN) ? TEX_POOL_BROKEN : TEX_POOL;
+        case OBJ_MINDFLAYER_CORPSE:  return TEX_CORPSE;
+        case OBJ_CARTILAGE_CHEST:    return (o->flags & OBJFLAG_TRIGGERED) ? TEX_CHEST_OPEN : TEX_CHEST;
+        case OBJ_RESTORATION_SHRINE: return TEX_SHRINE;
+        case OBJ_DOOR_EXIT:          return TEX_DOOR;
+        case OBJ_POD_OPEN:           return TEX_POD_OPEN;
+        case OBJ_POD_BROKEN:         return TEX_POD_BROKEN;
+        default:                     return TEX_WALL;
+    }
+}
 
 void dungeonView_init(void)
 {
@@ -74,7 +81,7 @@ void dungeonView_render(const Player *p)
             if (map_isWall(cx, cy))
             {
                 RoomObject *o = map_objectAt(cx, cy);
-                t = 1 + (o ? kindTexture[o->kind] : TEX_STONE);
+                t = 1 + (o ? objectTexture(o) : TEX_WALL);
             }
             cellTex[d][l + VIEW_LMAX] = t;
         }

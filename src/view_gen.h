@@ -12,20 +12,24 @@
 #define VIEW_DMAX 5
 #define VIEW_LMAX 5
 #define VIEW_TEX_ROWS 56220   // bytes per texture block in viewColumns
-#define TEX_STONE 0
-#define TEX_TANK 1
-#define TEX_CORPSE 2
-#define TEX_CHEST 3
-#define TEX_SHRINE 4
-#define TEX_DOOR 5
-#define TEX_COUNT 6
+#define TEX_WALL 0
+#define TEX_POOL 1
+#define TEX_POOL_BROKEN 2
+#define TEX_CORPSE 3
+#define TEX_CHEST 4
+#define TEX_CHEST_OPEN 5
+#define TEX_SHRINE 6
+#define TEX_DOOR 7
+#define TEX_POD_OPEN 8
+#define TEX_POD_BROKEN 9
+#define TEX_COUNT 10
 
 // One wall crossing of a column pair's ray: the cell (d cells ahead, l to the right), the
 // wall's first visible row and row count, and its pre-baked bytes' offset in viewColumns.
 typedef struct { s8 d, l; u8 top, rows; u16 bake; } ViewEvent;
 
 static const u16 viewPalette[16] = {
-    0, 546, 1604, 2150, 2730, 34, 580, 1126, 512, 1058, 610, 1222, 2632, 2220, 3750, 1066,
+    0, 514, 1060, 1606, 2154, 546, 1092, 2150, 2632, 610, 1222, 2722, 2220, 3750, 1066, 3310,
 };
 static const u16 viewColStart[113] = {
     0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 109, 118, 127, 136, 145, 154, 163, 172, 181, 190, 198, 206, 214,
