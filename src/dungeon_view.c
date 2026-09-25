@@ -11,12 +11,15 @@
 typedef struct { u8 x, y, w, h; } Rect;
 
 // Concentric rectangles (in BG_B tiles) the corridor view is built from: rects[0] is the
-// full 32x18 viewport, rects[1..2] the mid/far apertures, rects[3] the vanishing-point cap.
+// full 28x28 viewport (the left 28 of the screen's 40 tile columns; the right 12 columns
+// are the UI panel, see ui_panel.h), rects[1..2] the mid/far apertures, rects[3] the
+// vanishing-point cap. Square viewport -> the mid rect ends up taller than wide, which is
+// the correct consequence of that (not a mistake to "fix" back to landscape).
 static const Rect rects[4] = {
-    { 0, 0, 32, 18 },
-    { 8, 4, 16, 10 },
-    { 13, 7, 6, 4 },
-    { 15, 8, 2, 2 },
+    { 0, 0, 28, 28 },
+    { 7, 6, 14, 16 },
+    { 11, 11, 6, 6 },
+    { 13, 13, 2, 2 },
 };
 
 static u16 tileAt(u8 slot)

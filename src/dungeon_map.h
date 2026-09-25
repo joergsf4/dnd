@@ -3,8 +3,8 @@
 
 #include <genesis.h>
 
-#define MAP_W 14
-#define MAP_H 10
+#define MAP_W 8
+#define MAP_H 12
 
 // facing: 0=North 1=East 2=South 3=West (rotates clockwise)
 typedef enum

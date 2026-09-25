@@ -1,15 +1,7 @@
 #include "game.h"
 #include "dungeon_map.h"
 #include "dungeon_view.h"
-
-static const char facingLetter[4] = { 'N', 'E', 'S', 'W' };
-
-static void drawStatus(const Player *p)
-{
-    char text[40];
-    sprintf(text, "FACING %c   X:%02d Y:%02d", facingLetter[p->facing], p->x, p->y);
-    VDP_drawText(text, 2, 20);
-}
+#include "ui_panel.h"
 
 int main(bool hardReset)
 {
@@ -17,13 +9,11 @@ int main(bool hardReset)
     VDP_setScreenHeight224();
 
     dungeonView_init();
+    uiPanel_init();
 
-    Player player = { 1, 1, FACE_EAST };
+    Player player = { 4, 10, FACE_NORTH };
     dungeonView_render(&player);
-
-    VDP_drawText("D-PAD: UP/DOWN WALK, LEFT/RIGHT TURN", 2, 18);
-    drawStatus(&player);
-    VDP_drawText("HP 20/20   MP 12/12   GOLD 0", 2, 22);
+    uiPanel_drawStatus(&player);
 
     u16 prevJoy = 0;
     while (TRUE)
@@ -41,7 +31,7 @@ int main(bool hardReset)
         if (moved)
         {
             dungeonView_render(&player);
-            drawStatus(&player);
+            uiPanel_drawStatus(&player);
         }
 
         prevJoy = joy;

@@ -1,17 +1,20 @@
 #include "dungeon_map.h"
 
-// test dungeon: 1 = wall, 0 = floor. Placeholder for the real level data format.
+// POC dungeon: a 1-cell-wide, 4-cell-long corridor opening into a 6x6 room.
+// 1 = wall, 0 = floor. Placeholder for the real level data format.
 static const char *const grid[MAP_H] = {
-    "11111111111111",
-    "10000000000001",
-    "10010000010001",
-    "10010010010001",
-    "10010010010001",
-    "10010010000001",
-    "10000010000001",
-    "10000111000001",
-    "10000000000001",
-    "11111111111111",
+    "11111111",   // y=0  room north wall
+    "10000001",   // y=1  room interior (x=1..6) starts here, 6x6
+    "10000001",   // y=2
+    "10000001",   // y=3
+    "10000001",   // y=4
+    "10000001",   // y=5
+    "10000001",   // y=6
+    "11110111",   // y=7  room south wall, doorway at x=4 = corridor cell 1
+    "11110111",   // y=8  corridor cell 2
+    "11110111",   // y=9  corridor cell 3
+    "11110111",   // y=10 corridor cell 4 = player start (x=4,y=10), facing north
+    "11111111",   // y=11 south wall (dead end behind the player)
 };
 
 bool map_isWall(s16 x, s16 y)
