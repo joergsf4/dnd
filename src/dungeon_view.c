@@ -28,9 +28,9 @@ static const Rect rects[4] = {
     { 13, 12, 2, 4 },
 };
 
-static u16 tileAt(u8 slot)
+static u16 tileAt(u8 slot, bool hflip)
 {
-    return TILE_ATTR_FULL(PAL0, FALSE, FALSE, FALSE, TILE_USER_INDEX + slot);
+    return TILE_ATTR_FULL(PAL0, FALSE, FALSE, hflip, TILE_USER_INDEX + slot);
 }
 
 static void fillArea(u16 x0, u16 y0, u16 x1, u16 y1, u16 attr)
@@ -47,18 +47,20 @@ static void fillRect(Rect r, u16 attr)
 
 // Draws the left or right side of ring `depth` between the outer rect and the next-inner rect:
 // solid wall brick if that side is blocked, otherwise ceiling above / floor below (open passage).
+// The wall tile is diagonal, not horizontal (see tools/make_dungeon_tiles.py), and h-flipped on
+// the right side so both sides visually lean toward the vanishing point instead of matching.
 static void drawSide(Rect outer, Rect inner, bool onLeft, bool wall, u8 depth)
 {
     u16 x0 = onLeft ? outer.x : inner.x + inner.w;
     u16 x1 = onLeft ? inner.x : outer.x + outer.w;
     if (wall)
     {
-        fillArea(x0, inner.y, x1, inner.y + inner.h, tileAt(T_WALL(depth)));
+        fillArea(x0, inner.y, x1, inner.y + inner.h, tileAt(T_WALL(depth), !onLeft));
         return;
     }
     u16 mid = inner.y + inner.h / 2;
-    fillArea(x0, inner.y, x1, mid, tileAt(T_CEIL(depth)));
-    fillArea(x0, mid, x1, inner.y + inner.h, tileAt(T_FLOOR(depth)));
+    fillArea(x0, inner.y, x1, mid, tileAt(T_CEIL(depth), FALSE));
+    fillArea(x0, mid, x1, inner.y + inner.h, tileAt(T_FLOOR(depth), FALSE));
 }
 
 void dungeonView_init(void)
@@ -92,12 +94,12 @@ void dungeonView_render(const Player *p)
 
         if (r == renderDepth)
         {
-            fillRect(outer, tileAt(T_FRONT(r)));
+            fillRect(outer, tileAt(T_FRONT(r), FALSE));
             return;
         }
 
-        fillArea(outer.x, outer.y, outer.x + outer.w, inner.y, tileAt(T_CEIL(r)));                         // top band
-        fillArea(outer.x, inner.y + inner.h, outer.x + outer.w, outer.y + outer.h, tileAt(T_FLOOR(r)));    // bottom band
+        fillArea(outer.x, outer.y, outer.x + outer.w, inner.y, tileAt(T_CEIL(r), FALSE));                         // top band
+        fillArea(outer.x, inner.y + inner.h, outer.x + outer.w, outer.y + outer.h, tileAt(T_FLOOR(r), FALSE));    // bottom band
 
         s16 ax = p->x + dx * (r + 1);
         s16 ay = p->y + dy * (r + 1);
@@ -107,5 +109,5 @@ void dungeonView_render(const Player *p)
         drawSide(outer, inner, FALSE, rightWall, r);
     }
 
-    fillRect(rects[3], tileAt(T_MIST));
+    fillRect(rects[3], tileAt(T_MIST, FALSE));
 }

@@ -9,8 +9,13 @@ replace with hand-drawn art later as long as the slot order stays in sync.
 
 Slots 0-2   ceiling (near/mid/far)
 Slots 3-5   floor (near/mid/far)
-Slots 6-8   side wall brick (near/mid/far)
-Slots 9-11  front wall brick (near/mid/far)
+Slots 6-8   side wall (near/mid/far) -- diagonal coursing, not horizontal: this tile is drawn
+            on the left AND right side of the corridor (src/dungeon_view.c mirrors it with the
+            hardware h-flip for the right side), so a horizontal brick pattern reads as "a wall
+            facing you" on both sides. Diagonal lines instead read as a surface receding away,
+            and mirror into a rough "point toward the centre" chevron across the two sides.
+Slots 9-11  front wall (near/mid/far) -- horizontal brick coursing: this one IS a wall facing
+            you head-on (a dead end), so the frontal brick pattern is correct here.
 Slot 12     vanishing-point mist (far darkness)
 Slots 13-63 unused (kept black; padding to satisfy rescomp's minimum image size)
 """
@@ -63,10 +68,20 @@ def brick_tile(depth):
     return px
 
 
+def side_wall_tile(depth):
+    brick, mortar = BRICK[depth], MORTAR[depth]
+
+    def px(x, y):
+        # diagonal coursing (a "\" -- dungeon_view.c h-flips it to "/" for the right side),
+        # so the wall's lines run away from the viewer instead of straight across
+        return mortar if (x + y) % 4 == 0 else brick
+    return px
+
+
 for d in range(3):
     put(d, flat(CEIL[d]))
     put(3 + d, flat(FLOOR[d]))
-    put(6 + d, brick_tile(d))
+    put(6 + d, side_wall_tile(d))
     put(9 + d, brick_tile(d))
 put(12, flat(MIST))
 for s in range(13, COLS * ROWS):
