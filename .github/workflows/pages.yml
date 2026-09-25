@@ -21,7 +21,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build the ROM (SGDK 2.11 in Docker)
-        run: ./build.sh
+        # the container's user isn't the runner's: let it write into the checkout
+        run: chmod -R a+rwX . && ./build.sh
       - name: Assemble the web player
         run: tools/make_web.sh && rm site/nautiloid-web.zip
       - uses: actions/upload-pages-artifact@v3
