@@ -1,153 +1,112 @@
 #include "dungeon_view.h"
 #include "game.h"
+#include "view_gen.h"
 
-// Tile slots inside res/gfx/dungeon_tiles.png (see tools/make_dungeon_tiles.py for the layout).
-// The tileset only has 3 depth shades (near/mid/far); ring 3 (the 4th, added to see further into
-// open rooms -- see RENDER_RINGS) reuses the far shade rather than needing new art.
-#define MAX_SHADE   2
-#define T_CEIL(d)   (0 + (d))
-#define T_FLOOR(d)  (3 + (d))
-#define T_WALL(d)   (6 + (d))
-#define T_FRONT(d)  (9 + (d))
-#define T_MIST      12
+// First-person view, Eye of the Beholder / Dungeon Master style.
+//
+// The player always stands in a cell centre facing a cardinal direction, so the ray through
+// each 2-pixel screen column pair crosses a fixed sequence of cells relative to the player.
+// tools/make_view.py precomputes that sequence per column (view_gen.h) and, since a given wall
+// face at a given screen position always looks the same, bakes every such wall column's pixels
+// once per texture (res/view/columns.bin). Rendering is then:
+//   1. copy the static floor/ceiling backdrop into a RAM tile buffer (mirrored on alternate
+//      steps, the classic trick that makes stepping forward read as movement),
+//   2. per column pair, copy the baked bytes of the first wall its ray hits (src/view_draw.s),
+//   3. DMA the buffer into the VRAM tile set that isn't on screen, then point BG_B's tilemap at
+//      it during vblank (double buffered: no half-drawn frame is ever visible).
+// Walls come out pixel-accurate, with real perspective and distance shading, including side
+// walls several cells away -- the earlier tile-ring renderer could only say "wall or not" once
+// per depth ring and side, which is why open rooms showed walls inconsistently and floor and
+// ceiling as flat colour.
+//
+// Interactive objects and doors are wall cells too: they render as that wall's texture (tank,
+// corpse, chest, shrine, door), so they're visible from any distance with correct perspective.
 
-typedef struct { u8 x, y, w, h; } Rect;
+#define VIEW_TILE_BASE TILE_USER_INDEX   // two sets of VIEW_TILES tiles; see SPR_initEx in main.c
 
-// Concentric rectangles (in BG_B tiles) the corridor view is built from: rects[0] is the
-// full 28x28 viewport (the left 28 of the screen's 40 tile columns; the right 12 columns
-// are the UI panel, see ui_panel.h), rects[1..3] the nearer/mid/far apertures, rects[4] the
-// vanishing-point cap. Square viewport -> the mid rect ends up taller than wide, which is
-// the correct consequence of that (not a mistake to "fix" back to landscape).
-#define RENDER_RINGS 4
-static const Rect rects[RENDER_RINGS + 1] = {
-    { 0, 0, 28, 28 },
-    { 7, 6, 14, 16 },
-    { 10, 9, 8, 10 },
-    { 12, 11, 4, 6 },
-    { 13, 13, 2, 2 },
+void viewCopySpan(u8 *dst, const u8 *src, u32 rows, u32 r0);   // src/view_draw.s
+
+static u8 viewBuf[VIEW_BYTES] __attribute__((aligned(4)));
+static u8 cellTex[VIEW_DMAX + 1][2 * VIEW_LMAX + 1];   // 0 = open, else texture + 1
+static u8 frontSet;
+static bool mirror;
+static s16 lastX = -1, lastY = -1;
+static Facing lastFacing;
+
+static const u8 kindTexture[OBJ_KIND_COUNT] = {
+    TEX_STONE,   // OBJ_NONE (never looked up, plain walls use TEX_STONE directly)
+    TEX_TANK,    // OBJ_LARVA_TANK
+    TEX_CORPSE,  // OBJ_MINDFLAYER_CORPSE
+    TEX_CHEST,   // OBJ_CARTILAGE_CHEST
+    TEX_SHRINE,  // OBJ_RESTORATION_SHRINE
+    TEX_DOOR,    // OBJ_DOOR_EXIT
 };
-
-static u16 tileAt(u8 slot, bool hflip)
-{
-    return TILE_ATTR_FULL(PAL0, FALSE, FALSE, hflip, TILE_USER_INDEX + slot);
-}
-
-static void fillRect(Rect r, u16 attr)
-{
-    for (s16 y = r.y; y < r.y + r.h; y++)
-        for (s16 x = r.x; x < r.x + r.w; x++)
-            VDP_setTileMapXY(BG_B, attr, x, y);
-}
-
-// Fills the ring between outer and inner (inner must be centered inside outer) so it reads as a
-// tunnel: every tile is classified, picture-frame-style, into the left/right wall band or the
-// ceiling/floor band by comparing how far off-centre it is horizontally vs. vertically -- the
-// two mitred diagonals this draws are what actually bounds the tunnel left/right and tapers it
-// into the distance, instead of a flat rectangle that just floats in front of the next ring in.
-// (An earlier version filled the wall and ceiling/floor trapezoids separately, column-wise and
-// row-wise; independent integer rounding left 1-tile gaps at the seam between them, confirmed by
-// screenshot -- see tools/emutest.py. This single per-tile classification can't gap: every tile
-// in the ring gets exactly one band.)
-static void renderRing(Rect outer, Rect inner, u8 depth, bool leftWall, bool rightWall)
-{
-    u8 shade = depth > MAX_SHADE ? MAX_SHADE : depth;
-    s16 cx2 = outer.x * 2 + outer.w;   // 2x the ring's centre, so the per-tile midpoint stays integer
-    s16 cy2 = outer.y * 2 + outer.h;
-    u16 ceilAttr = tileAt(T_CEIL(shade), FALSE);
-    u16 floorAttr = tileAt(T_FLOOR(shade), FALSE);
-    u16 wallAttr[2] = { tileAt(T_WALL(shade), FALSE), tileAt(T_WALL(shade), TRUE) }; // [onLeft]
-
-    for (s16 y = outer.y; y < outer.y + outer.h; y++)
-    {
-        for (s16 x = outer.x; x < outer.x + outer.w; x++)
-        {
-            if (x >= inner.x && x < inner.x + inner.w && y >= inner.y && y < inner.y + inner.h)
-                continue; // inside the inner rect: the next ring (or the cap) owns this tile
-
-            s16 dx2 = x * 2 + 1 - cx2; // 2x the offset from centre to this tile's midpoint
-            s16 dy2 = y * 2 + 1 - cy2;
-            s16 adx = dx2 < 0 ? -dx2 : dx2;
-            s16 ady = dy2 < 0 ? -dy2 : dy2;
-            bool inSideBand = (s32) adx * outer.h >= (s32) ady * outer.w;
-
-            u16 attr;
-            if (inSideBand)
-            {
-                bool onLeft = dx2 < 0;
-                bool wall = onLeft ? leftWall : rightWall;
-                attr = wall ? wallAttr[onLeft] : (dy2 < 0 ? ceilAttr : floorAttr);
-            }
-            else
-            {
-                attr = dy2 < 0 ? ceilAttr : floorAttr;
-            }
-            VDP_setTileMapXY(BG_B, attr, x, y);
-        }
-    }
-}
 
 void dungeonView_init(void)
 {
-    VDP_loadTileSet(&dungeon_tiles, TILE_USER_INDEX, DMA);
-    PAL_setPalette(PAL0, dungeon_pal.data, DMA);
+    VDP_clearPlane(BG_B, TRUE);
+    PAL_setPalette(PAL0, viewPalette, DMA);
     VDP_setBackgroundColor(0);
-
-    // SGDK's default font renders with PAL0, indices 14/15 -- dungeon_pal only defines 14
-    // colors, so rescomp pads the rest with black, which made every VDP_drawText call
-    // invisible wherever BG_B has no content underneath it (i.e. the whole UI panel, columns
-    // 28+): black text on the black backdrop. Not a rendering bug, just missing contrast --
-    // took a long empirical bisection (removing dungeonView_init() entirely made text at
-    // column 30 render fine again) to trace it back to these two unset palette entries.
-    PAL_setColor((16 * PAL0) + 14, RGB24_TO_VDPCOLOR(0xFFFFFF));
-    PAL_setColor((16 * PAL0) + 15, RGB24_TO_VDPCOLOR(0xFFFFFF));
+    frontSet = 0;
+    VDP_fillTileMapRectInc(BG_B, TILE_ATTR_FULL(PAL0, FALSE, FALSE, FALSE, VIEW_TILE_BASE), 0, 0, VIEW_TW, VIEW_TH);
 }
 
 void dungeonView_render(const Player *p)
 {
-    s16 dx, dy, lx, ly, rx, ry;
-    map_forward(p->facing, &dx, &dy);
-    map_left(p->facing, &lx, &ly);
+    if (p->x != lastX || p->y != lastY || p->facing != lastFacing)
+    {
+        mirror = !mirror;
+        lastX = p->x;
+        lastY = p->y;
+        lastFacing = p->facing;
+    }
+
+    s16 fx, fy, rx, ry;
+    map_forward(p->facing, &fx, &fy);
     map_right(p->facing, &rx, &ry);
-
-    u8 renderDepth = RENDER_RINGS; // = open through all rendered rings, cap it with the vanishing mist
-    for (u8 d = 0; d < RENDER_RINGS; d++)
+    for (s16 d = 0; d <= VIEW_DMAX; d++)
     {
-        if (map_isWall(p->x + dx * (d + 1), p->y + dy * (d + 1)))
+        for (s16 l = -VIEW_LMAX; l <= VIEW_LMAX; l++)
         {
-            renderDepth = d;
-            break;
+            s16 cx = p->x + fx * d + rx * l;
+            s16 cy = p->y + fy * d + ry * l;
+            u8 t = 0;
+            if (map_isWall(cx, cy))
+            {
+                RoomObject *o = map_objectAt(cx, cy);
+                t = 1 + (o ? kindTexture[o->kind] : TEX_STONE);
+            }
+            cellTex[d][l + VIEW_LMAX] = t;
         }
     }
 
-    for (u8 r = 0; r < RENDER_RINGS; r++)
-    {
-        if (r == renderDepth)
-        {
-            fillRect(rects[r], tileAt(T_FRONT(r > MAX_SHADE ? MAX_SHADE : r), FALSE));
-            return;
-        }
+    u8 ahead = cellTex[1][VIEW_LMAX];
+    if (ahead)  // a wall right in front covers the whole view: take the pre-rendered image
+        memcpy(viewBuf, viewAdjacent + (u32) (ahead - 1) * VIEW_BYTES, VIEW_BYTES);
+    else
+        memcpy(viewBuf, viewBackdrops + (mirror ? VIEW_BYTES : 0), VIEW_BYTES);
 
-        s16 ax = p->x + dx * (r + 1);
-        s16 ay = p->y + dy * (r + 1);
-        // Check 2 cells to each side, not just the immediate neighbour: with only a 1-cell
-        // check, a room wider than a 1-wide corridor showed no side walls at all unless you
-        // were pressed right up against them -- the room read as empty/wall-less everywhere
-        // else, which is what prompted this widening (a real "you have to hug the wall" bug,
-        // not a stylistic choice). Not true 3D (a wall 2 cells over renders the same as one 1
-        // cell over, since a ring only has a single side-wall flag), but it means most of a
-        // room's walls are now actually visible instead of only right at its edges.
-        bool leftWall = map_isWall(ax + lx, ay + ly) || map_isWall(ax + lx * 2, ay + ly * 2);
-        bool rightWall = map_isWall(ax + rx, ay + ry) || map_isWall(ax + rx * 2, ay + ry * 2);
-        renderRing(rects[r], rects[r + 1], r, leftWall, rightWall);
+    for (u16 pc = 0; !ahead && pc < VIEW_PAIRS; pc++)
+    {
+        const ViewEvent *e = &viewEvents[viewColStart[pc]];
+        const ViewEvent *end = &viewEvents[viewColStart[pc + 1]];
+        for (; e < end; e++)
+        {
+            u8 t = cellTex[(u8) e->d][(u8) (e->l + VIEW_LMAX)];
+            if (t)
+            {
+                u8 *dst = viewBuf + ((e->top >> 3) * VIEW_TW + (pc >> 2)) * 32 + (e->top & 7) * 4 + (pc & 3);
+                const u8 *src = viewColumns + (u32) (t - 1) * VIEW_TEX_ROWS + e->bake;
+                viewCopySpan(dst, src, e->rows, e->top & 7);
+                break;
+            }
+        }
     }
 
-    fillRect(rects[RENDER_RINGS], tileAt(T_MIST, FALSE));
-}
-
-void dungeonView_getObjectAnchor(s16 *px, s16 *py, s16 *pw, s16 *ph)
-{
-    *px = rects[1].x * 8;
-    *py = rects[1].y * 8;
-    *pw = rects[1].w * 8;
-    *ph = rects[1].h * 8;
+    u8 back = frontSet ^ 1;
+    u16 base = VIEW_TILE_BASE + back * VIEW_TILES;
+    VDP_loadTileData((const u32 *) viewBuf, base, VIEW_TILES, DMA);
+    SYS_doVBlankProcess();
+    VDP_fillTileMapRectInc(BG_B, TILE_ATTR_FULL(PAL0, FALSE, FALSE, FALSE, base), 0, 0, VIEW_TW, VIEW_TH);
+    frontSet = back;
 }

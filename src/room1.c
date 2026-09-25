@@ -65,7 +65,7 @@ static void onChest(Player *p, RoomObject *obj)
     inventory_grantBasicGear();
     inventory_addHealingPotion(1);
     uiPanel_drawInventory();
-    const char *lines[2] = { "A cartilage chest.", "Found: basic gear, a potion." };
+    const char *lines[2] = { "A cartilage chest.", "Found: gear and a potion." };
     textbox_show(lines, 2, NULL, 0);
 }
 
@@ -108,12 +108,8 @@ static const char *const room1Grid[6] = {
     "11111111",
 };
 
-// Objects must sit ON a wall cell (see dungeon_objects.h) -- x=0/x=7 and y=0/y=5 are the only
-// cells room1Grid actually marks '1'. An earlier version placed the tank/chest one row inside
-// that border (3,1)/(4,4), which are open floor: the object still "worked" (map_objectAt doesn't
-// care about the grid), but the *real* wall was then 2 cells further back, so the tank rendered
-// small at ring 1 with ceiling/floor visible around it instead of filling ring 0 -- confirmed by
-// screenshot, looked like a "cut-out" of the wall instead of a wall filling the player's view.
+// Objects must sit ON a wall cell ('1' in room1Grid): dungeon_view.c draws an object as that
+// wall's texture, so an object on an open floor cell would be interactable but invisible.
 static const RoomObject room1Objects[] = {
     { 3, 0, OBJ_LARVA_TANK,         0,      0, 0 }, // north wall, directly ahead of spawn
     { 7, 2, OBJ_RESTORATION_SHRINE, 0,      0, 0 }, // east wall

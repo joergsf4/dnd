@@ -1,7 +1,7 @@
 # TODO
 
-Technical setup is done (toolchain, build/run scripts, boot boilerplate, a mitred-ring first-person
-renderer with grid movement). The vertical-slice foundation is also done now: data-driven rooms,
+Technical setup is done (toolchain, build/run scripts, boot boilerplate, an Eye-of-the-Beholder-
+style textured first-person renderer with grid movement). The vertical-slice foundation is also done now: data-driven rooms,
 interactive objects, a textbox/menu system, skill checks, and a minimal inventory, all wired
 together in Room 1 (the "Klonkammer" — see `BeschreibungInhaltVerticalSlice.md`). Next steps:
 
@@ -10,12 +10,11 @@ together in Room 1 (the "Klonkammer" — see `BeschreibungInhaltVerticalSlice.md
       `#define`s are gone, replaced by per-room `const` structs (`src/room1.c` is the pattern for
       future rooms). Object runtime state (looted/flagged) lives in per-room RAM, copied from the
       ROM template on first visit, so it survives backtracking once rooms link up to each other.
-- [x] Interactive objects in the first-person view (`src/dungeon_objects.c/.h`) — objects always
-      sit on a wall cell, so they're always the ring-0 front wall when faced; one shared sprite
-      shows/hides/repositions via `dungeonObjects_render`, frame-selected by `ObjectKind`.
-- [x] Textbox/menu system (`src/textbox.c/.h`) — modal, full-40-column overlay on the lower BG_A
-      rows (19-27), pauses the world. `uiPanel_redrawChrome()` must be called after any interaction
-      closes, since a textbox can cover the panel's status row.
+- [x] Interactive objects in the first-person view — objects sit on wall cells and are drawn as
+      that wall's texture (`kindTexture` in `src/dungeon_view.c`), visible from any distance;
+      `src/dungeon_objects.c` only does "what's straight ahead" and the shared door handler.
+- [x] Textbox/menu system (`src/textbox.c/.h`) — the message area below the view (rows 20-27,
+      columns 0-27), 27 characters per line, pauses the world while open.
 - [x] Skill checks (`src/skill_check.c/.h`) — d20 + a flat attribute modifier vs. a threshold, with
       a short "rolling" animation. `Character` gained `str`/`dex`/`intl` (placeholder 1-5 modifiers
       per class, not real ability scores — see the D&D-fidelity item below).
@@ -43,8 +42,15 @@ together in Room 1 (the "Klonkammer" — see `BeschreibungInhaltVerticalSlice.md
 - [ ] Doors, secret doors — `OBJ_DOOR_EXIT` + `dungeonObjects_tryDoor` exist and correctly stub
       "not built yet" (see Room 1); an actual room-to-room transition is untested since Room 2
       doesn't exist. Locked doors/keys: see the identified-item inventory item below.
-- [ ] Wall decorations (levers, plaques, torches) as overlays — could reuse the `dungeonObjects`
-      sprite mechanism, or be purely visual (part of the wall tileset instead).
+- [ ] Wall decorations (levers, plaques, torches) — a new texture in `tools/make_view.py` plus an
+      `ObjectKind`, same as the tank/chest. Limitation: a texture applies to every face of its wall
+      cell; fine on room borders (only one face is ever visible), needs per-face textures for
+      free-standing wall blocks.
+- [ ] Doors *between* cells (EOB-style door frames in a corridor, open/closed state) — the room 1
+      exit is a door texture on a border wall, which is enough for room-to-room exits but not for
+      doors you walk through inside a level.
+- [ ] Monsters/NPCs in the view: sprites over the view, pre-drawn at 3-4 sizes by distance (the
+      hardware can't scale), positioned from the same geometry as `tools/make_view.py`.
 - [ ] Strafing (classic EOB/DM control scheme uses a 3x3 or 4x4 button/D-pad layout; Mega Drive's
       3-button pad is cramped — decide on a control scheme early, maybe 6-button pad only).
 
@@ -70,25 +76,25 @@ together in Room 1 (the "Klonkammer" — see `BeschreibungInhaltVerticalSlice.md
 - [ ] Spellcasting (spell list, MP cost, targeting).
 
 ## UI/UX
-- [x] Screen split: dungeon view left (28x28 tiles, BG_B), party/inventory panel right
-      (12 cols, BG_A) — see `src/ui_panel.c` and the layout note at the top of `dungeon_view.c`.
-- [x] Textbox/menu overlay (`src/textbox.c`) — see above.
+- [x] Screen layout: view top-left (28x20 tiles, BG_B), message area below it (rows 20-27),
+      party/inventory panel right (12 columns) — see README.md, "Screen layout".
+- [x] Message area / menus (`src/textbox.c`) — see above.
 - [ ] Compass.
-- [ ] Message log (combat/pickup text) beyond the modal textbox — the panel has no room reserved
-      for a persistent log; would need to shrink the item grid or the party block.
+- [ ] Persistent message log (the message area is currently only used while a textbox is open).
 - [ ] Automap.
 - [ ] Room 6's countdown timer display (see roadmap above).
 
 ## Art
-- [ ] Replace `res/gfx/dungeon_tiles.png` placeholder brick texture with real pixel art
-      (keep the same tile-slot layout, or refactor `dungeon_view.c` if the slot scheme changes).
+- [ ] Real wall/floor/ceiling art — textures are procedural placeholders in `tools/make_view.py`
+      (64x64, palette indices into the 16-colour view palette). Could load hand-drawn indexed PNGs
+      there instead; the rest of the pipeline stays the same. The Nautiloid rooms want an organic,
+      bio-mechanical look rather than plain stone.
 - [x] Hero avatar (`res/gfx/avatar.png`, `tools/make_avatar.py`) — one generic 24x24 cloaked-figure
       placeholder shared by all 3 classes. Replace with real art, and/or split into per-class
       avatars, whenever that's worth the extra tile budget.
-- [x] Interactive-object icons (`res/gfx/dungeon_objects.png`, `tools/make_dungeon_objects.py`) —
-      5 placeholder 64x64 icons (larva tank, corpse, chest, shrine, door), one per `ObjectKind`.
-- [ ] Monster/companion sprites for Room 2+ (as VDP sprites overlaid on the view, same layer trick
-      as `dungeonObjects` and Wanderburg's enemy castles).
+- [x] Object/door wall textures (larva tank, corpse, chest, shrine, door) — placeholders in
+      `tools/make_view.py`.
+- [ ] Monster/companion sprites for Room 2+ (see "Monsters/NPCs in the view" above).
 - [ ] Title screen.
 
 ## Audio
@@ -96,12 +102,15 @@ together in Room 1 (the "Klonkammer" — see `BeschreibungInhaltVerticalSlice.md
       `tools/generate_sfx.py` in the Wanderburg project for the conversion approach).
 
 ## Gotchas worth remembering
-- SGDK's default font renders with PAL0, indices 14/15. Any palette we load into PAL0 that doesn't
-  explicitly define 16 colors (rescomp pads the rest with black) will make `VDP_drawText` invisible
-  wherever the backdrop is also black — not a rendering bug, just missing contrast. Fixed once in
-  `dungeonView_init()` (forces indices 14/15 to white); remember this if PAL0 is ever reassigned to
-  a different, differently-sized palette.
-- `tools/emutest.py`: consecutive `press()` calls for the *same* button need a `frames()` gap
-  between them, or BlastEm's bindup+binddown can land inside the same polled frame and the ROM's
-  edge-detection (`pressed = joy & ~prevJoy`) never sees the release — the second press silently
-  does nothing (looks like a movement bug, isn't one).
+- Text uses its own palette (PAL3, `VDP_setTextPalette` in `main.c`). SGDK's default is PAL0, and
+  when PAL0 held a palette that left the font's colour slots black, all panel text was invisible on
+  the black backdrop — not a rendering bug, just missing contrast. PAL0 now belongs to the view.
+- VRAM: the view needs two sets of 560 tiles (double buffering) from `TILE_USER_INDEX`, which only
+  fits because `main.c` shrinks the sprite reservation to 256 tiles (`SPR_initEx`). More sprite
+  tiles (monsters) means revisiting that split.
+- Redraw cost is 3-5 frames and grows with the number of wall pixels copied (`src/view_draw.s`).
+  A longer draw distance (`MAXZ` in `tools/make_view.py`) adds events per column and baked data.
+- `tools/emutest.py`: use `act()` for presses. Consecutive presses of the same button need a gap,
+  or BlastEm's bindup+binddown land inside one polled frame and the ROM's edge-detection
+  (`pressed = joy & ~prevJoy`) never sees the second press (looks like a movement bug, isn't one);
+  and a move needs a few frames to redraw before a screenshot shows it.

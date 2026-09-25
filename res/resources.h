@@ -3,9 +3,9 @@
 #ifndef _RES_RESOURCES_H_
 #define _RES_RESOURCES_H_
 
-extern const TileSet dungeon_tiles;
-extern const Palette dungeon_pal;
+extern const u8 viewColumns[337320];
+extern const u8 viewBackdrops[35840];
+extern const u8 viewAdjacent[107520];
 extern const SpriteDefinition avatar_sprite;
-extern const SpriteDefinition dungeon_objects_sprite;
 
 #endif // _RES_RESOURCES_H_

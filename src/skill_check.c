@@ -40,9 +40,9 @@ bool skillCheck_run(Character *actor, Attribute attr, u8 threshold)
     u8 total = roll + mod;
     bool success = total >= threshold;
 
-    sprintf(buf, "[%s CHECK] ROLLED %2d (+%d) = %2d", attrLabel[attr], roll, mod, total);
+    sprintf(buf, "[%s CHECK] %2d +%d = %2d   ", attrLabel[attr], roll, mod, total);   // <= 27 chars
     VDP_drawText(buf, 1, TEXTBOX_ROW);
-    VDP_drawText(success ? "SUCCESS!               " : "FAILURE.                ", 1, TEXTBOX_ROW + 1);
+    VDP_drawText(success ? "SUCCESS!" : "FAILURE.", 1, TEXTBOX_ROW + 1);
 
     waitFrames(60); // let the result sit before the caller's own textbox_show() replaces it
 

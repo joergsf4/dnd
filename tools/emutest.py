@@ -5,8 +5,10 @@ simulates key presses and takes screenshots via its own UI hotkey, so no OS-leve
 is needed (and none is available in this sandbox).
 
     python3 tools/emutest.py create              # just the character creation screen
-    python3 tools/emutest.py look                # creation -> walk the corridor -> look around the room
-    python3 tools/emutest.py look --class 2       # same, but pick Mage instead of the default Fighter
+    python3 tools/emutest.py look                # Room 1: look around from the spawn point
+    python3 tools/emutest.py tour                # Room 1: views from the middle and a corner
+    python3 tools/emutest.py room1               # Room 1: interact with every object
+    python3 tools/emutest.py look --class 2       # any scenario, but pick Mage instead of Fighter
 
 Screenshots go to out/emutest/ (gitignored). Needs a built out/rom.bin (./build.sh).
 
@@ -114,19 +116,27 @@ class Blastem:
             pass
 
 
+def act(b, key, settle=15):
+    """One button press, then enough frames for the ROM to redraw the view (a redraw takes up
+    to ~5 frames, see src/dungeon_view.c) and for the release to register -- consecutive
+    presses of the same button without a gap can land inside one polled frame, and the ROM's
+    edge-detection (pressed = joy & ~prevJoy) then never sees the second press."""
+    b.press(key)
+    b.frames(settle)
+
+
 def create_hero(b, cls_down=0):
     """Drives the character-creation screen: cursor starts on Fighter (index 0);
     cls_down Down-presses move it (1=Rogue, 2=Mage), then Start confirms."""
     b.frames(30)
     for _ in range(cls_down):
-        b.press("gamepads.1.down")
-    b.press("gamepads.1.start")
-    b.frames(10)
+        act(b, "gamepads.1.down", 6)
+    act(b, "gamepads.1.start", 30)
 
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("scenario", choices=["create", "look", "room1"])
+    ap.add_argument("scenario", choices=["create", "look", "tour", "room1"])
     ap.add_argument("--class", dest="cls", type=int, default=0, choices=[0, 1, 2],
                      help="0 fighter (default), 1 rogue, 2 mage")
     args = ap.parse_args()
@@ -146,80 +156,71 @@ def main():
         if args.scenario == "look":
             # Room 1 (the Klonkammer, src/room1.c): spawn facing the larva tank, look around.
             create_hero(b, args.cls)
-            b.shot("room1_spawn")              # (3,2) facing north, larva tank one step ahead
+            b.shot("room1_spawn")              # (3,1) facing north, larva tank one step ahead
+            for name in ("east", "south", "west"):
+                act(b, "gamepads.1.right")     # turn clockwise
+                b.shot(f"room1_look_{name}")
+            return
 
-            b.press("gamepads.1.right", 4)     # turn clockwise: now facing east
-            b.shot("room1_look_east")
-            b.press("gamepads.1.right", 4)     # facing south
-            b.shot("room1_look_south")
-            b.press("gamepads.1.right", 4)     # facing west
-            b.shot("room1_look_west")
+        if args.scenario == "tour":
+            # Views from the middle and the corners of Room 1 (interior x 1-6, y 1-4): every wall
+            # should be visible from everywhere, with side walls, corners and objects in place.
+            create_hero(b, args.cls)
+            act(b, "gamepads.1.down")          # back off the tank: (3,1) -> (3,2), still facing north
+            b.shot("tour_center_n")
+            for name in ("e", "s", "w"):
+                act(b, "gamepads.1.right")
+                b.shot(f"tour_center_{name}")
+            act(b, "gamepads.1.up")            # facing west: (3,2) -> (2,2)
+            act(b, "gamepads.1.left")          # west -> south
+            act(b, "gamepads.1.up")            # (2,3)
+            act(b, "gamepads.1.up")            # (2,4), south-west part of the room
+            act(b, "gamepads.1.left")          # south -> east
+            b.shot("tour_sw_e")                # looking along the south wall
+            act(b, "gamepads.1.left")          # east -> north
+            b.shot("tour_sw_n")                # looking diagonally across towards the tank
             return
 
         if args.scenario == "room1":
             # Walks up to and interacts with every object kind in Room 1: the larva tank's
-            # skill-check branch, a one-shot loot pickup, the reusable heal shrine, and a door
-            # whose target room isn't built yet (the "still sealed" stub).
+            # skill-check branch, a one-shot loot pickup, and a door whose target room isn't
+            # built yet (the "still sealed" stub).
             create_hero(b, args.cls)
             b.shot("r1_spawn")
 
             # --- larva tank (north wall, one step ahead) ---
-            b.press("gamepads.1.a")
-            b.frames(10)
+            act(b, "gamepads.1.a", 10)
             b.shot("r1_larva_menu")            # 3-option textbox: REACH IN / INVESTIGATE / LEAVE
-
-            b.press("gamepads.1.down")         # cursor -> INVESTIGATE [INT]
-            b.frames(6)
+            act(b, "gamepads.1.down", 6)       # cursor -> INVESTIGATE [INT]
             b.shot("r1_larva_cursor")
-            b.press("gamepads.1.a")            # confirm: runs the skill-check roll animation
-            b.frames(90)
+            act(b, "gamepads.1.a", 90)         # confirm: runs the skill-check roll animation
             b.shot("r1_larva_rolling")
             b.frames(90)
             b.shot("r1_larva_result")          # result textbox behind the roll's pause
-            b.press("gamepads.1.a")            # dismiss
-            b.frames(10)
+            act(b, "gamepads.1.a")             # dismiss
             b.shot("r1_larva_done")
 
             # --- walk to the mindflayer corpse (west wall, (0,2)) ---
-            # Spawn is (3,1) facing north, on the tank's wall -- go south one cell first to get
-            # off that wall before turning west. Note: consecutive press() calls need a frames()
-            # gap between them, or the ROM's edge-detection (pressed = joy & ~prevJoy) can miss
-            # the release/re-press entirely if BlastEm's bindup+binddown land within the same
-            # polled frame -- cost an hour to a mis-diagnosed "movement bug" that was actually
-            # just this script under-walking.
-            b.press("gamepads.1.right")        # north -> east
-            b.frames(6)
-            b.press("gamepads.1.right")        # east -> south
-            b.frames(6)
-            b.press("gamepads.1.up", 6)        # step south: (3,1) -> (3,2)
-            b.frames(6)
-            b.press("gamepads.1.right")        # south -> west
-            b.frames(6)
-            b.press("gamepads.1.up", 6)        # step west: (3,2) -> (2,2)
-            b.frames(6)
-            b.press("gamepads.1.up", 6)        # (2,2) -> (1,2), adjacent to the corpse
-            b.frames(6)
+            act(b, "gamepads.1.right")         # north -> east
+            act(b, "gamepads.1.right")         # east -> south
+            act(b, "gamepads.1.up")            # step south: (3,1) -> (3,2)
+            act(b, "gamepads.1.right")         # south -> west
+            act(b, "gamepads.1.up")            # step west: (3,2) -> (2,2)
+            act(b, "gamepads.1.up")            # (2,2) -> (1,2), adjacent to the corpse
             b.shot("r1_at_corpse")
-            b.press("gamepads.1.a")
-            b.frames(10)
+            act(b, "gamepads.1.a")
             b.shot("r1_corpse_loot")           # loot textbox + panel should show GOLD/GEM updated
-            b.press("gamepads.1.a")
-            b.frames(10)
+            act(b, "gamepads.1.a")
 
             # --- walk to the door (west wall, (0,3)) ---
-            b.press("gamepads.1.left")         # west -> south
-            b.frames(6)
-            b.press("gamepads.1.up", 6)        # step south: (1,2) -> (1,3)
-            b.frames(6)
-            b.press("gamepads.1.right")        # south -> west
-            b.frames(6)
+            act(b, "gamepads.1.left")          # west -> south
+            act(b, "gamepads.1.up")            # step south: (1,2) -> (1,3)
+            act(b, "gamepads.1.right")         # south -> west
             b.shot("r1_at_door")
-            b.press("gamepads.1.a")
-            b.frames(10)
+            act(b, "gamepads.1.a")
             b.shot("r1_door_stub")             # "still sealed" -- ROOM_2 isn't registered yet
-            b.press("gamepads.1.a")
-            b.frames(10)
-            b.shot("r1_panel_final")           # final panel state: HP down, gold/gem up
+            act(b, "gamepads.1.a")
+            b.shot("r1_panel_final")           # final panel state: gold/gem up
     finally:
         b.close()
 

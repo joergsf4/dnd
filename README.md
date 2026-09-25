@@ -21,34 +21,43 @@ Same setup as the other Mega Drive projects in this workspace:
   screenshots (`python3 tools/emutest.py room1`; screenshots land in `out/emutest/`, gitignored).
   BlastEm's own `ui.screenshot` binding writes the PNG, so no OS-level screen capture is needed —
   use this instead of trying to read pixels off the live window. Scenarios: `create` (character
-  creation only), `look` (Room 1, look around), `room1` (walks up to and interacts with every
-  object in Room 1). Note: consecutive `press()` calls for the *same* button need a `frames()` gap
-  between them or the ROM's edge-detection can miss the second press entirely (see TODO.md).
+  creation only), `look` (Room 1, look around from the spawn point), `tour` (views from the middle
+  and a corner of Room 1), `room1` (walks up to and interacts with every object in Room 1).
 
 ## Rendering approach
 
-The Mega Drive VDP has no hardware scaling or texture mapping, so — like the original EOB/DM-style
-engines — the 3D view is not raycast; it's built from pre-shaded wall/floor/ceiling *tiles*
-composited onto the BG_B plane as nested, mitred rings (near → mid → far → vanishing point), based
-on a 3-cell lookahead into the map grid from the player's position and facing. Every tile in a ring
-is classified into the left/right wall band or the ceiling/floor band by comparing its horizontal
-vs. vertical offset from the ring's centre (the same construction a picture frame's mitred corners
-use) — this tapers the wall/ceiling/floor boundary into a diagonal that actually recedes, which is
-what makes it read as a tunnel instead of nested rectangles. This is cheap (a few hundred
-`VDP_setTileMapXY` writes, only on movement, not per frame) and keeps the view entirely on BG_B,
-leaving BG_A free for HUD text.
+Eye of the Beholder / Dungeon Master style: the player always stands in a cell centre facing a
+cardinal direction, and sees up to 5 cells ahead and 5 to either side. Walls are drawn with real
+perspective, textured and darkened with distance; floor and ceiling are a static perspective
+backdrop with flagstone grout and cross beams (mirrored on alternate steps, the classic trick that
+makes stepping read as movement).
 
-See `src/dungeon_view.c` for the ring/depth geometry and compositing logic.
+Because the viewpoint is always a cell centre and a cardinal direction, the ray through each
+2-pixel screen column pair crosses a fixed sequence of cells — so almost everything is computed at
+build time by `tools/make_view.py`: the per-column cell sequences (`src/view_gen.h`), every wall
+column the view can ever show, already textured and shaded (`res/view/columns.bin`), the backdrop,
+and the full image of a wall right in front of the player. At runtime `src/dungeon_view.c` copies
+the backdrop into a RAM tile buffer, copies the pre-baked bytes of the first wall each column's ray
+hits (`src/view_draw.s`, the one hot loop, in assembler), and DMAs the buffer into whichever of two
+VRAM tile sets isn't on screen, swapping during vblank. A redraw takes 3-5 frames and only happens
+on a move, turn or interaction.
+
+Interactive objects and doors sit on wall cells and are drawn as that wall's texture (larva tank,
+corpse, chest, shrine, door), so they're visible from any distance with correct perspective.
+
+To change textures, the backdrop, the palette or the draw distance: edit `tools/make_view.py` and
+re-run it (`python3 tools/make_view.py --preview` also writes sample renders to
+`out/view_preview/` without building the ROM).
 
 ## Screen layout
 
-320x224px = 40x28 tiles, split 28/12: the dungeon view fills the left 28x28 tiles (224x224px,
-BG_B), the party/inventory panel fills the right 12 columns (96x224px, all 28 rows, BG_A text).
-Since the view uses the full screen height, **no text may be drawn left of column 28 during normal
-gameplay rendering** — BG_A composites in front of BG_B on real hardware, so it would cut into the
-view. A modal textbox (`src/textbox.c`) is the one deliberate exception: it pauses the world and
-draws a full-width overlay over the lower rows on purpose. See the comment above `UI_PANEL_COL` in
-`src/ui_panel.h`.
+320x224px = 40x28 tiles:
+- **View**: top-left 28x20 tiles (224x160px), BG_B, palette PAL0 (16 colours, all used by the view).
+- **Message area**: rows 20-27 below the view, columns 0-27 (`src/textbox.c`).
+- **Party panel**: columns 28-39, all rows (`src/ui_panel.c`).
+
+All text is BG_A with its own palette (PAL3, set in `main.c`), so it never depends on the view's
+colours. BG_A composites in front of BG_B, so text must stay out of the view's area.
 
 ## Project structure
 
@@ -56,9 +65,11 @@ draws a full-width overlay over the lower rows on purpose. See the comment above
 src/
   main.c                Init, character creation, room load, input, game loop
   dungeon_map.c/.h       RoomDef/RoomObject data model, player position/facing, movement rules
-  dungeon_view.c/.h      First-person renderer: BG_B tile compositing by depth ring
-  dungeon_objects.c/.h   Interactive-object sprite (always the ring-0 front wall when faced)
-  textbox.c/.h           Modal textbox/menu overlay (BG_A rows 19-27, full width)
+  dungeon_view.c/.h      First-person renderer (see "Rendering approach")
+  view_draw.s            The renderer's inner copy loop, in 68000 assembler
+  view_gen.h             Generated by tools/make_view.py: view palette, per-column cell sequences
+  dungeon_objects.c/.h   Interaction plumbing: object straight ahead, shared door handler
+  textbox.c/.h           Message area / menus below the view (BG_A rows 20-27, columns 0-27)
   skill_check.c/.h       d20 + attribute vs. threshold, with a "rolling" animation
   inventory.c/.h         Party-wide gold/gems/potions/gear (placeholder scope, see TODO.md)
   party.c/.h             Party data model (up to 4 members: class, name, HP/MP, str/dex/int)
@@ -70,13 +81,13 @@ src/
 res/
   resources.res          Asset manifest, compiled by SGDK's rescomp
   resources.h            Declares the compiled asset symbols (generated, but committed for IDE use)
-  gfx/dungeon_tiles.png    Placeholder wall/floor/ceiling tileset, from tools/make_dungeon_tiles.py
   gfx/avatar.png           Placeholder hero avatar (one generic sprite, shared by all classes)
-  gfx/dungeon_objects.png  Placeholder interactive-object icons, from tools/make_dungeon_objects.py
+  view/*.bin               Generated by tools/make_view.py: baked wall columns, backdrops,
+                           full "wall right ahead" images
 tools/
-  make_dungeon_tiles.py    Regenerates the placeholder tileset (16 tiles, indexed PNG)
+  make_view.py             Generates all first-person view data (textures are defined here)
   make_avatar.py           Regenerates the placeholder avatar sprite (24x24, indexed PNG)
-  make_dungeon_objects.py  Regenerates the placeholder object icons (5x 64x64, indexed PNG)
+  emutest.py               Headless BlastEm test scenarios with screenshots
 ```
 
 ## Current state
@@ -90,8 +101,8 @@ interacts with whatever's directly ahead. The right panel shows the live party (
 HP or MP, empty slots as "---EMPTY---"), live inventory (gold/gems/potions/gear), and a facing/
 coordinates status line.
 
-All placeholder art is procedurally generated (see `tools/`) — tile/sprite *slot order* is indexed
-directly by the C code (see each generator script's docstring), so keep that order if you replace
-the art.
+All placeholder art is procedurally generated (see `tools/`). Wall textures are 64x64 palette-
+index grids defined in `tools/make_view.py`; their order matches the `TEX_*` constants that
+`dungeon_view.c` maps object kinds to, so keep that order if you replace them.
 
 See [TODO.md](TODO.md) for what's next (Room 2 onward, combat, real D&D stats, real art).

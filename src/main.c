@@ -8,12 +8,30 @@
 #include "char_create.h"
 #include "room1.h"
 
+// Sprite tiles are reserved just below the font; the default 420 would collide with the view's two
+// 560-tile buffers (dungeon_view.c). The avatar needs 9 tiles, so 256 leaves plenty for later.
+#define SPRITE_VRAM_TILES 256
+
+// All text (VDP_drawText) renders with its own palette so PAL0 can be the view's full 16 colours.
+static const u16 textPalette[16] = {
+    0x0000, 0x0EEE, 0x0EEE, 0x0EEE, 0x0EEE, 0x0EEE, 0x0EEE, 0x0EEE,
+    0x0EEE, 0x0EEE, 0x0EEE, 0x0EEE, 0x0EEE, 0x0EEE, 0x0EEE, 0x0EEE,
+};
+
+static void redrawWorld(const Player *p)
+{
+    dungeonView_render(p);
+    uiPanel_drawStatus(p);
+}
+
 int main(bool hardReset)
 {
     VDP_setScreenWidth320();
     VDP_setScreenHeight224();
-    SPR_init();
+    SPR_initEx(SPRITE_VRAM_TILES);
     PAL_setPalette(PAL1, avatar_sprite.palette->data, DMA);
+    PAL_setPalette(PAL3, textPalette, DMA);
+    VDP_setTextPalette(PAL3);
 
     CharClass heroClass = charCreate_run();
     party_init();
@@ -21,19 +39,16 @@ int main(bool hardReset)
     inventory_init();
 
     dungeonView_init();
-    dungeonObjects_init();
     uiPanel_initSprites();
     uiPanel_redrawChrome();
+    SPR_update();   // drops the creation screen's avatar sprite before the first view is drawn
 
     map_registerRoom(&ROOM1);
     Player player;
     map_loadRoom(&ROOM1, &player);
+    redrawWorld(&player);
 
-    dungeonView_render(&player);
-    dungeonObjects_render(&player);
-    uiPanel_drawStatus(&player);
-
-    u16 prevJoy = 0;
+    u16 prevJoy = JOY_readJoypad(JOY_1);
     while (TRUE)
     {
         u16 joy = JOY_readJoypad(JOY_1);
@@ -46,12 +61,7 @@ int main(bool hardReset)
         if (pressed & BUTTON_LEFT) { player_turn(&player, -1); moved = TRUE; }
         else if (pressed & BUTTON_RIGHT) { player_turn(&player, 1); moved = TRUE; }
 
-        if (moved)
-        {
-            dungeonView_render(&player);
-            dungeonObjects_render(&player);
-            uiPanel_drawStatus(&player);
-        }
+        if (moved) redrawWorld(&player);
 
         if (pressed & BUTTON_A)
         {
@@ -59,9 +69,7 @@ int main(bool hardReset)
             if (target)
             {
                 map_currentRoom()->onInteract(&player, target);
-                dungeonView_render(&player);
-                dungeonObjects_render(&player);
-                uiPanel_drawStatus(&player);
+                redrawWorld(&player);
                 uiPanel_redrawChrome();
             }
         }

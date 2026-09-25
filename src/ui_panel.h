@@ -5,10 +5,10 @@
 #include "dungeon_map.h"
 #include "party.h"
 
-// The right-hand panel occupies the 12 columns to the right of the 28-tile dungeon view
-// (28 + 12 = 40, the full screen width). Every draw call in ui_panel.c stays at x >= UI_PANEL_COL:
-// the dungeon view now fills all 28 rows on BG_B, and BG_A composites in front of BG_B, so any
-// text left of this column would visibly cut into the view.
+// The right-hand panel occupies the 12 columns to the right of the 28-tile-wide dungeon view
+// (28 + 12 = 40, the full screen width), all 28 rows. Every draw call in ui_panel.c stays at
+// x >= UI_PANEL_COL: BG_A text composites in front of BG_B, so anything further left would cut
+// into the view (rows 0-19) or the message area (rows 20-27, src/textbox.c).
 #define UI_PANEL_COL 28
 #define UI_PANEL_W   12
 

@@ -2,9 +2,9 @@
 
 static void clearBox(void)
 {
-    char blank[41];
-    memset(blank, ' ', 40);
-    blank[40] = 0;
+    char blank[TEXTBOX_COLS + 1];
+    memset(blank, ' ', TEXTBOX_COLS);
+    blank[TEXTBOX_COLS] = 0;
     for (u8 r = 0; r < TEXTBOX_H; r++)
         VDP_drawText(blank, 0, TEXTBOX_ROW + r);
 }
@@ -13,16 +13,16 @@ static void drawLines(const char *const lines[], u8 lineCount)
 {
     if (lineCount > TEXTBOX_BODY_LINES) lineCount = TEXTBOX_BODY_LINES;
     for (u8 i = 0; i < lineCount; i++)
-        VDP_drawText(lines[i], 1, TEXTBOX_ROW + 1 + i);
+        VDP_drawText(lines[i], 1, TEXTBOX_ROW + i);
 }
 
 static void drawOptions(const char *const options[], u8 optionCount, u8 cursor)
 {
-    char buf[40];
+    char buf[TEXTBOX_COLS];
     for (u8 i = 0; i < optionCount; i++)
     {
         sprintf(buf, "%s %s", i == cursor ? ">" : " ", options[i]);
-        VDP_drawText(buf, 2, TEXTBOX_ROW + 5 + i);
+        VDP_drawText(buf, 2, TEXTBOX_ROW + 4 + i);
     }
 }
 
