@@ -62,3 +62,63 @@ viewCopySpan:
     dbra    %d1,3b
 4:
     rts
+
+/*
+ * void viewMaskSpan(u8 *dst, const u8 *src, u32 rows, u32 r0)
+ *
+ * Same walk down a column as viewCopySpan, for props (tools/make_view.py, bake_prop): src holds
+ * a (mask, data) byte pair per row and each byte becomes (dst & mask) | data, so transparent
+ * pixels keep the wall/floor behind them. d2 is callee-saved, hence the push.
+ */
+    .globl  viewMaskSpan
+viewMaskSpan:
+    move.l  %d2,-(%sp)
+    move.l  8(%sp),%a0              /* dst */
+    move.l  12(%sp),%a1             /* src */
+    move.l  16(%sp),%d1             /* rows left */
+    move.l  20(%sp),%d0             /* row within the first tile */
+    beq.s   .Lmwhole
+
+    neg.w   %d0
+    addq.w  #8,%d0
+    cmp.w   %d1,%d0
+    ble.s   1f
+    move.w  %d1,%d0
+1:
+    sub.w   %d0,%d1
+    subq.w  #1,%d0
+2:
+    move.b  (%a1)+,%d2
+    and.b   %d2,(%a0)
+    move.b  (%a1)+,%d2
+    or.b    %d2,(%a0)
+    addq.l  #4,%a0
+    dbra    %d0,2b
+    lea     864(%a0),%a0
+
+.Lmwhole:
+    cmp.w   #8,%d1
+    blt.s   .Lmtail
+    .irp    off,0,4,8,12,16,20,24,28
+    move.b  (%a1)+,%d2
+    and.b   %d2,\off(%a0)
+    move.b  (%a1)+,%d2
+    or.b    %d2,\off(%a0)
+    .endr
+    lea     896(%a0),%a0
+    subq.w  #8,%d1
+    bra.s   .Lmwhole
+
+.Lmtail:
+    subq.w  #1,%d1
+    bmi.s   4f
+3:
+    move.b  (%a1)+,%d2
+    and.b   %d2,(%a0)
+    move.b  (%a1)+,%d2
+    or.b    %d2,(%a0)
+    addq.l  #4,%a0
+    dbra    %d1,3b
+4:
+    move.l  (%sp)+,%d2
+    rts

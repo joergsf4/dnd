@@ -13,16 +13,19 @@
 #define VIEW_LMAX 5
 #define VIEW_TEX_ROWS 56220   // bytes per texture block in viewColumns
 #define TEX_WALL 0
-#define TEX_POOL 1
-#define TEX_POOL_BROKEN 2
-#define TEX_CORPSE 3
-#define TEX_CHEST 4
-#define TEX_CHEST_OPEN 5
-#define TEX_SHRINE 6
-#define TEX_DOOR 7
-#define TEX_POD_OPEN 8
-#define TEX_POD_BROKEN 9
-#define TEX_COUNT 10
+#define TEX_DOOR 1
+#define TEX_COUNT 2
+#define PROP_POOL 0
+#define PROP_POOL_BROKEN 1
+#define PROP_CHEST 2
+#define PROP_CHEST_OPEN 3
+#define PROP_CORPSE 4
+#define PROP_SHRINE 5
+#define PROP_POD_OPEN 6
+#define PROP_POD_BROKEN 7
+#define PROP_COUNT 8
+#define VIEW_HALF_K 56   // a wall at depth z is 2 * VIEW_HALF_K / z rows high
+#define VIEW_CY 80
 
 // One wall crossing of a column pair's ray: the cell (d cells ahead, l to the right), the
 // wall's first visible row and row count, and its pre-baked bytes' offset in viewColumns.
@@ -905,6 +908,27 @@ static const ViewEvent viewEvents[866] = {
     {4, 4, 64, 32, 56140},
     {5, 4, 68, 24, 56172},
     {5, 5, 68, 24, 56196},
+};
+
+// Props: record offset in viewProps per prop and distance (d = 1..VIEW_DMAX), and the column
+// pair of a prop's centre d cells ahead and l to the right (index l + VIEW_LMAX).
+static const u32 viewPropOffset[8][6] = {
+    { 0, 0, 4330, 5456, 5974, 6268 },
+    { 0, 6466, 11728, 13082, 13708, 14066 },
+    { 0, 14300, 18946, 20140, 20716, 21030 },
+    { 0, 21232, 27670, 29288, 30052, 30486 },
+    { 0, 30768, 34558, 35546, 36022, 36296 },
+    { 0, 36472, 42570, 44152, 44880, 45294 },
+    { 0, 45554, 53458, 55462, 56378, 56916 },
+    { 0, 57266, 64252, 66022, 66832, 67316 },
+};
+static const s16 viewPropCenter[6][11] = {
+    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+    { -224, -168, -112, -56, 0, 56, 112, 168, 224, 280, 336 },
+    { -84, -56, -28, 0, 28, 56, 84, 112, 140, 168, 196 },
+    { -37, -19, 0, 19, 37, 56, 75, 93, 112, 131, 149 },
+    { -14, 0, 14, 28, 42, 56, 70, 84, 98, 112, 126 },
+    { 0, 11, 22, 34, 45, 56, 67, 78, 90, 101, 112 },
 };
 
 #endif

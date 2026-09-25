@@ -147,91 +147,6 @@ def tex_wall():
     return organic_wall(1)
 
 
-def niche(t, x0, y0, x1, y1):
-    rect(t, x0, y0, x1, y1, 1)
-    rect(t, x0, y0, x1, y0 + 1, 2)                         # lit upper lip
-
-
-def tex_pool():
-    """Larva pool: a fleshy basin in the wall, full of green slime and tadpoles."""
-    rng = random.Random(2)
-    t = organic_wall(2)
-    ellipse(t, 32, 38, 27, 22, 14)                         # fleshy rim
-    ellipse(t, 32, 38, 23, 18, 2)
-    ellipse(t, 32, 40, 21, 15, 9)                          # slime
-    ellipse(t, 30, 34, 14, 6, 10)                          # glow on the surface
-    for _ in range(12):                                    # tadpoles: head + tail
-        x, y = rng.randint(16, 46), rng.randint(32, 50)
-        rect(t, x, y, x + 2, y + 2, 1)
-        t[y + 1][x + 2] = t[y][x + 3] = 1
-    for _ in range(6):
-        t[rng.randint(28, 50)][rng.randint(16, 48)] = 15   # bubbles
-    return t
-
-
-def tex_pool_broken():
-    """The larva pool after it burst: torn rim, drained, acid dripping down the wall."""
-    rng = random.Random(3)
-    t = organic_wall(2)
-    ellipse(t, 32, 38, 27, 22, 14)
-    ellipse(t, 32, 38, 23, 18, 1)                          # empty, dark basin
-    for _ in range(16):                                    # torn rim
-        a = rng.random() * math.tau
-        x, y = int(32 + math.cos(a) * 25), int(38 + math.sin(a) * 20)
-        rect(t, x - 2, y - 2, x + 2, y + 2, 1)
-    for _ in range(7):
-        vein(t, rng, rng.randint(12, 52), rng.randint(40, 50), rng.randint(8, 20), 9)   # acid drips
-    rect(t, 20, 52, 44, 55, 9)                             # puddle at the bottom
-    return t
-
-
-def tex_corpse():
-    """A dead mind flayer slumped in an alcove: purple head, tentacles, dark robe with trim."""
-    t = organic_wall(4)
-    niche(t, 8, 12, 56, 64)
-    ellipse(t, 32, 42, 18, 20, 2)                          # robe
-    rect(t, 14, 56, 50, 64, 2)
-    rect(t, 20, 40, 44, 42, 12)                            # collar trim
-    ellipse(t, 32, 28, 9, 10, 8)                           # head
-    for dx in (-5, -2, 2, 5):                              # tentacles
-        rect(t, 32 + dx, 33, 32 + dx + 1, 46, 8)
-    t[26][28] = t[26][35] = 15                             # dead white eyes
-    ellipse(t, 22, 58, 5, 3, 8)                            # three-fingered hand
-    return t
-
-
-def tex_chest(opened):
-    """A cartilage chest in a niche: ribbed, bone coloured; opened after it's been looted."""
-    t = organic_wall(5)
-    niche(t, 8, 22, 56, 64)
-    rect(t, 12, 38, 52, 60, 12)                            # body
-    for x in range(15, 52, 6):
-        rect(t, x, 38, x + 2, 60, 3)                       # cartilage ribs
-    if opened:
-        rect(t, 14, 40, 50, 46, 1)                         # dark, empty inside
-        rect(t, 12, 24, 52, 30, 12)                        # lid tipped up against the wall
-        rect(t, 12, 24, 52, 25, 15)
-    else:
-        rect(t, 11, 32, 53, 39, 12)                        # closed lid
-        rect(t, 11, 32, 53, 33, 15)
-        rect(t, 29, 38, 35, 43, 14)                        # fleshy clasp
-    return t
-
-
-def tex_shrine():
-    """Restoration station: a big blue glowing tentacle bladder on a column."""
-    t = organic_wall(6)
-    niche(t, 10, 4, 54, 64)
-    rect(t, 26, 40, 38, 64, 3)                             # column
-    rect(t, 26, 40, 28, 64, 4)
-    rect(t, 36, 40, 38, 64, 2)
-    for dx, h in ((-14, 18), (-9, 24), (9, 24), (14, 18)):  # tentacles hanging from the bladder
-        rect(t, 32 + dx, 26, 32 + dx + 2, 26 + h, 13)
-    ellipse(t, 32, 24, 18, 16, 13)                         # bladder
-    ellipse(t, 28, 19, 7, 5, 15)                           # glow highlight
-    return t
-
-
 def tex_door():
     """Sphincter door: a ring of flesh folded shut in a chitin frame."""
     t = organic_wall(7)
@@ -248,40 +163,205 @@ def tex_door():
     return t
 
 
-def pod(seed, broken):
-    """Clone pod: an upright egg of chitin and sinew with a turquoise slime-glass front."""
-    rng = random.Random(seed)
-    t = organic_wall(seed)
-    ellipse(t, 32, 34, 22, 30, 2)                          # chitin shell
-    ellipse(t, 32, 34, 20, 28, 3)
-    ellipse(t, 32, 36, 15, 23, 1)                          # dark inside
+TEXTURES = [tex_wall(), tex_door()]
+TEX_NAMES = ["TEX_WALL", "TEX_DOOR"]
+
+# ---------------------------------------------------------------- props (free-standing objects)
+# A prop stands in the middle of a floor cell, drawn as an upright billboard one cell wide and one
+# cell high (64x64 texels, bottom row on the floor), pre-scaled per distance like the originals
+# did it. T marks transparent texels.
+
+T = -1
+
+
+def shade_body(t, x0, x1, c=3, lit=4, dark=2):
+    """Side lighting for a round body: left edge lit, right edge in shadow."""
+    for y in range(TEX):
+        for x in range(TEX):
+            if t[y][x] == c:
+                if x < x0:
+                    t[y][x] = lit
+                elif x > x1:
+                    t[y][x] = dark
+
+
+def prop_pool(broken):
+    """Larva pool: a fleshy basin on the floor, slime and tadpoles in it (burst: torn, empty)."""
+    rng = random.Random(2)
+    t = blank(T)
     if broken:
-        for y in range(TEX):                               # jagged remains of the glass
-            for x in range(TEX):
-                if in_ellipse(x, y, 32, 36, 15, 23) and not in_ellipse(x, y, 32, 36, 12, 20):
-                    if (x * 7 + y * 3) % 5 < 3:
-                        t[y][x] = 11
-        for _ in range(5):
-            x, y = rng.randint(22, 42), rng.randint(20, 50)
-            t[y][x] = 15                                   # glints on the shards
-        rect(t, 22, 52, 42, 56, 9)                         # spilled slime at the bottom
-    else:
-        rect(t, 17, 36, 21, 40, 12)                        # hinge; the glass front swung open
-        for y in range(TEX):
-            for x in range(TEX):
-                if in_ellipse(x, y, 32, 36, 15, 23) and x < 23:
-                    t[y][x] = 11                           # open glass half, seen edge-on
+        ellipse(t, 32, 61, 31, 3, 9)                       # acid puddle around the base
+    for y in range(38, 63):                                # bowl body, rounded towards the floor
+        for x in range(TEX):
+            if in_ellipse(x, y, 32, 38, 27, 24):
+                t[y][x] = 3
+    shade_body(t, 12, 51)
+    for x in (18, 31, 44):                                 # veins down the bowl
+        vein(t, rng, x, 42, 18, 14)
+    ellipse(t, 32, 38, 27, 8, 14)                          # rim, seen slightly from above
+    if broken:
+        ellipse(t, 32, 38, 23, 6, 1)                       # drained, dark
+        for _ in range(9):                                 # torn edge on the rim
+            x = rng.randint(8, 56)
+            rect(t, x - 2, 29, x + 2, 36, T)
         for _ in range(6):
-            vein(t, rng, rng.randint(26, 44), rng.randint(20, 40), rng.randint(6, 14), 10)  # slime
-    for dy in (6, 62):
-        rect(t, 20, dy - 2, 44, dy, 14)                    # sinews holding it in place
+            vein(t, rng, rng.randint(10, 54), 42, rng.randint(6, 16), 9)   # acid running down
+    else:
+        ellipse(t, 32, 38, 23, 6, 9)                       # slime
+        ellipse(t, 29, 37, 12, 3, 10)                      # glow on the surface
+        for _ in range(9):                                 # tadpoles: head + tail
+            x, y = rng.randint(14, 48), rng.randint(35, 41)
+            if in_ellipse(x, y, 32, 38, 21, 5):
+                t[y][x] = t[y][x + 1] = 1
+                t[y + 1][x + 2] = 1
+        for _ in range(4):
+            x, y = rng.randint(14, 50), rng.randint(35, 41)
+            if in_ellipse(x, y, 32, 38, 21, 5):
+                t[y][x] = 15                               # bubbles
     return t
 
 
-TEXTURES = [tex_wall(), tex_pool(), tex_pool_broken(), tex_corpse(), tex_chest(False),
-            tex_chest(True), tex_shrine(), tex_door(), pod(8, False), pod(9, True)]
-TEX_NAMES = ["TEX_WALL", "TEX_POOL", "TEX_POOL_BROKEN", "TEX_CORPSE", "TEX_CHEST",
-             "TEX_CHEST_OPEN", "TEX_SHRINE", "TEX_DOOR", "TEX_POD_OPEN", "TEX_POD_BROKEN"]
+def prop_chest(opened):
+    """A cartilage chest: ribbed, bone coloured; lid thrown back once looted."""
+    t = blank(T)
+    ellipse(t, 32, 62, 28, 2, 1)                           # shadow on the floor
+    if opened:
+        rect(t, 11, 18, 53, 36, 3)                         # lid, inside facing us
+        rect(t, 11, 18, 53, 20, 12)
+        rect(t, 11, 18, 13, 36, 12)
+        rect(t, 51, 18, 53, 36, 12)
+        rect(t, 10, 34, 54, 41, 12)                        # rim of the open box
+        rect(t, 13, 35, 51, 40, 1)                         # dark, empty inside
+    else:
+        rect(t, 9, 32, 55, 41, 12)                         # closed lid
+        rect(t, 9, 32, 55, 34, 15)
+    rect(t, 10, 41, 54, 62, 12)                            # body
+    for x in range(14, 52, 7):
+        rect(t, x, 41, x + 2, 62, 3)                       # cartilage ribs
+    rect(t, 10, 60, 54, 62, 3)
+    if not opened:
+        rect(t, 29, 38, 35, 46, 14)                        # fleshy clasp
+    return t
+
+
+def prop_corpse():
+    """A dead mind flayer, slumped on the floor: purple head, tentacles, dark robe."""
+    t = blank(T)
+    ellipse(t, 32, 62, 30, 2, 1)                           # shadow
+    ellipse(t, 32, 53, 21, 11, 2)                          # robe
+    rect(t, 11, 53, 54, 63, 2)
+    rect(t, 20, 43, 44, 45, 12)                            # collar trim
+    ellipse(t, 30, 34, 9, 10, 8)                           # head, lolling to one side
+    for dx in (-5, -2, 1, 4):                              # tentacles over the robe
+        rect(t, 30 + dx, 40, 30 + dx + 1, 53 - abs(dx), 8)
+    t[32][26] = t[32][33] = 15                             # dead white eyes
+    ellipse(t, 12, 60, 5, 3, 8)                            # hands on the floor
+    ellipse(t, 53, 60, 5, 3, 8)
+    return t
+
+
+def prop_shrine():
+    """Restoration station: a big blue glowing tentacle bladder on a column."""
+    t = blank(T)
+    ellipse(t, 32, 62, 16, 2, 1)
+    rect(t, 20, 57, 44, 63, 2)                             # base
+    rect(t, 20, 57, 44, 58, 4)
+    rect(t, 26, 34, 38, 57, 3)                             # column
+    rect(t, 26, 34, 28, 57, 4)
+    rect(t, 36, 34, 38, 57, 2)
+    for x, h in ((14, 16), (19, 22), (43, 22), (48, 16)):  # tentacles hanging from the bladder
+        rect(t, x, 26, x + 2, 26 + h, 13)
+        t[26 + h][x + (2 if x < 32 else -1)] = 13          # curled tip
+    ellipse(t, 32, 21, 19, 16, 13)                         # bladder
+    ellipse(t, 32, 26, 16, 9, 11)                          # darker underside
+    ellipse(t, 32, 21, 17, 12, 13)
+    ellipse(t, 26, 15, 6, 4, 15)                           # glow highlight
+    return t
+
+
+def prop_pod(broken):
+    """Clone pod: an upright egg of chitin with a turquoise glass front (open, or shattered)."""
+    rng = random.Random(8 if broken else 9)
+    t = blank(T)
+    ellipse(t, 32, 62, 22, 2, 1)
+    ellipse(t, 32, 33, 20, 30, 2)                          # chitin shell
+    ellipse(t, 32, 33, 18, 28, 3)
+    shade_body(t, 19, 46)
+    ellipse(t, 32, 35, 13, 22, 1)                          # dark inside
+    if broken:
+        for y in range(TEX):                               # jagged remains of the glass
+            for x in range(TEX):
+                if in_ellipse(x, y, 32, 35, 13, 22) and not in_ellipse(x, y, 32, 35, 10, 18):
+                    if (x * 7 + y * 3) % 5 < 3:
+                        t[y][x] = 11
+        for _ in range(5):
+            t[rng.randint(22, 50)][rng.randint(24, 40)] = 15   # glints on the shards
+        for _ in range(8):                                 # shards on the floor
+            x = rng.randint(6, 58)
+            t[rng.randint(60, 63)][x] = rng.choice((11, 15))
+    else:
+        for _ in range(6):                                 # slime running down inside
+            vein(t, rng, rng.randint(24, 40), rng.randint(16, 30), rng.randint(8, 20), 10)
+        ellipse(t, 32, 53, 11, 3, 9)                       # slime pooled at the bottom
+        for y in range(TEX):                               # glass front swung open to the left
+            for x in range(TEX):
+                if in_ellipse(x, y, 9, 34, 5, 21):
+                    t[y][x] = 11 if x > 6 else 15
+        rect(t, 13, 30, 18, 34, 12)                        # hinge
+    ellipse(t, 32, 60, 18, 3, 14)                          # sinews anchoring it to the floor
+    return t
+
+
+PROPS = [prop_pool(False), prop_pool(True), prop_chest(False), prop_chest(True), prop_corpse(),
+         prop_shrine(), prop_pod(False), prop_pod(True)]
+PROP_NAMES = ["PROP_POOL", "PROP_POOL_BROKEN", "PROP_CHEST", "PROP_CHEST_OPEN", "PROP_CORPSE",
+              "PROP_SHRINE", "PROP_POD_OPEN", "PROP_POD_BROKEN"]
+
+
+def bake_prop(sprite, d):
+    """A prop at distance d, pre-scaled and shaded, as column pairs relative to its centre pair:
+    (left pair offset, [(top, rows, [mask, data] * rows)]). mask keeps the background nibble
+    where a texel is transparent."""
+    half = HALF_K / d
+    y0 = CY - half
+    scale = TEX / (2 * half)                               # texels per pixel, both axes
+    band = band_of(d)
+    k0 = math.floor(-half / 2) - 1
+    cols = []
+    for k in range(k0, -k0 + 1):
+        px = []
+        for y in range(VH):
+            v = int((y + 0.5 - y0) * scale)
+            pair = []
+            for i in (0, 1):
+                u = int(TEX / 2 + (2 * k + i + 0.5) * scale)
+                c = sprite[v][u] if 0 <= v < TEX and 0 <= u < TEX else T
+                pair.append(c)
+            px.append(pair)
+        ys = [y for y in range(VH) if px[y] != [T, T]]
+        if not ys:
+            cols.append((0, 0, []))
+            continue
+        top, bot = ys[0], ys[-1] + 1
+        data = []
+        for y in range(top, bot):
+            a, b = px[y]
+            mask = (0xF0 if a == T else 0) | (0x0F if b == T else 0)
+            val = ((SHADE[band][a] << 4) if a != T else 0) | (SHADE[band][b] if b != T else 0)
+            data += [mask, val]
+        cols.append((top, bot - top, data))
+    while cols and cols[0][1] == 0:
+        cols.pop(0)
+        k0 += 1
+    while cols and cols[-1][1] == 0:
+        cols.pop()
+    return k0, cols
+
+
+def prop_center(d, l):
+    """Column pair of a prop's centre, d cells ahead and l to the right."""
+    return round((CX + l * F / d) / 2)
+
 
 # ---------------------------------------------------------------- backdrop (floor + ceiling)
 
@@ -429,9 +509,24 @@ def main():
     for t in range(len(TEXTURES)):
         adjacent.extend(tiles_bytes(render(bd, cols, {(1, 0): t})))
 
+    # Props, pre-scaled per distance: per (prop, d) a record [pair count, left pair offset (s8),
+    # then per pair: top row, row count, (mask, data) byte pairs]; offsets in viewPropOffset.
+    props = bytearray()
+    prop_off = []
+    for sprite in PROPS:
+        row = [0]
+        for d in range(1, DMAX + 1):
+            row.append(len(props))
+            left, pcols = bake_prop(sprite, d)
+            props.extend([len(pcols), left & 0xFF])
+            for top, rows, data in pcols:
+                props.extend([top, rows] + data)
+        prop_off.append(row)
+
     resdir = os.path.join(ROOT, "res", "view")
     os.makedirs(resdir, exist_ok=True)
-    for name, data in (("columns.bin", columns), ("backdrops.bin", backdrops), ("adjacent.bin", adjacent)):
+    for name, data in (("columns.bin", columns), ("backdrops.bin", backdrops), ("adjacent.bin", adjacent),
+                       ("props.bin", props)):
         with open(os.path.join(resdir, name), "wb") as f:
             f.write(data)
 
@@ -445,7 +540,12 @@ def main():
     out.append(f"#define VIEW_TEX_ROWS {total_rows}   // bytes per texture block in viewColumns")
     for i, n in enumerate(TEX_NAMES):
         out.append(f"#define {n} {i}")
-    out.append(f"#define TEX_COUNT {len(TEX_NAMES)}\n")
+    out.append(f"#define TEX_COUNT {len(TEX_NAMES)}")
+    for i, n in enumerate(PROP_NAMES):
+        out.append(f"#define {n} {i}")
+    out.append(f"#define PROP_COUNT {len(PROP_NAMES)}")
+    out.append(f"#define VIEW_HALF_K {int(HALF_K)}   // a wall at depth z is 2 * VIEW_HALF_K / z rows high")
+    out.append(f"#define VIEW_CY {int(CY)}\n")
     out.append("// One wall crossing of a column pair's ray: the cell (d cells ahead, l to the right), the\n"
                "// wall's first visible row and row count, and its pre-baked bytes' offset in viewColumns.")
     out.append("typedef struct { s8 d, l; u8 top, rows; u16 bake; } ViewEvent;\n")
@@ -456,13 +556,23 @@ def main():
         ev_lines.append("    {%d, %d, %d, %d, %d}," % (e[0], e[1], e[2], e[3], off))
     ev_lines.append("};")
     out.append("\n".join(ev_lines))
+    out.append("\n// Props: record offset in viewProps per prop and distance (d = 1..VIEW_DMAX), and the column\n"
+               "// pair of a prop's centre d cells ahead and l to the right (index l + VIEW_LMAX).")
+    out.append(f"static const u32 viewPropOffset[{len(PROPS)}][{DMAX + 1}] = {{")
+    for row in prop_off:
+        out.append("    { " + ", ".join(str(v) for v in row) + " },")
+    out.append("};")
+    out.append(f"static const s16 viewPropCenter[{DMAX + 1}][{2 * LMAX + 1}] = {{")
+    for d in range(DMAX + 1):
+        out.append("    { " + ", ".join(str(prop_center(d, l) if d else 0) for l in range(-LMAX, LMAX + 1)) + " },")
+    out.append("};")
     out.append("\n#endif")
 
     path = os.path.join(ROOT, "src", "view_gen.h")
     with open(path, "w") as f:
         f.write("\n".join(out) + "\n")
     print(f"wrote {path}: {len(flat)} events, max {max(len(c) for c in cols)} per column; "
-          f"res/view/*.bin {len(columns) + len(backdrops) + len(adjacent)} bytes")
+          f"res/view/*.bin {len(columns) + len(backdrops) + len(adjacent) + len(props)} bytes")
 
     if "--preview" in sys.argv:
         preview(bd, cols)
@@ -470,9 +580,10 @@ def main():
 
 # ---------------------------------------------------------------- preview (same algorithm as the C code)
 
-def render(bd, cols, grid):
-    """grid: dict (d, l) -> texture index for wall cells."""
+def render(bd, cols, grid, props=None):
+    """grid: dict (d, l) -> texture index for wall cells; props: dict (d, l) -> prop index."""
     img = [row[:] for row in bd]
+    wall_h = [0] * NPAIR                   # height above the horizon of the wall drawn per pair
     for pc, evs in enumerate(cols):
         for ev in evs:
             if (ev[0], ev[1]) not in grid:
@@ -480,7 +591,22 @@ def render(bd, cols, grid):
             for y, b in zip(range(ev[2], ev[2] + ev[3]), bake(ev, grid[(ev[0], ev[1])])):
                 img[y][2 * pc] = b >> 4
                 img[y][2 * pc + 1] = b & 15
+            wall_h[pc] = int(CY) - ev[2]
             break
+    for d in range(DMAX, 0, -1):          # far to near, so nearer props cover farther ones
+        for l in range(-min(d, LMAX), min(d, LMAX) + 1):
+            if (props or {}).get((d, l)) is None:
+                continue
+            left, pcols = bake_prop(PROPS[props[(d, l)]], d)
+            for k, (top, rows, data) in enumerate(pcols):
+                pc = prop_center(d, l) + left + k
+                if not 0 <= pc < NPAIR or wall_h[pc] * d >= int(HALF_K):
+                    continue               # off screen, or the wall in this column is nearer
+                for i in range(rows):
+                    mask, val = data[2 * i], data[2 * i + 1]
+                    for j, (m, v) in enumerate(((mask >> 4, val >> 4), (mask & 15, val & 15))):
+                        if not m:
+                            img[top + i][2 * pc + j] = v
     return img
 
 
@@ -493,20 +619,21 @@ def save(img, path):
 def preview(bd, cols):
     outdir = os.path.join(ROOT, "out", "view_preview")
     os.makedirs(outdir, exist_ok=True)
-    corridor = {}
-    for d in range(0, 6):
-        for l in range(-5, 6):
-            if abs(l) >= 1:
-                corridor[(d, l)] = 0
-    corridor[(4, 0)] = 0
-    save(render(bd, cols, corridor), os.path.join(outdir, "corridor.png"))
+    corridor = {(d, l): 0 for d in range(0, 6) for l in range(-5, 6) if abs(l) >= 1}
+    corridor[(4, 0)] = 1
+    save(render(bd, cols, corridor, {(2, 0): 2}), os.path.join(outdir, "corridor.png"))
     room = {(d, l): 0 for d in range(0, 6) for l in range(-5, 6) if d == 4 or abs(l) == 3}
-    room[(4, 1)] = 5
-    save(render(bd, cols, room), os.path.join(outdir, "room.png"))
-    save(render(bd, cols, {(1, 0): 1}), os.path.join(outdir, "adjacent_tank.png"))
-    junction = {(d, l): 0 for d in range(0, 6) for l in range(-5, 6) if abs(l) >= 1 and d != 2}
-    junction[(3, 0)] = 0
-    save(render(bd, cols, junction), os.path.join(outdir, "junction.png"))
+    room[(4, 1)] = 1
+    save(render(bd, cols, room, {(2, 0): 0, (1, -1): 6, (3, 2): 5, (3, -2): 7, (2, 1): 4, (1, 1): 3}),
+         os.path.join(outdir, "room.png"))
+    save(render(bd, cols, room, {(1, 0): 6}), os.path.join(outdir, "adjacent_pod.png"))
+    # every prop at distance 1 and 3, for judging the art
+    sheet = Image.new("RGB", (VW * len(PROPS) // 2, VH * 2))
+    for i in range(len(PROPS)):
+        im = Image.new("RGB", (VW, VH))
+        im.putdata([RGB[c] for row in render(bd, cols, room, {(1, 0): i, (3, 1): i}) for c in row])
+        sheet.paste(im, ((i % 4) * VW, (i // 4) * VH))
+    sheet.save(os.path.join(outdir, "props.png"))
     print(f"previews in {outdir}")
 
 

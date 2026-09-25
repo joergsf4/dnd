@@ -168,33 +168,37 @@ def main():
         if args.scenario == "look":
             # Room 1 (the Klonkammer, src/room1.c): spawn in front of the open pod, look around.
             start_game(b, args.cls)
-            b.shot("room1_spawn")              # (3,4) facing south, larva pool two steps ahead
+            b.shot("room1_spawn")              # (3,3) facing south, larva pool two cells ahead
             for name in ("west", "north", "east"):
                 act(b, "gamepads.1.right")     # turn clockwise
-                b.shot(f"room1_look_{name}")
+                b.shot(f"room1_look_{name}")   # north: the open pod right behind the start
             return
 
         if args.scenario == "tour":
-            # Views from two opposite corners of Room 1 (interior x 1-6, y 1-5): every wall
-            # should be visible from everywhere, with side walls, corners and objects in place.
+            # Views from two opposite corners of Room 1 (interior x 1-6, y 1-5): walls from
+            # everywhere, props standing free in the room and hidden behind nearer walls.
             start_game(b, args.cls)
             act(b, "gamepads.1.right")         # south -> west
-            walk(b, 2)                         # (1,4)
+            walk(b, 2)                         # (1,3)
             act(b, "gamepads.1.right")         # west -> north
-            walk(b, 3)                         # (1,1), north-west corner
-            b.shot("tour_nw_n")
+            walk(b, 2)                         # (1,1), north-west corner
             act(b, "gamepads.1.right")
-            b.shot("tour_nw_e")                # along the north wall: broken pods, chest
+            b.shot("tour_nw_e")                # broken pod right ahead, chest far away
             act(b, "gamepads.1.right")
-            b.shot("tour_nw_s")                # along the west wall, the pod pillar to the left
-            walk(b, 4)                         # (1,5)
+            b.shot("tour_nw_s")                # down the west side: broken pod
+            walk(b, 2)                         # (1,3)
             act(b, "gamepads.1.left")          # south -> east
-            walk(b, 5)                         # (6,5), south-east corner, facing the corpse
-            b.shot("tour_se_e")
-            act(b, "gamepads.1.left")
-            b.shot("tour_se_n")                # along the east wall: shrine
-            act(b, "gamepads.1.left")
-            b.shot("tour_se_w")                # across the room towards the door
+            walk(b, 4)                         # (5,3), shrine ahead
+            act(b, "gamepads.1.right")         # east -> south
+            walk(b, 1)                         # (5,4)
+            act(b, "gamepads.1.left")          # south -> east
+            walk(b, 1)                         # (6,4), south-east corner
+            act(b, "gamepads.1.right")
+            b.shot("tour_se_s")                # corpse right ahead
+            act(b, "gamepads.1.right")
+            b.shot("tour_se_w")                # across the room: broken pods, pool
+            act(b, "gamepads.1.right")
+            b.shot("tour_se_n")                # shrine ahead, chest behind it
             return
 
         if args.scenario == "room1":
@@ -207,8 +211,8 @@ def main():
             act(b, "gamepads.1.a")
             b.shot("r1_spawn")
 
-            # --- larva pool (south wall, two steps ahead) ---
-            walk(b, 1)                         # (3,5)
+            # --- larva pool, (3,5) ---
+            walk(b, 1)                         # (3,4)
             act(b, "gamepads.1.a", 10)
             b.shot("r1_pool_menu")             # Hineinfassen / Untersuchen [INT] / Weggehen
             act(b, "gamepads.1.down", 6)       # cursor -> Untersuchen [INT]
@@ -222,53 +226,64 @@ def main():
             act(b, "gamepads.1.a")             # Hineinfassen
             b.shot("r1_pool_boom")             # -3 KP, panel updated
             act(b, "gamepads.1.a")
-            b.shot("r1_pool_broken")           # burst pool texture
+            b.shot("r1_pool_broken")           # burst pool
 
-            # --- corpse (east wall, (7,5)) ---
+            # --- corpse, (6,5) ---
             act(b, "gamepads.1.left")          # south -> east
-            walk(b, 3)                         # (6,5)
+            walk(b, 3)                         # (6,4)
+            act(b, "gamepads.1.right")         # east -> south
             act(b, "gamepads.1.a")
             b.shot("r1_corpse")
             act(b, "gamepads.1.a")
 
-            # --- restoration station (east wall, (7,3)) ---
+            # --- restoration station, (6,3) ---
+            act(b, "gamepads.1.left")          # south -> east
             act(b, "gamepads.1.left")          # east -> north
-            walk(b, 2)                         # (6,3)
-            act(b, "gamepads.1.right")         # north -> east
             b.shot("r1_at_shrine")
             act(b, "gamepads.1.a")
             b.shot("r1_shrine")                # KP back to full
             act(b, "gamepads.1.a")
 
-            # --- chest (north wall, (6,0)) ---
+            # --- chest, (6,1) ---
+            act(b, "gamepads.1.left")          # north -> west
+            walk(b, 1)                         # (5,4)
+            act(b, "gamepads.1.right")         # west -> north
+            walk(b, 2)                         # (5,2)
+            act(b, "gamepads.1.right")         # north -> east
+            walk(b, 1)                         # (6,2)
             act(b, "gamepads.1.left")          # east -> north
-            walk(b, 2)                         # (6,1)
             act(b, "gamepads.1.a")
             b.shot("r1_chest")
             act(b, "gamepads.1.a")
-            b.shot("r1_chest_open")            # open-chest texture, panel: potion + gear
+            b.shot("r1_chest_open")            # opened chest, panel: potion + gear
 
-            # --- door (west wall, (0,1)) ---
+            # --- door, west wall (0,1) ---
             act(b, "gamepads.1.left")          # north -> west
-            walk(b, 5)                         # (1,1)
+            walk(b, 1)                         # (5,2)
+            act(b, "gamepads.1.left")          # west -> south
+            walk(b, 1)                         # (5,3)
+            act(b, "gamepads.1.right")         # south -> west
+            walk(b, 4)                         # (1,3)
+            act(b, "gamepads.1.right")         # west -> north
+            walk(b, 2)                         # (1,1)
+            act(b, "gamepads.1.left")          # north -> west
             b.shot("r1_at_door")
             act(b, "gamepads.1.a")
             b.shot("r1_door")                  # still sealed: ROOM_2 isn't built yet
             act(b, "gamepads.1.a")
 
-            # --- broken pod (west wall, (0,4)) ---
-            act(b, "gamepads.1.left")          # west -> south
-            walk(b, 3)                         # (1,4)
-            act(b, "gamepads.1.right")         # south -> west
+            # --- broken pod, (2,1) ---
+            act(b, "gamepads.1.right")         # west -> north
+            act(b, "gamepads.1.right")         # north -> east
             act(b, "gamepads.1.a")
             b.shot("r1_pod_broken")
             act(b, "gamepads.1.a")
 
-            # --- the open pod in the middle, (3,3) ---
-            act(b, "gamepads.1.right")         # west -> north
-            walk(b, 1)                         # (1,3)
-            act(b, "gamepads.1.right")         # north -> east
-            walk(b, 1)                         # (2,3)
+            # --- the open pod, (3,2) ---
+            act(b, "gamepads.1.right")         # east -> south
+            walk(b, 1)                         # (1,2)
+            act(b, "gamepads.1.left")          # south -> east
+            walk(b, 1)                         # (2,2)
             act(b, "gamepads.1.a")
             b.shot("r1_pod_open")
             act(b, "gamepads.1.a")

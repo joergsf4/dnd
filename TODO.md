@@ -10,8 +10,9 @@ together in Room 1 (the "Klonkammer" — see `BeschreibungInhaltVerticalSlice.md
       `#define`s are gone, replaced by per-room `const` structs (`src/room1.c` is the pattern for
       future rooms). Object runtime state (looted/flagged) lives in per-room RAM, copied from the
       ROM template on first visit, so it survives backtracking once rooms link up to each other.
-- [x] Interactive objects in the first-person view — objects sit on wall cells and are drawn as
-      that wall's texture (`objectTexture()` in `src/dungeon_view.c`, with per-state variants), visible from any distance;
+- [x] Interactive objects in the first-person view — free-standing props on floor cells,
+      pre-scaled per distance and occluded by nearer walls (`objectProp()` in
+      `src/dungeon_view.c`, with per-state variants); doors stay wall textures;
       `src/dungeon_objects.c` only does "what's straight ahead" and the shared door handler.
 - [x] Textbox/menu system (`src/textbox.c/.h`) — the message area below the view (rows 20-27,
       columns 0-27), 27 characters per line, pauses the world while open.
@@ -44,15 +45,16 @@ together in Room 1 (the "Klonkammer" — see `BeschreibungInhaltVerticalSlice.md
 - [ ] Doors, secret doors — `OBJ_DOOR_EXIT` + `dungeonObjects_tryDoor` exist and correctly stub
       "not built yet" (see Room 1); an actual room-to-room transition is untested since Room 2
       doesn't exist. Locked doors/keys: see the identified-item inventory item below.
-- [ ] Wall decorations (levers, plaques, torches) — a new texture in `tools/make_view.py` plus an
-      `ObjectKind`, same as the tank/chest. Limitation: a texture applies to every face of its wall
+- [ ] Wall decorations (levers, plaques, torches) — a new wall texture in `tools/make_view.py`
+      plus an `ObjectKind`, same as the door. Limitation: a texture applies to every face of its wall
       cell; fine on room borders (only one face is ever visible), needs per-face textures for
       free-standing wall blocks.
 - [ ] Doors *between* cells (EOB-style door frames in a corridor, open/closed state) — the room 1
       exit is a door texture on a border wall, which is enough for room-to-room exits but not for
       doors you walk through inside a level.
-- [ ] Monsters/NPCs in the view: sprites over the view, pre-drawn at 3-4 sizes by distance (the
-      hardware can't scale), positioned from the same geometry as `tools/make_view.py`.
+- [ ] Monsters/NPCs in the view: the prop pipeline (pre-scaled per distance, masked, occluded
+      by walls) already does this for static objects; monsters need several frames per prop and
+      props in the player's own row that move. Redraw cost grows with prop size up close.
 - [ ] Strafing (classic EOB/DM control scheme uses a 3x3 or 4x4 button/D-pad layout; Mega Drive's
       3-button pad is cramped — decide on a control scheme early, maybe 6-button pad only).
 
@@ -94,8 +96,8 @@ together in Room 1 (the "Klonkammer" — see `BeschreibungInhaltVerticalSlice.md
 - [x] Hero avatar (`res/gfx/avatar.png`, `tools/make_avatar.py`) — one generic 24x24 cloaked-figure
       placeholder shared by all 3 classes. Replace with real art, and/or split into per-class
       avatars, whenever that's worth the extra tile budget.
-- [x] Object/door wall textures (larva pool + burst, corpse, chest + open, shrine, sphincter door,
-      clone pod open/broken) — placeholders in
+- [x] Props (larva pool + burst, corpse, chest + open, shrine, clone pod open/broken) and the
+      sphincter door texture — placeholders in
       `tools/make_view.py`.
 - [ ] Monster/companion sprites for Room 2+ (see "Monsters/NPCs in the view" above).
 - [ ] Title screen.

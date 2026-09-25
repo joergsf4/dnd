@@ -86,7 +86,7 @@ void player_step(Player *p, s16 sign)
     map_forward(p->facing, &dx, &dy);
     s16 nx = p->x + dx * sign;
     s16 ny = p->y + dy * sign;
-    if (!map_isWall(nx, ny))
+    if (!map_isWall(nx, ny) && !map_objectAt(nx, ny))   // props on floor cells block too
     {
         p->x = nx;
         p->y = ny;

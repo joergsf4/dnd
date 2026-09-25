@@ -13,3 +13,5 @@ BIN viewColumns "view/columns.bin" 2 2 0 NONE
 BIN viewBackdrops "view/backdrops.bin" 4 4 0 NONE
 // ...and the finished full view of a wall right in front of the player, one per texture.
 BIN viewAdjacent "view/adjacent.bin" 4 4 0 NONE
+// ...and the free-standing objects (props), pre-scaled per distance, with transparency masks.
+BIN viewProps "view/props.bin" 2 2 0 NONE

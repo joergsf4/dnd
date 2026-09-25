@@ -124,39 +124,39 @@ static void room1_onInteract(Player *p, RoomObject *obj)
     }
 }
 
-// Klonkammer, 6x5 inside. The open pod the player woke up in stands free in the middle (3,3);
-// the player starts right in front of it, facing away from it.
+// Klonkammer, 6x5 inside. Everything except the door stands free on the floor (props, see
+// dungeon_view.c) and blocks that cell; the player uses it from a neighbouring cell. The open pod
+// the player woke up in stands right behind the start.
 //
 //      x 0 1 2 3 4 5 6 7
-//  y 0   1 1 P 1 P 1 C 1     P broken pod   C chest
-//    1   D 0 0 0 0 0 0 1     D sphincter door (north-west exit)
-//    2   1 0 0 0 0 0 0 1
-//    3   1 0 0 O 0 0 0 S     O open pod     S restoration station
-//    4   P 0 0 @ 0 0 0 1     @ start, facing south
-//    5   1 0 0 0 0 0 0 G     G mind flayer corpse
-//    6   1 1 1 L 1 P 1 1     L larva pool
+//  y 0   1 1 1 1 1 1 1 1
+//    1   D . P . . . C 1     D sphincter door (north-west exit, on the wall)
+//    2   1 . . O . . . 1     P broken pod   C chest   O open pod
+//    3   1 . . @ . . S 1     @ start, facing south    S restoration station
+//    4   1 P . . . . . 1
+//    5   1 . . L . P G 1     L larva pool   G mind flayer corpse
+//    6   1 1 1 1 1 1 1 1
 static const char *const room1Grid[7] = {
     "11111111",
     "10000001",
     "10000001",
-    "10010001",
+    "10000001",
     "10000001",
     "10000001",
     "11111111",
 };
 
-// Objects must sit ON a wall cell ('1' in room1Grid): dungeon_view.c draws an object as that
-// wall's texture, so an object on an open floor cell would be interactable but invisible.
+// Objects on a wall cell ('1') are drawn as that wall's texture (only the door); objects on a
+// floor cell are free-standing props.
 static const RoomObject room1Objects[] = {
-    { 3, 3, OBJ_POD_OPEN,           0,      0, 0 },
-    { 3, 6, OBJ_LARVA_TANK,         0,      0, 0 },
-    { 2, 0, OBJ_POD_BROKEN,         0,      0, 0 },
-    { 4, 0, OBJ_POD_BROKEN,         0,      0, 0 },
-    { 5, 6, OBJ_POD_BROKEN,         0,      0, 0 },
-    { 0, 4, OBJ_POD_BROKEN,         0,      0, 0 },
-    { 6, 0, OBJ_CARTILAGE_CHEST,    0,      0, 0 },
-    { 7, 3, OBJ_RESTORATION_SHRINE, 0,      0, 0 },
-    { 7, 5, OBJ_MINDFLAYER_CORPSE,  0,      0, 0 },
+    { 3, 2, OBJ_POD_OPEN,           0,      0, 0 },
+    { 3, 5, OBJ_LARVA_TANK,         0,      0, 0 },
+    { 2, 1, OBJ_POD_BROKEN,         0,      0, 0 },
+    { 1, 4, OBJ_POD_BROKEN,         0,      0, 0 },
+    { 5, 5, OBJ_POD_BROKEN,         0,      0, 0 },
+    { 6, 1, OBJ_CARTILAGE_CHEST,    0,      0, 0 },
+    { 6, 3, OBJ_RESTORATION_SHRINE, 0,      0, 0 },
+    { 6, 5, OBJ_MINDFLAYER_CORPSE,  0,      0, 0 },
     { 0, 1, OBJ_DOOR_EXIT,          ROOM_2, 0, 0 }, // ROOM_2 isn't built yet
 };
 
@@ -164,7 +164,7 @@ const RoomDef ROOM1 = {
     .roomId = ROOM_1,
     .w = 8, .h = 7,
     .grid = room1Grid,
-    .startX = 3, .startY = 4, .startFacing = FACE_SOUTH,
+    .startX = 3, .startY = 3, .startFacing = FACE_SOUTH,
     .objectCount = sizeof(room1Objects) / sizeof(room1Objects[0]),
     .objects = room1Objects,
     .onInteract = room1_onInteract,
