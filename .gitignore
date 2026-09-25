@@ -1,0 +1,7 @@
+out/
+*.o
+*.bin
+*.elf
+*.map
+.DS_Store
+src/dev_config.h
