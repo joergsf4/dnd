@@ -4,7 +4,9 @@
 #        ./build.sh clean    -> clean build artifacts
 set -euo pipefail
 cd "$(dirname "$0")"
-docker run --rm -v "$PWD":/m68k -t registry.gitlab.com/doragasu/docker-sgdk:v2.11 "$@"
+TTY=""
+[ -t 1 ] && TTY="-t"          # no terminal in CI (GitHub Actions): docker must not ask for one
+docker run --rm -v "$PWD":/m68k $TTY registry.gitlab.com/doragasu/docker-sgdk:v2.11 "$@"
 
 # Requirement: keep the ROM within the biggest commercial Mega Drive cartridge size
 # (40 Mbit = 5 MB, Super Street Fighter II). Only checked after a normal build.

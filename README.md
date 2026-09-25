@@ -17,6 +17,11 @@ Same setup as the other Mega Drive projects in this workspace:
 - `./build.sh` — builds `out/rom.bin` in the container (`./build.sh clean` to clean).
 - `./run.sh` — runs the last build in BlastEm.
 - `.vscode/tasks.json` — the same two as build/run tasks (Cmd+Shift+B to build).
+- **Play in the browser:** https://joergsf4.github.io/dnd/ -- `.github/workflows/pages.yml` builds the
+  ROM on every push to main and publishes it with EmulatorJS (Genesis Plus GX core), the same
+  player as Wanderburg's itch.io version. `tools/make_web.sh` assembles the same thing locally in
+  `site/` (plus a zip for itch.io): `(cd site && python3 -m http.server 8000)`, then
+  http://localhost:8000/?autostart
 - `tools/emutest.py` — drives BlastEm's debugger (`-d`) to play the ROM headlessly and save
   screenshots (`python3 tools/emutest.py room1`; screenshots land in `out/emutest/`, gitignored).
   BlastEm's own `ui.screenshot` binding writes the PNG, so no OS-level screen capture is needed —
@@ -131,7 +136,8 @@ tools/
   make_portraits.py        Generates the nine hero portraits and their avatars
   make_title.py            Generates the title screen image (gfx/title.png)
   make_logo.py             The club logo (gfx/rcd_logo.png) from rcd_logo.svg (both from Wanderburg)
-  generate_music.py        Composes the songs (PSG VGM), imports the title theme's MIDI
+  generate_music.py        Composes the songs (PSG VGM)
+  make_web.sh              Assembles the browser version in site/ (EmulatorJS)
   generate_sfx.py          Synthesises the sound effects (8-bit WAV)
   emutest.py               Headless BlastEm test scenarios with screenshots
 ```
@@ -278,10 +284,8 @@ synthesised by `tools/generate_sfx.py` (`WAV sfx_x "sfx/x.wav" XGM2`).
   combat song and back.
 - Effects: hits, misses, the party getting hurt, spells, fire, healing, the tank bursting, doors,
   Lae'zel landing, dice, victory, game over, menu cursor, the quakes of the ending, loot.
-- The **title theme** is Baldur's Gate's opening theme, imported from a MIDI (a fan arrangement
-  from vgmusic.com, `res/music/src/`) by the MIDI reader in `generate_music.py`. The composition
-  isn't ours: fine for this private project, to be replaced by an own piece before anything is
-  published. All other songs are original.
+- All songs are original compositions (the title theme once came from a fan MIDI of Baldur's
+  Gate; it was replaced before the game went on the web).
 
 Booting takes a moment longer since the driver loads first (tools/emutest.py waits 150 frames
 before pressing START on the title).

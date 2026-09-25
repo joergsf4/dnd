@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Nautiloid – ein D&amp;D-Prolog für das Mega Drive</title>
+<style>
+  :root { --bg: #140a10; --fg: #e8d8d0; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg); overflow: hidden;
+               font: 13px/1.4 system-ui, sans-serif; }
+  body { display: flex; flex-direction: column; }
+  #game { flex: 1; min-height: 0; }
+  footer { flex: none; padding: 6px 12px; text-align: center; background: #0a0508; }
+  kbd { background: #3a1a24; border-radius: 3px; padding: 0 5px; }
+</style>
+</head>
+<body>
+<div id="game"></div>
+<footer>
+  Steuerkreuz / D-pad: <kbd>Pfeiltasten</kbd> &nbsp; A (benutzen): <kbd>S</kbd> &nbsp;
+  B (Gruppe): <kbd>X</kbd> &nbsp; Start: <kbd>Enter</kbd>
+</footer>
+
+<script>
+  EJS_player = "#game";
+  EJS_core = "segaMD";                     // Genesis Plus GX
+  EJS_gameUrl = "nautiloid.bin";
+  EJS_gameName = "Nautiloid";
+  EJS_pathtodata = "data/";
+  EJS_color = "#d05834";
+  EJS_backgroundColor = "#140a10";
+  EJS_language = "en-US";                  // no translation files are shipped
+  EJS_disableAutoLang = false;
+  EJS_startOnLoaded = false;               // the Play button gives the browser the click it needs for sound
+  EJS_disableDatabases = true;
+  if (location.search.indexOf("autostart") >= 0) EJS_startOnLoaded = true;     // for local tests
+</script>
+<script src="data/loader.js"></script>
+</body>
+</html>

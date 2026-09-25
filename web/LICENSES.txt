@@ -1,0 +1,10 @@
+Nautiloid (Mega Drive) in the browser
+
+The game ROM (nautiloid.bin) is built with SGDK (MIT license, https://github.com/Stephane-D/SGDK).
+A fan project inspired by Baldur's Gate 3 and Dungeons & Dragons; not affiliated with Larian
+Studios or Wizards of the Coast. All graphics, music and sounds are made for this project.
+
+The player in data/ is EmulatorJS (GPL-3.0, https://github.com/EmulatorJS/EmulatorJS) with the
+Genesis Plus GX core (Charles MacDonald / Eke-Eke, non-commercial license,
+https://github.com/ekeeke/Genesis-Plus-GX). Both are unchanged copies from https://cdn.emulatorjs.org/stable/.
+Because of the Genesis Plus GX license the game must be published free of charge.

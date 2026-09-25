@@ -2,11 +2,9 @@
 """Composes the music of the Nautiloid prologue as VGM files for the SN76489 (the Mega Drive's PSG)
 in res/music/. rescomp turns each .vgm into an XGM2 song (`XGM2 name "music/x.vgm"`, see
 res/resources.res); src/sfx.c plays them. The framework (Track, write_vgm, note strings) comes
-from the Wanderburg project; the songs are new, except the title theme.
+from the Wanderburg project; all songs are original.
 
-    title    Baldur's Gate's opening theme, imported from a MIDI (res/music/src/, a fan arrangement
-             for guitar and recorder from vgmusic.com). The composition is not ours: fine for this
-             private project, to be replaced by an own piece before anything is published.
+    title    dark and stately, D minor: a fantasy theme over slow arpeggios
     dungeon  eerie: a pulsing low drone, a sparse minor melody with an echo, a heartbeat
     combat   driving D minor riff with drums
     bridge   hectic E minor, fast, for the countdown on the bridge
@@ -170,120 +168,29 @@ def m(*names):
 
 
 
-# ------------------------------------------------------------------ MIDI import (the title theme)
-
-SRC_DIR = os.path.join(OUT_DIR, "src")
-
-
-def varlen(data, p):
-    v = 0
-    while True:
-        b = data[p]
-        p += 1
-        v = (v << 7) | (b & 0x7F)
-        if not b & 0x80:
-            return v, p
-
-
-def read_midi(path):
-    """A minimal type-0/1 MIDI reader: (ticks per quarter, tempo map, [notes per track]) with a note
-    being (start tick, end tick, pitch). Tracks without notes are dropped."""
-    data = open(path, "rb").read()
-    assert data[:4] == b"MThd", "not a MIDI file"
-    _fmt, ntrk, div = struct.unpack(">HHH", data[8:14])
-    pos, tempos, tracks = 14, [(0, 500000)], []
-    for _ in range(ntrk):
-        assert data[pos:pos + 4] == b"MTrk"
-        length = struct.unpack(">I", data[pos + 4:pos + 8])[0]
-        p, end, t, status, on, notes = pos + 8, pos + 8 + length, 0, 0, {}, []
-        while p < end:
-            delta, p = varlen(data, p)
-            t += delta
-            if data[p] & 0x80:
-                status = data[p]
-                p += 1
-            if status == 0xFF:                                  # meta event
-                kind = data[p]
-                n, p = varlen(data, p + 1)
-                if kind == 0x51:
-                    tempos.append((t, int.from_bytes(data[p:p + 3], "big")))
-                p += n
-                continue
-            if status in (0xF0, 0xF7):                          # sysex
-                n, p = varlen(data, p)
-                p += n
-                continue
-            hi = status & 0xF0
-            if hi in (0x80, 0x90):
-                note, vel = data[p], data[p + 1]
-                p += 2
-                if hi == 0x90 and vel:
-                    on[note] = t
-                elif note in on:
-                    notes.append((on.pop(note), t, note))
-            elif hi in (0xA0, 0xB0, 0xE0):
-                p += 2
-            else:                                               # 0xC0, 0xD0
-                p += 1
-        if notes:
-            tracks.append(notes)
-        pos = end
-    return div, sorted(tempos), tracks
-
-
-def frames_of(tick, div, tempos):
-    """MIDI tick -> video frame (60 Hz), following the tempo map."""
-    sec, last_t, last_tempo = 0.0, 0, tempos[0][1]
-    for t, tempo in tempos:
-        if t > tick:
-            break
-        sec += (t - last_t) / div * last_tempo / 1e6
-        last_t, last_tempo = t, tempo
-    sec += (tick - last_t) / div * last_tempo / 1e6
-    return int(round(sec * 60))
-
-
-def line(notes, div, tempos, total, pick):
-    """A monophonic line from (possibly polyphonic) notes: per frame the highest (pick=max) or
-    lowest (pick=min) sounding note, as [(pitch or None, frames)] with notes kept apart."""
-    frame = [None] * total
-    start = [False] * total
-    for s, e, n in notes:
-        fs, fe = frames_of(s, div, tempos), frames_of(e, div, tempos)
-        for f in range(fs, min(fe, total)):
-            if frame[f] is None or pick(frame[f], n) == n:
-                if frame[f] != n:
-                    start[f] = f == fs
-                frame[f] = n
-        if fs < total:
-            start[fs] = True
-    out = []
-    for f in range(total):
-        if out and out[-1][0] == frame[f] and not (start[f] and frame[f] is not None):
-            out[-1] = (frame[f], out[-1][1] + 1)
-        else:
-            out.append((frame[f], 1))
-    return out
-
+# ------------------------------------------------------------------ own songs
 
 def song_title():
-    """Baldur's Gate's opening theme from res/music/src/baldurs_gate_opening.mid: the track with the
-    fewest notes (recorder) is the melody, the other (guitar) gives the harmony (its top note) and
-    the bass (its bottom note)."""
-    div, tempos, tracks = read_midi(os.path.join(SRC_DIR, "baldurs_gate_opening.mid"))
-    tracks.sort(key=len)                                    # the melody has the fewest notes
-    melody, accomp = tracks[0], (tracks[-1] if len(tracks) > 1 else tracks[0])
-    melody = [(st, en, n + 12) for st, en, n in melody]     # an octave up: clearer on the PSG
-    bass = [(st, en, n - 12) for st, en, n in accomp]       # the guitar's bottom, an octave down
-    total = max(frames_of(e, div, tempos) for tr in tracks for _, e, _ in tr) + 30
+    """Dark and stately, D minor: a fantasy theme over slow arpeggios, a timpani beat per bar."""
+    e = 20
+    a = "D5:4 A4:2 D5:2 F5:4 E5:2 D5:2 C5:4 A4:4 D5:8 "
+    b = "F5:4 G5:2 A5:2 A#5:4 A5:2 G5:2 F5:4 E5:4 D5:8 "
+    c = "A5:4 F5:2 D5:2 G5:4 E5:2 C#5:2 D5:6 E5:2 F5:4 E5:4 D5:4 C#5:4 "
+    d = "D5:2 E5:2 F5:2 G5:2 A5:4 A#5:2 A5:2 G5:4 F5:2 E5:2 D5:8 "
+    names = ["Dm", "Dm", "C", "Dm", "Bb", "Gm", "C", "Dm", "Dm", "C", "Bb", "A", "Dm", "Gm", "A", "Dm"]
+    chord = {"Dm": m("D4", "F4", "A4"), "C": m("C4", "E4", "G4"), "Bb": m("A#3", "D4", "F4"),
+             "Gm": m("G3", "A#3", "D4"), "A": m("A3", "C#4", "E4")}
+    root = {"Dm": "D3", "C": "C3", "Bb": "A#2", "Gm": "G2", "A": "A2"}
+    bass = []
+    for n in names:
+        bass += parse(f"{root[n]}:4 {root[n]}:4", e)
     t = Track()
-    t.add_voice(0, line(melody, div, tempos, total, max), vol=2, fall=0.15)
-    t.add_voice(1, line(accomp, div, tempos, total, max), vol=6, fall=0.2)
-    t.add_voice(2, line(bass, div, tempos, total, min), vol=4, fall=0.15)
+    t.add_voice(0, parse(a + b + c + d, e), vol=2, fall=0.12, staccato=2)
+    t.add_voice(1, chord_arp([chord[n] for n in names], e), vol=10, fall=0.3)
+    t.add_voice(2, bass, vol=4, fall=0.1, staccato=3)
+    t.add_drums(" ".join(["k . . . . . . ."] * 16), e)
     return t
 
-
-# ------------------------------------------------------------------ own songs
 
 def song_dungeon():
     """Eerie: a slowly pulsing drone, a sparse A minor melody and its echo, a faint heartbeat."""

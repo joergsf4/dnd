@@ -132,10 +132,14 @@ together in Room 1 (the "Klonkammer" — see `BeschreibungInhaltVerticalSlice.md
       mind flayers could get busts the same way.
 - [x] Title screen (`tools/make_title.py`, `src/title.c`).
 
+## Web
+- [x] Browser version on GitHub Pages (EmulatorJS, built by `.github/workflows/pages.yml`).
+- [ ] The reference images (screenso/) stay local and out of git (.gitignore): they are
+      third-party art and BG3 screenshots.
+
 ## Audio
 - [x] Music and effects via XGM2 (README, "Audio"); pipeline taken over from Wanderburg.
-- [ ] Replace the title theme (Baldur's Gate, from a fan MIDI) with an own composition before
-      anything is published.
+- [x] Own title theme (the Baldur's Gate MIDI is gone, also from the git history).
 - [ ] Listen through on hardware/BlastEm: volumes, PCM priorities, whether music stutters while
       the view redraws (DMA vs. the Z80).
 

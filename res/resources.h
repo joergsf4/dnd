@@ -23,7 +23,7 @@ extern const u8 viewColumns[224880];
 extern const u8 viewBackdrops[35840];
 extern const u8 viewAdjacent[71680];
 extern const u8 viewProps[285994];
-extern const u8 music_title[2560];
+extern const u8 music_title[1280];
 extern const u8 music_dungeon[1024];
 extern const u8 music_combat[1536];
 extern const u8 music_bridge[1536];

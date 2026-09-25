@@ -6,3 +6,7 @@ out/
 *.map
 .DS_Store
 src/dev_config.h
+site/
+# Reference images and third-party material: kept locally, never published
+screenso/
+res/music/src/
