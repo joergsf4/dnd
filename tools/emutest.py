@@ -204,7 +204,7 @@ def main():
 
         if args.scenario == "room1":
             # Plays through Room 1: intro, both larva-pool branches (INT check, then reaching
-            # in), corpse, shrine, chest, the still sealed door, a broken pod and the open pod.
+            # in), corpse, shrine, chest, a broken pod and the open pod.
             create_hero(b, args.cls)
             b.shot("r1_intro1")
             act(b, "gamepads.1.a")
@@ -258,7 +258,7 @@ def main():
             act(b, "gamepads.1.a")
             b.shot("r1_chest_open")            # opened chest, panel: potion + gear
 
-            # --- door, west wall (0,1) ---
+            # --- past the door, west wall (0,1) ---
             act(b, "gamepads.1.left")          # north -> west
             walk(b, 1)                         # (5,2)
             act(b, "gamepads.1.left")          # west -> south
@@ -268,10 +268,7 @@ def main():
             act(b, "gamepads.1.right")         # west -> north
             walk(b, 2)                         # (1,1)
             act(b, "gamepads.1.left")          # north -> west
-            b.shot("r1_at_door")
-            act(b, "gamepads.1.a")
-            b.shot("r1_door")                  # still sealed: ROOM_2 isn't built yet
-            act(b, "gamepads.1.a")
+            b.shot("r1_at_door")               # the door itself leads to Room 2: see "room2"
 
             # --- broken pod, (2,1) ---
             act(b, "gamepads.1.right")         # west -> north
