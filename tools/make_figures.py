@@ -7,6 +7,10 @@ two different figures are never on screen at the same time. Conventions shared b
 index 0 transparent, 1 outline, 15 a bright accent (the combat target marker is drawn in it).
 
     res/gfx/fig_imp.png              Niederer Kobold (imp), 32x48, 3 frames of wing beat
+    res/gfx/fig_hound.png            Höllenhund, 48x40
+    res/gfx/fig_cambion.png          Cambion, 48x96
+    res/gfx/fig_zhalk.png            Kommandant Zhalk, 64x112, the Everburn Blade in his hand
+    res/gfx/fig_mindflayer_bust.png  the mind flayer on the bridge, 80x96 close-up
     res/gfx/fig_laezel.png           Lae'zel, full figure 48x96 (she lands in front of you)
     res/gfx/fig_laezel_bust.png      Lae'zel, 80x96 close-up while she speaks
     res/gfx/fig_shadowheart.png      Schattenherz, full figure 48x96
@@ -35,14 +39,34 @@ OUT = os.path.join(HERE, "..", "res", "gfx")
 TR, OUT_C = 0, 1
 
 # ---------------------------------------------------------------- palettes (index 0: transparent)
-IMP_PAL = [
-    (0xFF, 0x00, 0xFF), (0x10, 0x0C, 0x10), (0xD0, 0x30, 0x28), (0x80, 0x18, 0x18),
-    (0x48, 0x2C, 0x24), (0xF8, 0xF8, 0xF0), (0x90, 0x98, 0xA8), (0xD8, 0xE0, 0xE8),
-    (0xF0, 0x60, 0x40), (0x60, 0x40, 0x30), (0xB8, 0x88, 0x40), (0x70, 0x50, 0x28),
-    (0x30, 0x20, 0x18), (0x98, 0x70, 0x50), (0xA8, 0x28, 0x20), (0xF8, 0xD0, 0x40),
+# All creatures of Avernus share one palette, so mixed fights work (PAL2 holds one palette at a
+# time): imps, hellhounds, cambions, Zhalk. Colours 8-10 are the fire ramp; combat.c cycles them
+# during Zhalk's fight, so his sword burns (flames anywhere else flicker along).
+HELL_PAL = [
+    (0xFF, 0x00, 0xFF), (0x10, 0x08, 0x08),
+    (0xE8, 0x50, 0x38), (0xB8, 0x28, 0x20), (0x70, 0x14, 0x14),   # blood-red skin
+    (0x70, 0x68, 0x74), (0x3C, 0x34, 0x3C), (0x1C, 0x18, 0x1C),   # hell iron / black hide
+    (0xF8, 0xE0, 0x60), (0xF0, 0x90, 0x30), (0xD0, 0x40, 0x20),   # fire (cycled)
+    (0xD0, 0xB8, 0x98), (0x84, 0x6C, 0x54),                       # horn, bone
+    (0xA8, 0xB0, 0xC0),                                           # steel
+    (0x54, 0x28, 0x28),                                           # wing membrane
+    (0xF8, 0xF0, 0x80),                                           # glowing eyes (accent)
 ]
-(I_RED, I_RED_D, I_WING, I_WHITE, I_STEEL, I_STEEL_L, I_RED_H, I_WING_H, I_HORN, I_HORN_D,
- I_WING_D, I_HORN_L, I_RED_M, I_YELLOW) = range(2, 16)
+(H_RED_H, H_RED, H_RED_D, H_IRON_H, H_IRON, H_IRON_D, H_FIRE_Y, H_FIRE_O, H_FIRE_R, H_HORN,
+ H_HORN_D, H_STEEL, H_WING, H_EYE) = range(2, 16)
+
+MF_PAL = [
+    (0xFF, 0x00, 0xFF), (0x14, 0x0C, 0x1C),
+    (0xC8, 0x98, 0xD0), (0x98, 0x68, 0xA8), (0x60, 0x3C, 0x70),   # mauve skin
+    (0x50, 0x40, 0x88), (0x30, 0x24, 0x58), (0x18, 0x10, 0x30),   # indigo robe
+    (0xF8, 0xD8, 0x70), (0xB8, 0x84, 0x34),                       # gold
+    (0xF0, 0xF0, 0xF8),                                           # pupil-less eyes
+    (0x40, 0x18, 0x30),                                           # maw
+    (0x90, 0x70, 0xF0), (0x00, 0x00, 0x00), (0x00, 0x00, 0x00),
+    (0xC8, 0xB8, 0xFF),                                           # psionic glow (accent)
+]
+(M_SKIN_H, M_SKIN, M_SKIN_L, M_ROBE_H, M_ROBE, M_ROBE_D, M_GOLD_H, M_GOLD, M_EYE, M_MAW,
+ M_GLOW) = range(2, 13)
 
 LZ_PAL = [
     (0xFF, 0x00, 0xFF), (0x18, 0x10, 0x10),
@@ -168,38 +192,210 @@ def to_rgba(canvas, palette):
     return img
 
 
-# ---------------------------------------------------------------- imp
+# ---------------------------------------------------------------- creatures of Avernus
+def bat_wing(c, root, tip, low, bones=3):
+    c.poly([root, tip, low], H_WING)
+    for k in range(bones):                                # the wing's finger bones
+        t = (k + 1) / (bones + 1)
+        c.line(root[0], root[1], tip[0] + (low[0] - tip[0]) * t, tip[1] + (low[1] - tip[1]) * t, H_RED_D)
+    c.line(root[0], root[1], tip[0], tip[1], H_HORN_D)
+
+
+def horn(c, x, y, dx, length, thick):
+    """A horn curving up and back from (x, y); dx = -1 / +1 for the side."""
+    for i in range(length):
+        t = i / max(1, length - 1)
+        r = thick * (1 - t) + 0.6
+        c.ellipse(x + dx * (length * 0.5 * t + length * 0.4 * t * t), y - length * 0.8 * t + length * 0.3 * t * t, r, r, H_HORN if i % 3 else H_HORN_D)
+
+
 def imp(frame):
     """Tiny crimson devil: goat horns, bat wings (3-frame beat), thin arrow tail, iron trident."""
     c = Canvas(32, 48)
     wing_y = (0, 6, 12)[frame]                            # wing tips: up, level, down
     for side in (-1, 1):
-        root = (16 + side * 4, 20)
-        tip = (16 + side * 15, 8 + wing_y)
-        low = (16 + side * 12, 24 + wing_y // 2)
-        c.poly([root, tip, low], I_WING)
-        c.line(root[0], root[1], tip[0], tip[1], I_WING_H)   # wing bone
-        c.set(tip[0], tip[1], I_RED_D)
+        bat_wing(c, (16 + side * 4, 20), (16 + side * 15, 8 + wing_y), (16 + side * 12, 24 + wing_y // 2), 2)
     for i in range(16):                                   # tail, curling behind
-        c.set(16 + int(6 * math.sin(i / 3.0)), 30 + i, I_RED_D)
-    c.poly([(14, 45), (19, 45), (16, 41)], I_RED_D)       # arrow tip of the tail
+        c.set(16 + int(6 * math.sin(i / 3.0)), 30 + i, H_RED_D)
+    c.poly([(14, 45), (19, 45), (16, 41)], H_RED_D)       # arrow tip of the tail
     c.ellipse(16, 27, 6, 7, TMP)                          # body
-    c.rect(12, 32, 15, 38, I_RED_D)                       # legs
-    c.rect(18, 32, 21, 38, I_RED_D)
+    c.rect(12, 32, 15, 38, H_RED_D)                       # legs
+    c.rect(18, 32, 21, 38, H_RED_D)
     c.ellipse(16, 15, 6, 6, TMP)                          # head
-    c.shade_region(TMP, I_RED_H, I_RED, I_RED_M, 16, 20, 7, 12)
-    c.poly([(11, 11), (9, 4), (13, 9)], I_HORN)           # goat horns
-    c.poly([(21, 11), (23, 4), (19, 9)], I_HORN_D)
-    c.set(13, 15, I_YELLOW)                               # eyes
-    c.set(18, 15, I_YELLOW)
-    c.rect(14, 18, 19, 19, I_RED_D)                       # grin
-    c.set(15, 18, I_WHITE)
-    c.set(17, 18, I_WHITE)
-    c.rect(26, 6, 27, 40, I_STEEL)                        # trident shaft
+    c.shade_region(TMP, H_RED_H, H_RED, H_RED_D, 16, 20, 7, 12)
+    c.poly([(11, 11), (9, 4), (13, 9)], H_HORN)           # goat horns
+    c.poly([(21, 11), (23, 4), (19, 9)], H_HORN_D)
+    c.set(13, 15, H_EYE)                                  # eyes
+    c.set(18, 15, H_EYE)
+    c.rect(14, 18, 19, 19, H_RED_D)                       # grin
+    c.set(15, 18, H_HORN)
+    c.set(17, 18, H_HORN)
+    c.rect(26, 6, 27, 40, H_STEEL)                        # trident shaft
     for x in (24, 26, 28):
-        c.rect(x, 3, x + 1, 8, I_STEEL_L)
-    c.rect(24, 7, 29, 8, I_STEEL)
-    c.rect(21, 24, 26, 26, I_RED)                         # arm holding it
+        c.rect(x, 3, x + 1, 8, H_STEEL)
+    c.rect(24, 7, 29, 8, H_IRON_H)
+    c.rect(21, 24, 26, 26, H_RED)                         # arm holding it
+    c.outline()
+    return c
+
+
+def hound():
+    """Hellhound: a black hound with glowing magma cracks, fire in its jaws, a flame for a tail."""
+    rng = random.Random(31)
+    c = Canvas(48, 40)
+    for i in range(10):                                   # tail of flame
+        c.ellipse(42 + i * 0.3, 18 - i * 1.2, 2.5 - i * 0.2, 2, (H_FIRE_R, H_FIRE_O, H_FIRE_Y)[i % 3])
+    c.ellipse(28, 22, 15, 9, TMP)                         # body
+    c.shade_region(TMP, H_IRON_H, H_IRON, H_IRON_D, 26, 18, 16, 9)
+    for x, bend in ((18, -2), (24, 1), (34, -1), (40, 2)):    # legs, claws
+        c.rect(x, 26, x + 4, 37, H_IRON_D)
+        c.rect(x + bend, 37, x + bend + 5, 39, H_IRON)
+    for _ in range(6):                                    # magma cracks
+        x, y = rng.randint(18, 40), rng.randint(16, 26)
+        for k in range(rng.randint(4, 8)):
+            c.set(x, y, H_FIRE_O if k % 3 else H_FIRE_Y)
+            x += rng.choice((1, 1, 0))
+            y += rng.choice((-1, 0, 1))
+    for x in range(16, 40, 3):                            # smouldering ridge on the back
+        c.poly([(x, 15), (x + 2, 9 - (x % 2) * 2), (x + 3, 15)], H_FIRE_R)
+    c.ellipse(11, 17, 9, 8, TMP)                          # head
+    c.shade_region(TMP, H_IRON_H, H_IRON, H_IRON_D, 9, 14, 9, 8)
+    c.poly([(5, 12), (7, 2), (10, 11)], H_IRON)           # ears
+    c.poly([(13, 11), (16, 3), (17, 12)], H_IRON_D)
+    c.rect(1, 18, 12, 23, H_IRON)                         # snout
+    c.rect(1, 22, 12, 26, H_FIRE_O)                       # open jaws full of fire
+    c.rect(2, 23, 10, 25, H_FIRE_Y)
+    for x in range(2, 12, 2):
+        c.set(x, 22, H_HORN)                              # teeth
+        c.set(x + 1, 26, H_HORN)
+    c.set(7, 15, H_EYE)
+    c.set(12, 15, H_EYE)
+    c.outline()
+    return c
+
+
+def cambion():
+    """Cambion: horned, winged devil in lighter black armour, with a glaive."""
+    c = Canvas(48, 96)
+    for side in (-1, 1):
+        bat_wing(c, (24 + side * 6, 34), (24 + side * 24, 10), (24 + side * 20, 60))
+    c.rect(18, 62, 23, 90, H_IRON_D)                      # legs in iron
+    c.rect(25, 62, 30, 90, H_IRON_D)
+    c.rect(17, 88, 24, 95, H_IRON)
+    c.rect(24, 88, 31, 95, H_IRON)
+    c.poly([(15, 32), (33, 32), (32, 64), (16, 64)], TMP)   # armour
+    c.shade_region(TMP, H_IRON_H, H_IRON, H_IRON_D, 22, 44, 12, 18)
+    c.line(24, 34, 24, 62, H_IRON_D)
+    for side in (-1, 1):                                  # spiked pauldrons
+        c.poly([(24 + side * 6, 30), (24 + side * 16, 30), (24 + side * 19, 24), (24 + side * 13, 36)], H_IRON)
+        c.line(24 + side * 16, 30, 24 + side * 19, 24, H_IRON_H)
+    c.rect(10, 36, 14, 58, H_RED)                         # red arms
+    c.rect(34, 36, 38, 58, H_RED_D)
+    c.rect(39, 6, 41, 92, H_HORN_D)                       # glaive shaft...
+    c.poly([(38, 6), (44, 0), (44, 14), (40, 16)], H_STEEL)   # ...and blade
+    c.line(44, 0, 44, 14, H_HORN)
+    c.rect(34, 50, 41, 55, H_RED)                         # hand on the shaft
+    c.rect(21, 25, 27, 32, H_RED_D)                       # neck
+    c.ellipse(24, 18, 6, 8, TMP)                          # head
+    c.shade_region(TMP, H_RED_H, H_RED, H_RED_D, 22, 16, 7, 9)
+    horn(c, 19, 12, -1, 10, 1.6)
+    horn(c, 29, 12, 1, 10, 1.6)
+    c.rect(20, 17, 23, 18, H_EYE)                         # glowing eyes
+    c.rect(25, 17, 28, 18, H_EYE)
+    c.rect(21, 22, 27, 23, H_RED_D)                       # sneer
+    c.outline()
+    return c
+
+
+def zhalk():
+    """Kommandant Zhalk: a hulking cambion, huge horns and wings, spiked black hell-iron with
+    skulls, and the Everburn Blade -- a greatsword wrapped in fire (the fire ramp is cycled)."""
+    c = Canvas(64, 112)
+    for side in (-1, 1):
+        bat_wing(c, (32 + side * 8, 40), (32 + side * 32, 6), (32 + side * 28, 76), 4)
+    c.rect(22, 76, 29, 106, H_IRON_D)                     # legs
+    c.rect(35, 76, 42, 106, H_IRON_D)
+    c.poly([(20, 104), (30, 104), (31, 111), (18, 111)], H_IRON)
+    c.poly([(34, 104), (44, 104), (46, 111), (33, 111)], H_IRON)
+    c.poly([(17, 38), (47, 38), (45, 78), (19, 78)], TMP)   # armour
+    c.shade_region(TMP, H_IRON_H, H_IRON, H_IRON_D, 28, 52, 16, 22)
+    for y in range(44, 76, 8):                            # plates with spikes
+        c.line(19, y, 45, y, H_IRON_D)
+    c.ellipse(32, 60, 4, 4, H_HORN)                       # a skull on the belt
+    c.rect(30, 59, 32, 60, H_IRON_D); c.rect(33, 59, 35, 60, H_IRON_D)
+    for side in (-1, 1):                                  # huge spiked pauldrons with skulls
+        cx = 32 + side * 15
+        c.ellipse(cx, 40, 10, 7, TMP)
+        c.shade_region(TMP, H_IRON_H, H_IRON, H_IRON_D, cx - 3, 38, 10, 7)
+        for k in range(3):
+            c.poly([(cx - 6 + k * 5, 36), (cx - 4 + k * 5 + side * 2, 26 - k), (cx - 2 + k * 5, 36)], H_IRON_H)
+        c.ellipse(cx, 42, 3, 3, H_HORN)
+        c.set(cx - 1, 42, H_IRON_D); c.set(cx + 1, 42, H_IRON_D)
+    c.rect(8, 44, 14, 70, H_RED)                          # arms, red and massive
+    c.rect(50, 44, 56, 70, H_RED_D)
+    # the Everburn Blade, raised diagonally, the blade wrapped in flames
+    for i in range(64):
+        x, y = 56 - i * 0.66, 70 - i * 1.08
+        if i < 6:
+            c.rect(x, y, x + 3, y + 2, H_HORN_D)          # grip
+            continue
+        c.rect(x - 1, y, x + 5, y + 2, H_STEEL if i % 2 else H_FIRE_Y)
+        if i % 3 == 0:                                    # tongues of fire licking up the blade
+            fx = x + (4 if i % 6 else -2)
+            c.poly([(fx - 2, y + 1), (fx + (2 if i % 6 else -3), y - 7), (fx + 2, y + 1)],
+                   (H_FIRE_O, H_FIRE_R, H_FIRE_Y)[(i // 3) % 3])
+    c.rect(50, 66, 60, 69, H_IRON_H)                      # crossguard
+    c.rect(49, 69, 57, 74, H_RED)                         # fist on the grip
+    c.rect(27, 29, 37, 38, H_RED_D)                       # neck
+    c.ellipse(32, 22, 9, 11, TMP)                         # head
+    c.shade_region(TMP, H_RED_H, H_RED, H_RED_D, 30, 20, 10, 12)
+    horn(c, 25, 14, -1, 16, 2.4)
+    horn(c, 39, 14, 1, 16, 2.4)
+    c.rect(26, 20, 30, 22, H_EYE)                         # glowing eyes
+    c.rect(34, 20, 38, 22, H_EYE)
+    c.rect(26, 27, 38, 30, H_RED_D)                       # grin full of fangs
+    for x in range(27, 38, 2):
+        c.set(x, 27, H_HORN)
+        c.set(x + 1, 29, H_HORN)
+    c.outline()
+    return c
+
+
+def mindflayer_bust():
+    """The mind flayer on the bridge: bulging mauve head, pupil-less white eyes, four tentacles
+    over the chest, a towering indigo collar with gold trim."""
+    c = Canvas(80, 96)
+    c.poly([(8, 16), (24, 4), (40, 8), (56, 4), (72, 16), (66, 70), (14, 70)], TMP)   # collar
+    c.shade_region(TMP, M_ROBE_H, M_ROBE, M_ROBE_D, 36, 30, 30, 30)
+    for i in range(7):                                    # gold trim along its edge
+        c.line(8 + i * 0, 16, 24, 4, M_GOLD)
+    c.line(8, 16, 24, 4, M_GOLD_H); c.line(24, 4, 40, 8, M_GOLD); c.line(40, 8, 56, 4, M_GOLD)
+    c.line(56, 4, 72, 16, M_GOLD_H)
+    c.poly([(14, 70), (66, 70), (78, 96), (2, 96)], TMP)   # robe over the shoulders
+    c.shade_region(TMP, M_ROBE_H, M_ROBE, M_ROBE_D, 34, 80, 30, 14)
+    c.line(40, 72, 40, 96, M_GOLD)
+    c.line(20, 72, 12, 96, M_GOLD)
+    c.line(60, 72, 68, 96, M_GOLD)
+    c.ellipse(40, 32, 18, 21, TMP)                        # the bulging head
+    c.shade_region(TMP, M_SKIN_H, M_SKIN, M_SKIN_L, 36, 26, 20, 22)
+    for side in (-1, 1):                                  # pupil-less eyes, slanted
+        for k in range(7):
+            c.set(40 + side * (5 + k), 33 - k // 3, M_EYE)
+            c.set(40 + side * (5 + k), 34 - k // 3, M_EYE)
+        c.line(40 + side * 4, 31, 40 + side * 12, 28, M_SKIN_L)
+    c.ellipse(40, 45, 7, 4, M_MAW)                        # the maw...
+    for k, dx in enumerate((-9, -3, 3, 9)):               # ...and four tentacles over the chest
+        for i in range(34):
+            t = i / 33
+            x = 40 + dx * (1 + 0.4 * t) + 3 * math.sin(t * 5 + k)
+            y = 44 + i
+            c.ellipse(x, y, 3.2 - 1.6 * t, 1.6, M_SKIN if (i // 4) % 2 else M_SKIN_L)
+            if i % 5 == 2:
+                c.set(x, y, M_SKIN_H)
+    for gx, gy in ((10, 40), (70, 36), (64, 58), (14, 60)):   # psionic glow
+        c.set(gx, gy, 15)
+        for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            c.set(gx + dx, gy + dy, M_GLOW)
     c.outline()
     return c
 
@@ -507,9 +703,13 @@ def arrow():
 
 
 if __name__ == "__main__":
-    save([imp(0), imp(1), imp(2)], "fig_imp.png", IMP_PAL)
+    save([imp(0), imp(1), imp(2)], "fig_imp.png", HELL_PAL)
+    save([hound()], "fig_hound.png", HELL_PAL)
+    save([cambion()], "fig_cambion.png", HELL_PAL)
+    save([zhalk()], "fig_zhalk.png", HELL_PAL)
+    save([mindflayer_bust()], "fig_mindflayer_bust.png", MF_PAL)
     save([laezel()], "fig_laezel.png", LZ_PAL)
     save([laezel_bust()], "fig_laezel_bust.png", LZ_PAL)
     save([shadowheart()], "fig_shadowheart.png", SH_PAL)
     save([shadowheart_bust()], "fig_shadowheart_bust.png", SH_PAL)
-    save([arrow()], "fig_arrow.png", IMP_PAL)
+    save([arrow()], "fig_arrow.png", HELL_PAL)

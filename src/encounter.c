@@ -1,20 +1,29 @@
 #include "encounter.h"
 #include "dungeon_view.h"
 #include "ui_panel.h"
+#include "abilities.h"
+#include "textbox.h"
 
 typedef struct
 {
     u8 count;
     const EnemyDef *enemies[COMBAT_MAX_ENEMIES];
     u8 gold;
+    u8 chase;    // cells (not diagonal) within which it closes in; 0: stays put
 } Encounter;
 
+// Sprite VRAM (main.c): a fight's figures plus four avatars must fit, see the sizes in
+// tools/make_figures.py -- Zhalk fights alone, cambions in pairs.
 static const Encounter encounters[] = {
-    [ENC_IMPS3] = { 3, { &ENEMY_IMP, &ENEMY_IMP, &ENEMY_IMP }, 6 },
-    [ENC_IMPS2] = { 2, { &ENEMY_IMP, &ENEMY_IMP }, 4 },
+    [ENC_IMPS3]       = { 3, { &ENEMY_IMP, &ENEMY_IMP, &ENEMY_IMP }, 6, 6 },
+    [ENC_IMPS2]       = { 2, { &ENEMY_IMP, &ENEMY_IMP }, 4, 6 },
+    [ENC_BRIDGE_IMPS] = { 3, { &ENEMY_IMP, &ENEMY_HOUND, &ENEMY_IMP }, 8, 2 },
+    [ENC_HOUNDS]      = { 2, { &ENEMY_HOUND, &ENEMY_HOUND }, 0, 2 },
+    [ENC_CAMBIONS]    = { 2, { &ENEMY_CAMBION, &ENEMY_CAMBION }, 12, 12 },
+    [ENC_ZHALK]       = { 1, { &ENEMY_ZHALK }, 50, 0 },
 };
 
-#define CHASE_RANGE 6   // cells (not diagonal); groups farther away stay put
+
 #define TANK_RANGE  3
 
 static s16 dist(s16 x0, s16 y0, s16 x1, s16 y1)
@@ -47,7 +56,7 @@ bool encounter_tick(const Player *p)
         RoomObject *o = &objects[i];
         if (!isEnemy(o)) continue;
         s16 d = dist(o->x, o->y, p->x, p->y);
-        if (d <= 1 || d > CHASE_RANGE) continue;
+        if (d <= 1 || d > encounters[o->param0].chase) continue;
 
         // Close in along the longer axis first, the other one if that's blocked.
         s16 dx = p->x - o->x, dy = p->y - o->y;
@@ -96,4 +105,13 @@ void encounter_fight(Player *p, RoomObject *group)
     const Encounter *e = &encounters[group->param0];
     combat_run(p, e->enemies, e->count, tank, e->gold);
     group->kind = OBJ_NONE;
+
+    if (group->param0 == ENC_ZHALK)
+    {
+        Character *c = ab_giveEverburn();
+        char l1[32];
+        sprintf(l1, "Sie geht an %s.", c ? c->name : "niemanden");
+        const char *lines[3] = { "Zhalk fällt! Die Immer-", "brand-Klinge lodert weiter.", l1 };
+        textbox_show(lines, 3, NULL, 0);
+    }
 }

@@ -9,7 +9,8 @@ typedef enum
 {
     ITEM_RUNE = 0,      // Eldritch-Rune (Room 5): opens Schattenherz's pod in Room 4
     ITEM_GOLD_KEY,      // verzierter Schlüssel (Room 5): opens the ornate chest there
-    ITEM_SCROLL,        // Schriftrolle (Room 5's chest); no use yet
+    ITEM_SCROLL,        // Schriftrolle (Room 5's chest): Brennende Hände, once, in combat
+    ITEM_EVERBURN,      // Immerbrand-Klinge (Zhalk, Room 6): wielded by the party's fighter
     ITEM_COUNT
 } ItemId;
 
@@ -33,5 +34,7 @@ void inventory_giveItem(ItemId item);
 void inventory_takeItem(ItemId item);
 bool inventory_hasItem(ItemId item);
 const char *inventory_itemName(ItemId item);   // for the panel, at most 12 characters
+
+#define INVENTORY_ITEM_ROWS 3   // panel rows for key items (18-20); at most 3 are ever carried
 
 #endif

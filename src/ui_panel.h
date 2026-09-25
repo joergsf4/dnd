@@ -28,6 +28,12 @@ void uiPanel_redrawChrome(void);
 // uiPanel_redrawChrome; exposed separately so a loot pickup can refresh just this part.
 void uiPanel_drawInventory(void);
 
+// Moves the avatars in a column (the end screen): the first at (x, y), one below the other.
+void uiPanel_moveAvatars(s16 x, s16 y, s16 dy);
+
+// Redraws the countdown line (row 21): "ABSTURZ: 10" while Room 6's countdown runs, else blank.
+void uiPanel_drawCountdown(void);
+
 // Redraws just the facing/coordinates line; call after each player move/turn.
 void uiPanel_drawStatus(const Player *p);
 

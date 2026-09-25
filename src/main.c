@@ -11,15 +11,18 @@
 #include "room3.h"
 #include "room4.h"
 #include "room5.h"
+#include "room6.h"
+#include "countdown.h"
 #include "figures.h"
 #include "encounter.h"
 #include "abilities.h"
 #include "text.h"
 
 // Sprite tiles are reserved just below the font; the default 420 would collide with the view's two
-// 560-tile buffers (dungeon_view.c). Avatars take 9 tiles each, a fight up to 3 imps x 24 + the
-// marker, Lae'zel's figure 72 -- 256 covers that with room to spare.
-#define SPRITE_VRAM_TILES 256
+// 560-tile buffers (dungeon_view.c). Avatars take 9 tiles each, figures up to 120 (a bust), a
+// fight at most 2 cambions (2 x 72) or Zhalk (112) plus the marker (encounter.c).
+#define SPRITE_VRAM_TILES 304   // all there is: tile maps start at 0xC000 (1536 tiles), the font
+                                // takes the top 96, the view 16 + 2 x 560 below
 
 #define ENEMY_STEP_FRAMES 45
 
@@ -69,6 +72,7 @@ int main(bool hardReset)
     map_registerRoom(&ROOM3);
     map_registerRoom(&ROOM4);
     map_registerRoom(&ROOM5);
+    map_registerRoom(&ROOM6);
     Player player;
     map_loadRoom(&ROOM1, &player);
     redrawWorld(&player);
@@ -81,8 +85,11 @@ int main(bool hardReset)
         u16 pressed = joy & ~prevJoy;
         bool moved = FALSE;
 
-        if (pressed & BUTTON_UP) { player_step(&player, 1); moved = TRUE; }
-        else if (pressed & BUTTON_DOWN) { player_step(&player, -1); moved = TRUE; }
+        if (pressed & (BUTTON_UP | BUTTON_DOWN))
+        {
+            if (player_step(&player, (pressed & BUTTON_UP) ? 1 : -1)) countdown_step();
+            moved = TRUE;
+        }
 
         if (pressed & BUTTON_LEFT) { player_turn(&player, -1); moved = TRUE; }
         else if (pressed & BUTTON_RIGHT) { player_turn(&player, 1); moved = TRUE; }
@@ -123,6 +130,7 @@ int main(bool hardReset)
             enemyTimer = 0;
         }
 
+        countdown_update();
         prevJoy = joy;
         SPR_update();
         SYS_doVBlankProcess();

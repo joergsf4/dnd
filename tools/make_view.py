@@ -795,6 +795,124 @@ def prop_ornate_chest(opened):
     return t
 
 
+def prop_hounds():
+    """Two hellhounds prowling side by side: black hides, glowing cracks, fire in their jaws."""
+    rng = random.Random(15)
+    t = blank(T)
+    shadow(t, 30)
+    for cx, cy, s in ((18, 50, 0.9), (44, 53, 1.0)):
+        ellipse(t, cx + 4 * s, cy, 11 * s, 6 * s, CH1)         # body
+        for dx in (-3, 2, 7, 11):
+            rect(t, int(cx + dx * s), int(cy + 3 * s), int(cx + dx * s + 2), 62, CH0)   # legs
+        ellipse(t, cx - 8 * s, cy - 4 * s, 6 * s, 5 * s, CH1)  # head
+        rect(t, int(cx - 16 * s), int(cy - 3 * s), int(cx - 8 * s), int(cy + 1 * s), CH0)   # snout
+        rect(t, int(cx - 16 * s), int(cy), int(cx - 9 * s), int(cy + 2 * s), MEM2)   # fiery jaws
+        t[int(cy - 6 * s)][int(cx - 9 * s)] = BONE             # eye
+        for _ in range(5):                                     # glowing cracks
+            x, y = int(cx + rng.randint(-4, 12) * s), int(cy + rng.randint(-3, 3) * s)
+            t[y][x] = MEM2
+            t[y][x + 1] = MEM1
+        for i in range(6):                                     # flame tail
+            t[int(cy - 3 - i)][int(cx + 15 * s) + i // 3] = MEM2 if i % 2 else BONE
+    return t
+
+
+def prop_cambions():
+    """Two cambions standing guard: red horned heads, black armour, wings folded behind."""
+    t = blank(T)
+    shadow(t, 28)
+    for cx in (20, 44):
+        for side in (-1, 1):                                   # folded wings behind
+            for y in range(18, 50):
+                w = max(0, 9 - abs(y - 26) // 3)
+                rect(t, cx + side * 4 if side > 0 else cx - 4 - w, y, cx + 4 + w if side > 0 else cx - 4, y + 1, CH0)
+        rect(t, cx - 5, 26, cx + 5, 46, CH1)                   # armour
+        rect(t, cx - 5, 26, cx - 3, 46, CH2)
+        rect(t, cx - 4, 46, cx - 1, 62, CH0)                   # legs
+        rect(t, cx + 1, 46, cx + 4, 62, CH0)
+        ellipse(t, cx, 20, 4, 5, MEM1)                         # head
+        t[19][cx - 2] = t[19][cx + 2] = BONE                   # eyes
+        for side in (-1, 1):                                   # horns
+            for i in range(6):
+                t[16 - i][cx + side * (3 + i // 2)] = BONE
+        rect(t, cx + 7, 8, cx + 8, 60, CH2)                    # glaive
+        rect(t, cx + 6, 6, cx + 10, 12, CH3)
+    return t
+
+
+def prop_duel():
+    """Zhalk and the mind flayer locked in combat: the cambion's burning sword against psionic
+    blue light."""
+    t = blank(T)
+    shadow(t, 30)
+    # Zhalk, left: wings, black armour, red skin, horns
+    for y in range(12, 44):
+        w = max(0, 12 - abs(y - 20) // 2)
+        rect(t, 2, y, 2 + w, y + 1, CH0)
+    rect(t, 10, 24, 24, 46, CH1)
+    rect(t, 10, 24, 13, 46, CH2)
+    rect(t, 12, 46, 16, 62, CH0)
+    rect(t, 19, 46, 23, 62, CH0)
+    ellipse(t, 17, 17, 5, 6, MEM1)
+    t[16][15] = t[16][19] = BONE
+    for side in (-1, 1):
+        for i in range(7):
+            t[12 - i][17 + side * (4 + i // 2)] = BONE
+    for i in range(22):                                        # the Everburn Blade, raised
+        x, y = 24 + i, 30 - i
+        rect(t, x, y, x + 2, y + 1, MEM2 if i % 2 else BONE)
+        if i % 3 == 0:
+            t[y - 2][x + 1] = MEM1
+    # the mind flayer, right: robe, mauve head, tentacles, a hand full of blue light
+    rect(t, 42, 26, 56, 62, CH1)
+    rect(t, 42, 26, 45, 62, CH2)
+    for y in range(12, 30):                                    # high collar
+        rect(t, 40, y, 42, y + 1, CH2)
+        rect(t, 56, y, 58, y + 1, CH2)
+    ellipse(t, 49, 18, 6, 7, FLESH)
+    t[17][47] = t[17][51] = GLINT
+    for dx in (-3, -1, 1, 3):
+        rect(t, 49 + dx, 23, 50 + dx, 32, FLESH)
+    ellipse(t, 38, 28, 4, 4, BLUE)                             # psionic blast
+    ellipse(t, 38, 28, 2, 2, GLINT)
+    for i in range(6):
+        t[28 + (i % 3) - 1][32 + i] = BLUE
+    return t
+
+
+def prop_transponder():
+    """The transponder at the helm: a thick stalk of tentacles holding a glowing orb, nerve strands
+    hanging from it -- connect them and the ship tears itself away."""
+    rng = random.Random(16)
+    t = blank(T)
+    shadow(t, 20)
+    for k, dx in enumerate((-10, -5, 0, 5, 10)):               # tentacles twisting up
+        for y in range(20, 63):
+            x = 32 + dx * (1 - (y - 20) / 70) + 2 * math.sin(y / 4 + k)
+            rect(t, int(x) - 2, y, int(x) + 2, y + 1, FLESH if (y + k) % 6 else FL0)
+    ellipse(t, 32, 14, 11, 10, BLUE)                           # the orb
+    ellipse(t, 32, 14, 7, 6, TEAL)
+    ellipse(t, 29, 11, 3, 2, GLINT)
+    for _ in range(7):                                         # nerve strands hanging down
+        vein(t, rng, rng.randint(22, 42), 22, rng.randint(10, 24), BLUE)
+    return t
+
+
+def prop_tentacle_console():
+    """A console of the ship: tentacles around a knot of glowing red nodes."""
+    t = blank(T)
+    stalk(t, 40, 3)
+    ellipse(t, 32, 36, 14, 8, FLESH)
+    ellipse(t, 32, 34, 11, 5, FL2)
+    for cx in (24, 32, 40):
+        ellipse(t, cx, 34, 2, 2, MEM2)
+        t[33][cx] = GLINT
+    for dx in (-13, 13):                                       # tentacles reaching up
+        for i in range(14):
+            t[34 - i][32 + dx + int(2 * math.sin(i / 2))] = FLESH
+    return t
+
+
 PROPS = [prop_pool(False), prop_pool(True), prop_chest(False), prop_chest(True), prop_corpse(),
          prop_shrine(), prop_pod(False), prop_pod(True), prop_myrnath(False), prop_myrnath(True),
          prop_op_table(), prop_lectern(), prop_fire(), prop_tank(False), prop_tank(True), prop_imps(),
@@ -802,14 +920,16 @@ PROPS = [prop_pool(False), prop_pool(True), prop_chest(False), prop_chest(True),
          prop_pod_console(False), prop_pod_console(True), prop_button_console(),
          prop_pod_sealed("woman"), prop_pod_sealed("flayer"), prop_pod_sealed("woman", CH1),
          prop_switch(False), prop_switch(True), prop_cleric(), prop_ornate_chest(False),
-         prop_ornate_chest(True)]
+         prop_ornate_chest(True), prop_hounds(), prop_cambions(), prop_duel(), prop_transponder(),
+         prop_tentacle_console()]
 PROP_NAMES = ["PROP_POOL", "PROP_POOL_BROKEN", "PROP_CHEST", "PROP_CHEST_OPEN", "PROP_CORPSE",
               "PROP_SHRINE", "PROP_POD_OPEN", "PROP_POD_BROKEN", "PROP_MYRNATH", "PROP_MYRNATH_DEAD",
               "PROP_OP_TABLE", "PROP_LECTERN", "PROP_FIRE", "PROP_TANK", "PROP_TANK_BROKEN", "PROP_IMPS",
               "PROP_POD_SEALED", "PROP_POD_DEAD", "PROP_POD_SHADOWHEART", "PROP_POD_CONSOLE",
               "PROP_POD_CONSOLE_LIT", "PROP_BUTTON_CONSOLE", "PROP_POD_WOMAN", "PROP_POD_FLAYER",
               "PROP_POD_DARK", "PROP_SWITCH", "PROP_SWITCH_USED", "PROP_CLERIC", "PROP_ORNATE_CHEST",
-              "PROP_ORNATE_CHEST_OPEN"]
+              "PROP_ORNATE_CHEST_OPEN", "PROP_HOUNDS", "PROP_CAMBIONS", "PROP_DUEL", "PROP_TRANSPONDER",
+              "PROP_TENTACLE_CONSOLE"]
 
 
 def bake_prop(sprite, d):

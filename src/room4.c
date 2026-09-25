@@ -60,11 +60,11 @@ static void freeShadowheart(Player *p, RoomObject *console)
 
     Sprite *s = figures_add(&fig_shadowheart_sprite, 112, 138);
     figures_wait(40);
-    SPR_releaseSprite(s);                         // she steps up close: the bust while she speaks
+    figures_release(s);                         // she steps up close: the bust while she speaks
     s = figures_addBust(&fig_shadowheart_bust_sprite);
     say("SCHATTEN: \"Danke. Ich", "dachte schon, das wäre", "mein Ende.\"");
     say("\"Lass uns diesen", "Höllenort verlassen!\"", NULL);
-    SPR_releaseSprite(s);
+    figures_release(s);
     SPR_update();
 
     party_addMember(CLASS_SHADOWHEART);
@@ -151,7 +151,13 @@ static void room4_onInteract(Player *p, RoomObject *obj)
         case OBJ_POD_CONSOLE:     onPodConsole(p, obj); break;
         case OBJ_BUTTON_CONSOLE:  onButtonConsole(p, obj); break;
         case OBJ_POD_SEALED:      onPod(obj); break;
-        case OBJ_DOOR_EXIT:       dungeonObjects_tryDoor(p, obj); break;
+        case OBJ_DOOR_EXIT:
+            // The gate to the bridge opens "once ready" (design doc): when Schattenherz is free.
+            if (obj->param0 == ROOM_6 && !(findObject(OBJ_SHADOWHEART_POD)->flags & OBJFLAG_TRIGGERED))
+                say("Das Tor zur Brücke ist", "noch versiegelt.", NULL);
+            else
+                dungeonObjects_tryDoor(p, obj);
+            break;
         default: break;
     }
 }
@@ -196,8 +202,9 @@ static const RoomObject room4Objects[] = {
     { 6, 2, OBJ_ENEMY_GROUP,     ENC_IMPS2, 0, OBJFLAG_HIDDEN },
     { 4, 8, OBJ_DOOR_EXIT,       ROOM_3,    0, 0 },
     { 8, 4, OBJ_DOOR_EXIT,       ROOM_5,    0, 0 },
-    { 4, 0, OBJ_DOOR_EXIT,       ROOM_6,    0, 0 }, // ROOM_6 isn't built yet
+    { 4, 0, OBJ_DOOR_EXIT,       ROOM_6,    0, 0 }, // opens once Schattenherz is free
 };
+ROOM_OBJECTS_FIT(room4Objects);
 
 const RoomDef ROOM4 = {
     .roomId = ROOM_4,

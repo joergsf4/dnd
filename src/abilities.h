@@ -16,6 +16,7 @@
 //   Paladin (Schattenherz): Heilende Hände (pool of 5), Göttlicher Sinn, heavy armour
 
 #define BUFF_MAGE_ARMOR 0x01   // AC 13 + GES, lasts the whole game once cast (8 hours in 5e)
+#define BUFF_EVERBURN   0x02   // wields the Immerbrand-Klinge: weapon die at least 1W10, +1W4 fire
 
 #define EXPERTISE_BONUS 2
 #define LAY_ON_HANDS_POOL 5
@@ -30,6 +31,13 @@ Character *ab_pickMember(const char *question);
 u8 ab_potion(Character *target);                        // 2W4+2 KP, revives the fallen
 u8 ab_layOnHands(Character *paladin, Character *target); // up to the pool, revives the fallen
 void ab_mageArmor(Character *mage);                     // one slot
+
+// Zhalk's sword goes to the party's first fighter (the hero as Kämpfer, else Lae'zel); returns
+// who took it, or NULL.
+Character *ab_giveEverburn(void);
+
+// "Deine Gruppe ist gefallen" and friends: a game-over box, then a restart. Never returns.
+void ab_gameOver(const char *l0, const char *l1, const char *l2);
 
 // The party menu on B in the dungeon: potions, Magierrüstung, Heilende Hände, Göttlicher Sinn.
 void ab_partyMenu(const Player *p);

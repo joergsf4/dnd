@@ -14,6 +14,10 @@ SPRITE fig_shadowheart_sprite "gfx/fig_shadowheart.png" 6 12 NONE 0
 SPRITE fig_laezel_bust_sprite "gfx/fig_laezel_bust.png" 10 12 NONE 0
 SPRITE fig_shadowheart_bust_sprite "gfx/fig_shadowheart_bust.png" 10 12 NONE 0
 SPRITE fig_arrow_sprite "gfx/fig_arrow.png" 1 1 NONE 0
+SPRITE fig_hound_sprite "gfx/fig_hound.png" 6 5 NONE 0
+SPRITE fig_cambion_sprite "gfx/fig_cambion.png" 6 12 NONE 0
+SPRITE fig_zhalk_sprite "gfx/fig_zhalk.png" 8 14 NONE 0
+SPRITE fig_mindflayer_bust_sprite "gfx/fig_mindflayer_bust.png" 10 12 NONE 0
 
 // SGDK's default font with German umlauts in 7 unused ASCII slots (tools/make_font.py, used via
 // src/text.c). NONE/NONE: VDP_loadFont needs all 96 glyphs in order.

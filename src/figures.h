@@ -15,6 +15,18 @@ Sprite *figures_add(const SpriteDefinition *def, s16 cx, s16 bottom);
 // A companion's close-up while they speak: the bust sits on the bottom edge of the view.
 Sprite *figures_addBust(const SpriteDefinition *def);
 
+// A sprite at (x, y) on palette `pal` whose palette the caller loads itself (the combat marker,
+// the portrait on the creation screen), in the figures' VRAM.
+Sprite *figures_addPlain(const SpriteDefinition *def, s16 x, s16 y, u16 pal);
+
+// Releases a figure. Once none is left, the figures' VRAM starts over from the bottom.
+void figures_release(Sprite *s);
+
+// Sprite VRAM is laid out by hand (SGDK's allocator fragments: after a few scenes a 120-tile bust
+// found no room): the party avatars' fixed slots first, then the figures stacked on top of each
+// other. The VRAM tile of avatar slot i:
+u16 figures_avatarTile(u8 slot);
+
 // Blinks a figure `times` times (a hit), blocking.
 void figures_blink(Sprite *s, u8 times);
 

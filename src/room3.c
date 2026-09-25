@@ -44,7 +44,7 @@ static void onEnter(Player *p)
 
     Sprite *laezel = laezelLands();
     figures_wait(30);
-    SPR_releaseSprite(laezel);                    // she steps up close: the bust while she speaks
+    figures_release(laezel);                    // she steps up close: the bust while she speaks
     laezel = figures_addBust(&fig_laezel_bust_sprite);
     say("LAE'ZEL: \"Ein Überlebender!", "Halt still... Dein Kopf", "pulsiert.\"");
     const char *lines[2] = { "\"Du bist infiziert -", "genau wie ich!\"" };
@@ -53,7 +53,7 @@ static void onEnter(Player *p)
         say("\"Ich bin Lae'zel von den", "Githyanki. Diskutiert wird", "später!\"");
     say("\"Erst schlagen wir uns zum", "Steuerpult durch!\"", NULL);
 
-    SPR_releaseSprite(laezel);
+    figures_release(laezel);
     SPR_update();
     party_addMember(CLASS_LAEZEL);
     uiPanel_initSprites();
@@ -133,6 +133,7 @@ static const RoomObject room3Objects[] = {
     { 2, 9, OBJ_DOOR_EXIT,          ROOM_2,    0, 0 },
     { 2, 0, OBJ_DOOR_EXIT,          ROOM_4,    0, 0 }, // ROOM_4 isn't built yet
 };
+ROOM_OBJECTS_FIT(room3Objects);
 
 const RoomDef ROOM3 = {
     .roomId = ROOM_3,

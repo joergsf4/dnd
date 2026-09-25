@@ -2,6 +2,8 @@
 #include "inventory.h"
 #include "text.h"
 #include "portraits.h"
+#include "countdown.h"
+#include "figures.h"
 #include "game.h"
 
 static const char *const facingLetter[4] = { "N", "O", "S", "W" };
@@ -55,7 +57,9 @@ void uiPanel_initSprites(void)
                 pal = PAL3;
                 break;
         }
-        avatars[i] = SPR_addSprite(def, UI_PANEL_COL * 8, row * 8, TILE_ATTR(pal, FALSE, FALSE, FALSE));
+        avatars[i] = SPR_addSpriteEx(def, UI_PANEL_COL * 8, row * 8,
+                                     TILE_ATTR_FULL(pal, FALSE, FALSE, FALSE, figures_avatarTile(i)),
+                                     SPR_FLAG_AUTO_TILE_UPLOAD);
     }
 }
 
@@ -71,12 +75,13 @@ void uiPanel_drawInventory(void)
     sprintf(text, "TRÄNKE:  %2d", inventory.healingPotions);
     text_draw(text, UI_PANEL_COL, 16);
     text_draw(inventory.hasBasicGear ? "AUSRÜST.: JA" : "AUSRÜST.: - ", UI_PANEL_COL, 17);
-    for (u8 i = 0; i < ITEM_COUNT; i++)   // key items, one per row, only while carried
-    {
-        text_draw("            ", UI_PANEL_COL, 18 + i);
+    u8 row = 18;                         // key items while carried, packed from row 18
+    for (u8 i = 0; i < ITEM_COUNT && row < 18 + INVENTORY_ITEM_ROWS; i++)
         if (inventory_hasItem((ItemId) i))
-            text_draw(inventory_itemName((ItemId) i), UI_PANEL_COL, 18 + i);
-    }
+            text_draw(inventory_itemName((ItemId) i), UI_PANEL_COL, row++);
+    for (; row < 18 + INVENTORY_ITEM_ROWS; row++)
+        text_draw("            ", UI_PANEL_COL, row);
+    uiPanel_drawCountdown();
 }
 
 void uiPanel_redrawChrome(void)
@@ -97,4 +102,24 @@ void uiPanel_drawStatus(const Player *p)
     char text[UI_PANEL_W + 1];
     sprintf(text, "%s (%02d,%02d)", facingLetter[p->facing], p->x, p->y);
     text_draw(text, UI_PANEL_COL, 27);
+}
+
+void uiPanel_drawCountdown(void)
+{
+    char text[UI_PANEL_W + 1];
+    if (countdown_active())
+        sprintf(text, "ABSTURZ: %2d ", countdown_left());
+    else
+        strcpy(text, "            ");
+    text_draw(text, UI_PANEL_COL, 21);
+}
+
+void uiPanel_moveAvatars(s16 x, s16 y, s16 dy)
+{
+    for (u8 i = 0; i < PARTY_MAX; i++)
+    {
+        if (!avatars[i]) continue;
+        SPR_setPosition(avatars[i], x, y);
+        y += dy;
+    }
 }

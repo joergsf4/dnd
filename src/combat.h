@@ -14,11 +14,17 @@ typedef struct
 {
     const char *name;                 // at most 6 characters: a letter is appended ("KOBOLD A")
     u8 hpMax, ac, atk, dmgDie, dmgBonus;
+    u8 fireDie;                       // extra fire damage per hit (0: none)
+    u8 attacks;                       // attacks per turn
     const SpriteDefinition *sprite;
     s16 bottom;                       // screen y of the figure's feet (hovering ones are higher)
+    bool burning;                     // cycle the fire colours while it's in the fight (Zhalk)
 } EnemyDef;
 
-extern const EnemyDef ENEMY_IMP;
+extern const EnemyDef ENEMY_IMP, ENEMY_HOUND, ENEMY_CAMBION, ENEMY_ZHALK;
+
+// Called at the start of every combat round (NULL: none) -- Room 6's countdown counts them.
+void combat_setRoundHook(void (*hook)(void));
 
 // Fights `count` enemies (up to COMBAT_MAX_ENEMIES). `tank`, if not NULL, is an acid tank within
 // reach: it's offered as a target and, once hit, bursts and hurts every enemy (the design doc's

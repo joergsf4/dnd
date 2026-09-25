@@ -1,5 +1,6 @@
 #include "char_create.h"
 #include "portraits.h"
+#include "figures.h"
 #include "text.h"
 #include "game.h"
 
@@ -37,10 +38,10 @@ static void drawMenu(u8 cursor, u8 portrait)
 
 static Sprite *showPortrait(Sprite *old, u8 cursor, u8 portrait)
 {
-    if (old) SPR_releaseSprite(old);
+    if (old) figures_release(old);
     const SpriteDefinition *def = portrait_bust(classOrder[cursor], portrait);
     PAL_setPalette(PAL3, def->palette->data, DMA);   // colour 15 stays white: the text is safe
-    return SPR_addSprite(def, PORTRAIT_X, PORTRAIT_Y, TILE_ATTR(PAL3, FALSE, FALSE, FALSE));
+    return figures_addPlain(def, PORTRAIT_X, PORTRAIT_Y, PAL3);
 }
 
 CharClass charCreate_run(u8 *portrait)
@@ -75,7 +76,7 @@ CharClass charCreate_run(u8 *portrait)
         SYS_doVBlankProcess();
     }
 
-    SPR_releaseSprite(bust);
+    figures_release(bust);
     VDP_clearPlane(BG_A, TRUE);
     *portrait = pick;
     return classOrder[cursor];

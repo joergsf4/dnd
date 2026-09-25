@@ -47,7 +47,12 @@
 #define PROP_CLERIC 27
 #define PROP_ORNATE_CHEST 28
 #define PROP_ORNATE_CHEST_OPEN 29
-#define PROP_COUNT 30
+#define PROP_HOUNDS 30
+#define PROP_CAMBIONS 31
+#define PROP_DUEL 32
+#define PROP_TRANSPONDER 33
+#define PROP_TENTACLE_CONSOLE 34
+#define PROP_COUNT 35
 #define VIEW_HALF_K 56   // a wall at depth z is 2 * VIEW_HALF_K / z rows high
 #define VIEW_CY 80
 
@@ -936,7 +941,7 @@ static const ViewEvent viewEvents[866] = {
 
 // Props: record offset in viewProps per prop and distance (d = 1..VIEW_DMAX), and the column
 // pair of a prop's centre d cells ahead and l to the right (index l + VIEW_LMAX).
-static const u32 viewPropOffset[30][6] = {
+static const u32 viewPropOffset[35][6] = {
     { 0, 0, 5548, 6946, 7596, 7962 },
     { 0, 8208, 13446, 14800, 15428, 15776 },
     { 0, 16012, 20546, 21720, 22278, 22568 },
@@ -967,6 +972,11 @@ static const u32 viewPropOffset[30][6] = {
     { 0, 217484, 219762, 220356, 220644, 220822 },
     { 0, 220936, 225798, 227064, 227652, 227974 },
     { 0, 228184, 234276, 235842, 236576, 236986 },
+    { 0, 237252, 240658, 241552, 241986, 242238 },
+    { 0, 242390, 250106, 252092, 253072, 253622 },
+    { 0, 253984, 262918, 265206, 266264, 266868 },
+    { 0, 267284, 272094, 273254, 273816, 274142 },
+    { 0, 274354, 277700, 278556, 278966, 279210 },
 };
 static const s16 viewPropCenter[6][11] = {
     { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },

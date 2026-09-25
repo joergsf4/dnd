@@ -1,6 +1,7 @@
 #include "dungeon_view.h"
 #include "game.h"
 #include "view_gen.h"
+#include "encounter.h"
 
 // First-person view, Eye of the Beholder / Dungeon Master style.
 //
@@ -62,7 +63,16 @@ static u8 objectProp(const RoomObject *o)
         case OBJ_MYRNATH:            return (o->flags & OBJFLAG_TRIGGERED) ? PROP_MYRNATH_DEAD : PROP_MYRNATH;
         case OBJ_OP_TABLE:           return PROP_OP_TABLE;
         case OBJ_LECTERN:            return PROP_LECTERN;
-        case OBJ_ENEMY_GROUP:        return PROP_IMPS;   // the only enemies so far
+        case OBJ_ENEMY_GROUP:                            // how each encounter looks from afar
+            switch (o->param0)
+            {
+                case ENC_HOUNDS:   return PROP_HOUNDS;
+                case ENC_CAMBIONS: return PROP_CAMBIONS;
+                case ENC_ZHALK:    return PROP_DUEL;
+                default:           return PROP_IMPS;
+            }
+        case OBJ_TRANSPONDER:        return PROP_TRANSPONDER;
+        case OBJ_TENTACLE_CONSOLE:   return PROP_TENTACLE_CONSOLE;
         case OBJ_ACID_TANK:          return (o->flags & OBJFLAG_BROKEN) ? PROP_TANK_BROKEN : PROP_TANK;
         case OBJ_FIRE:               return PROP_FIRE;
         case OBJ_POD_SEALED:

@@ -165,6 +165,7 @@ static const RoomObject room2Objects[] = {
     { 4, 7, OBJ_DOOR_EXIT, ROOM_1, 0, 0 },
     { 4, 0, OBJ_DOOR_EXIT, ROOM_3, 0, 0 }, // ROOM_3 isn't built yet
 };
+ROOM_OBJECTS_FIT(room2Objects);
 
 const RoomDef ROOM2 = {
     .roomId = ROOM_2,

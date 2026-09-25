@@ -169,3 +169,26 @@ void ab_partyMenu(const Player *p)
         default: break;
     }
 }
+
+Character *ab_giveEverburn(void)
+{
+    for (u8 i = 0; i < PARTY_MAX; i++)
+    {
+        Character *c = &party.members[i];
+        if (!c->active || !ab_isFighter(c)) continue;
+        c->buffs |= BUFF_EVERBURN;
+        if (c->dmgDie < 10) c->dmgDie = 10;
+        inventory_giveItem(ITEM_EVERBURN);
+        uiPanel_redrawChrome();
+        return c;
+    }
+    return NULL;
+}
+
+void ab_gameOver(const char *l0, const char *l1, const char *l2)
+{
+    const char *lines[3] = { l0, l1, l2 };
+    const char *options[1] = { "Neu beginnen" };
+    textbox_show(lines, 3, options, 1);
+    SYS_hardReset();
+}

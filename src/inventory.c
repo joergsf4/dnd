@@ -27,7 +27,7 @@ void inventory_grantBasicGear(void)
     inventory.hasBasicGear = TRUE;
 }
 
-static const char *const itemNames[ITEM_COUNT] = { "RUNE", "SCHLÜSSEL", "SCHRIFTROLLE" };
+static const char *const itemNames[ITEM_COUNT] = { "RUNE", "SCHLÜSSEL", "SCHRIFTROLLE", "IMMERBRAND" };
 
 void inventory_giveItem(ItemId item)
 {

@@ -185,6 +185,7 @@ static const RoomObject room5Objects[] = {
     { 3, 3, OBJ_CLERIC,       0,      0, 0 },
     { 0, 2, OBJ_DOOR_EXIT,    ROOM_4, 0, 0 },
 };
+ROOM_OBJECTS_FIT(room5Objects);
 
 const RoomDef ROOM5 = {
     .roomId = ROOM_5,

@@ -12,6 +12,9 @@ is needed (and none is available in this sandbox).
     python3 tools/emutest.py room2               # through the door: Room 2, Myrnath, back to Room 1
     python3 tools/emutest.py room3               # on to Room 3: Lae'zel joins, fight against 3 imps
     python3 tools/emutest.py room45              # through Room 3 to Rooms 4 and 5: rune, Schattenherz
+    python3 tools/emutest.py room6               # the bridge: sneak past to the transponder, the ending
+    python3 tools/emutest.py zhalk               # the bridge: walk up to Zhalk and fight him
+    python3 tools/emutest.py crash               # the bridge: dawdle until the countdown runs out
     python3 tools/emutest.py look --class 2       # any scenario, but pick Mage instead of Fighter
 
 Screenshots go to out/emutest/ (gitignored). Needs a built out/rom.bin (./build.sh).
@@ -165,6 +168,55 @@ def to_room3(b, cls_down=0):
     act(b, "gamepads.1.a", 20)
 
 
+def to_room6(b, cls_down=0):
+    """New game, through Room 3's fight and Room 4, the rune from Room 5, Schattenherz freed, then
+    through the gate onto the bridge (its intro still showing)."""
+    to_room3(b, cls_down)
+    for _ in range(9):                         # Lae'zel's scene, the imps' entrance
+        act(b, "gamepads.1.a", 40)
+    b.frames(150)
+    for _ in range(40):                        # the fight
+        act(b, "gamepads.1.a", 45)
+    walk(b, 7)                                 # (2,1)
+    act(b, "gamepads.1.a", 20)                 # Room 4
+    act(b, "gamepads.1.a")                     # intro
+    act(b, "gamepads.1.right")                 # north -> east
+    walk(b, 2)                                 # (6,7)
+    act(b, "gamepads.1.left")                  # east -> north
+    walk(b, 3)                                 # (6,4), past the pod at (7,6)
+    act(b, "gamepads.1.right")                 # north -> east
+    walk(b, 1)                                 # (7,4), passage to Room 5 ahead
+    act(b, "gamepads.1.a", 20)
+    act(b, "gamepads.1.a")
+    act(b, "gamepads.1.a")                     # Room 5 intro
+    walk(b, 1)                                 # (2,2)
+    act(b, "gamepads.1.right")                 # east -> south
+    walk(b, 1)                                 # (2,3)
+    act(b, "gamepads.1.left")                  # south -> east, the cleric
+    act(b, "gamepads.1.a")
+    act(b, "gamepads.1.a")                     # rune + key
+    act(b, "gamepads.1.left")                  # east -> north
+    walk(b, 1)                                 # (2,2)
+    act(b, "gamepads.1.left")                  # north -> west
+    walk(b, 1)                                 # (1,2)
+    act(b, "gamepads.1.a", 20)                 # back to Room 4, (7,4) facing west
+    act(b, "gamepads.1.right")                 # west -> north
+    walk(b, 1)                                 # (7,3)
+    act(b, "gamepads.1.left")                  # north -> west
+    walk(b, 4)                                 # (3,3)
+    act(b, "gamepads.1.a")                     # pod console
+    act(b, "gamepads.1.a", 20)                 # Rune einsetzen
+    for _ in range(4):                         # Puff!, her thanks, joining
+        act(b, "gamepads.1.a", 40)
+    act(b, "gamepads.1.right")                 # west -> north
+    walk(b, 1)                                 # (3,2); a pod stands at (3,1)
+    act(b, "gamepads.1.right")                 # north -> east
+    walk(b, 1)                                 # (4,2)
+    act(b, "gamepads.1.left")                  # east -> north
+    walk(b, 1)                                 # (4,1), the gate ahead
+    act(b, "gamepads.1.a", 30)                 # onto the bridge
+
+
 def walk(b, n):
     for _ in range(n):
         act(b, "gamepads.1.up")
@@ -172,7 +224,7 @@ def walk(b, n):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("scenario", choices=["create", "portraits", "look", "tour", "room1", "room2", "room3", "room45"])
+    ap.add_argument("scenario", choices=["create", "portraits", "look", "tour", "room1", "room2", "room3", "room45", "room6", "zhalk", "crash"])
     ap.add_argument("--class", dest="cls", type=int, default=0, choices=[0, 1, 2],
                      help="0 fighter (default), 1 rogue, 2 mage")
     args = ap.parse_args()
@@ -549,6 +601,64 @@ def main():
             b.shot("r4_joined")
             act(b, "gamepads.1.a")
             b.shot("r45_final")
+
+        if args.scenario in ("room6", "zhalk", "crash"):
+            to_room6(b, args.cls)
+            b.shot("r6_arrive")
+            for i in range(5):                 # intro: bridge, mind flayer (2), Zhalk, countdown
+                act(b, "gamepads.1.a", 40)
+                b.shot(f"r6_intro{i}")
+            b.shot("r6_start")                 # ABSTURZ: 10 in the panel
+
+        if args.scenario == "room6":
+            # Sneak along the east lane past both groups (they only close in within 2 cells).
+            act(b, "gamepads.1.right")         # north -> east
+            walk(b, 3)                         # (7,12)
+            act(b, "gamepads.1.left")          # east -> north
+            walk(b, 10)                        # (7,2)
+            b.shot("r6_lane")
+            act(b, "gamepads.1.left")          # north -> west
+            walk(b, 1)                         # (6,2)
+            act(b, "gamepads.1.right")         # west -> north
+            walk(b, 1)                         # (6,1): step 15 = round 5, the cambions
+            b.shot("r6_cambions")
+            act(b, "gamepads.1.a")
+            act(b, "gamepads.1.left")          # north -> west
+            walk(b, 1)                         # (5,1), the transponder ahead
+            b.shot("r6_transponder")
+            act(b, "gamepads.1.a", 10)
+            b.shot("r6_transponder_menu")
+            act(b, "gamepads.1.a", 20)         # Nervenstränge verbinden!
+            b.shot("r6_end1")
+            act(b, "gamepads.1.a", 150)
+            b.shot("r6_end2")
+            act(b, "gamepads.1.a", 200)
+            b.shot("r6_end3")
+            act(b, "gamepads.1.a", 30)
+            b.shot("r6_end_screen")
+
+        if args.scenario == "zhalk":
+            act(b, "gamepads.1.left")          # north -> west
+            walk(b, 3)                         # (1,12)
+            act(b, "gamepads.1.right")         # west -> north
+            walk(b, 5)                         # (1,7): next to Zhalk, the fight starts
+            b.frames(60)
+            b.shot("zhalk_fight")
+            for i in range(60):
+                act(b, "gamepads.1.a", 45)
+                if i % 6 == 5:
+                    b.shot(f"zhalk_{i:02d}")
+            b.shot("zhalk_after")
+
+        if args.scenario == "crash":
+            act(b, "gamepads.1.right")         # north -> east
+            for i in range(40):                # pace back and forth; A through fights and boxes
+                act(b, "gamepads.1.up", 10)
+                act(b, "gamepads.1.down", 10)
+                act(b, "gamepads.1.a", 30)
+                if i % 8 == 7:
+                    b.shot(f"crash_{i:02d}")
+            b.shot("crash_end")
     finally:
         b.close()
 

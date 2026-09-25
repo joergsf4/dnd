@@ -49,6 +49,16 @@ together in Room 1 (the "Klonkammer" — see `BeschreibungInhaltVerticalSlice.md
       transformation switch (the woman turns into a mind flayer, or the pod goes dark).
       Rooms 4/5 verified via `tools/emutest.py room45`.
 
+- [x] Room 6 (Brücke): countdown (3 steps or 1 combat round = 1 round, 10 rounds), guarded
+      lanes, Zhalk duelling the mind flayer (optional fight, Immerbrand-Klinge), cambions after
+      round 5, transponder and ending screen. Verified via `tools/emutest.py room6`, `zhalk`,
+      `crash`. The vertical slice is playable from start to end.
+- [x] Schriftrolle usable (Brennende Hände), "Gegenstand" submenu in combat.
+- [x] Fixed: rooms with more than 12 objects overflowed their RAM state into the next room's
+      (Room 4 had 13); now 20 per room, checked at compile time (`ROOM_OBJECTS_FIT`).
+- [ ] Balance: Zhalk is meant to be a high-risk fight and is -- with level-1 hit points he often
+      downs a party member per turn. Tune after play-testing.
+
 ## Room-by-room roadmap (light — detailed planning happens per room, not now)
 - [ ] **Room 6** (timed boss): a persistent countdown on the panel. With combat in place, "rounds"
       can be combat rounds plus steps outside fights; bigger figures (Zhalk 48x64 in the doc, far

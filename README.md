@@ -95,6 +95,10 @@ src/
   room3.c/.h             Room 3 ("Außendeck"): Lae'zel joins, the imps, first fight
   room4.c/.h             Room 4 ("Kapselsaal"): Schattenherz, the consoles
   room5.c/.h             Room 5 ("Labor"): cleric, ornate chest, transformation
+  room6.c/.h             Room 6 ("Brücke"): countdown, Zhalk, transponder
+  countdown.c/.h         Room 6's rounds until the crash
+  ending.c/.h            The escape sequence and the "ENDE DES PROLOGS" screen
+  abilities.c/.h         Class features shared by combat and dungeon, party menu (B)
   combat.c/.h            Turn-based menu combat (see "Combat")
   encounter.c/.h         Enemy groups in the dungeon: closing in, starting fights
   figures.c/.h           Figure sprites in front of the view (dialogue scenes, combat)
@@ -229,4 +233,29 @@ party menu: Heiltrank, Magierrüstung, Heilende Hände, Göttlicher Sinn.
 Combat values per class are in `src/party.c`, enemies in `src/combat.c` (`ENEMY_IMP`),
 encounters in `src/encounter.c`.
 
-See [TODO.md](TODO.md) for what's next (Room 6, more spells and enemies, real art).
+## Room 6 and the ending
+
+Die Brücke (7x12): the transponder at the far end, two groups guarding the middle line (they
+only close in within 2 cells, so the outer lanes lead past them), Kommandant Zhalk duelling the
+mind flayer on the west side (walk up to him and you fight him: 45 KP, two attacks per turn,
+the Everburn Blade in his hand -- its fire colours cycle, `SYS_setVBlankCallback` in combat.c),
+acid tanks, burning wreckage, hull breaches onto the hellmouth. The gate from Room 4 opens once
+Schattenherz is free.
+
+On arrival the mind flayer (bust) and Zhalk (figure) speak, then the **countdown** starts
+(`src/countdown.c`): 10 rounds, a round being a combat round or three steps (30 feet); the panel
+shows "ABSTURZ: n" (row 21, blinking at 3 and below). After round 5 two cambions storm in from
+behind. At zero the ship crashes: game over. Beating Zhalk wins the Immerbrand-Klinge (the
+party's fighter: weapon die at least 1W10, +1W4 fire). Connecting the transponder's nerve strands
+plays the ending (`src/ending.c`): the ship tears itself away, the screen quakes and flashes, it
+crashes on the Sword Coast -- then "ENDE DES PROLOGS" with the party, gold and gems.
+
+The creatures of Avernus (imp, hellhound, cambion, Zhalk) share one figure palette
+(`HELL_PAL` in tools/make_figures.py), so they can fight side by side. Sprite VRAM (304 tiles,
+all there is) is laid out by hand in `src/figures.c`: four avatar slots, then the figures
+stacked -- SGDK's allocator fragmented after a few scenes and a bust found no room.
+
+The Schriftrolle from Room 5 is a one-shot *Brennende Hände* (3W6 fire to every enemy, a GES
+save halves it), under "Gegenstand" in the combat menu next to the potions.
+
+See [TODO.md](TODO.md) for what's next (title screen, audio, more spells and enemies, real art).

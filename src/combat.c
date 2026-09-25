@@ -16,7 +16,11 @@
 // gets a main menu of at most four entries -- Angriff (Magier: Zaubertrick), a submenu with the
 // class's features (Fähigkeit / Zauber), Heiltrank, Abwehr.
 
-const EnemyDef ENEMY_IMP = { "KOBOLD", 9, 13, 4, 4, 2, &fig_imp_sprite, 124 };
+// Level-1-friendly versions of the Monster Manual (and BG3) values.
+const EnemyDef ENEMY_IMP     = { "KOBOLD", 9, 13, 4, 4, 2, 0, 1, &fig_imp_sprite, 124, FALSE };
+const EnemyDef ENEMY_HOUND   = { "HUND", 12, 13, 4, 6, 2, 0, 1, &fig_hound_sprite, 140, FALSE };
+const EnemyDef ENEMY_CAMBION = { "DÄMON", 16, 15, 5, 8, 3, 0, 1, &fig_cambion_sprite, 142, FALSE };
+const EnemyDef ENEMY_ZHALK   = { "ZHALK", 45, 17, 6, 10, 4, 4, 2, &fig_zhalk_sprite, 150, TRUE };
 
 #define VIEW_CENTER_X 112   // the view is 224 px wide (view_gen.h)
 #define TANK_AC     5
@@ -24,6 +28,8 @@ const EnemyDef ENEMY_IMP = { "KOBOLD", 9, 13, 4, 4, 2, &fig_imp_sprite, 124 };
 #define FOE_SPACING 80      // px between figure centres
 #define HIDE_DC     11      // the imps' passive perception
 #define SLEEP_DICE  5       // Schlaf: 5W8 hit points of enemies fall asleep
+
+#define SCROLL_DC  13        // Brennende Hände: GES save for half damage
 
 #define FS_ASLEEP 0x01      // skips its turns until hurt; attacks against it have advantage
 #define FS_PRONE  0x02      // attacks against it have advantage; spends its next turn getting up
@@ -52,9 +58,32 @@ static bool hidden[PARTY_MAX];       // Verstecken: can't be targeted, next atta
 static bool shielded[PARTY_MAX];     // Schild: +5 AC until their next turn
 static bool usedSecondWind[PARTY_MAX], usedCleave[PARTY_MAX], usedTopple[PARTY_MAX];
 
+static void (*roundHook)(void);
+
+void combat_setRoundHook(void (*hook)(void))
+{
+    roundHook = hook;
+}
+
 static u8 roll(u8 die)
 {
     return (random() % die) + 1;
+}
+
+// The Everburn Blade's flames (and every other fire in the figure palette) flicker: the three fire
+// colours of the hell palette rotate every 8 frames while a burning enemy is in the fight.
+#define FIRE_INDEX (PAL2 * 16 + 8)
+static u16 fireColours[3];
+static u8 fireTimer, firePhase;
+
+static void cycleFire(void)
+{
+    if (++fireTimer < 8) return;
+    fireTimer = 0;
+    firePhase = (firePhase + 1) % 3;
+    u16 rotated[3];
+    for (u8 i = 0; i < 3; i++) rotated[i] = fireColours[(i + firePhase) % 3];
+    PAL_setColors(FIRE_INDEX, rotated, 3, CPU);
 }
 
 // A d20 with advantage (mode > 0: the better of two) or disadvantage (mode < 0: the worse);
@@ -262,6 +291,7 @@ static void weaponAttack(u8 m, u8 t, Strike strike)
 
     u8 dmg = weaponDie(c) + c->dmgBonus;
     if (r == 20) dmg += weaponDie(c);                    // a natural 20 rolls the damage die twice
+    if (c->buffs & BUFF_EVERBURN) dmg += roll(4);        // the Everburn Blade's fire
     bool sneak = c->cls == CLASS_ROGUE && (mode > 0 || allyFighting(m));
     if (sneak) dmg += roll(6);                           // Hinterhältiger Angriff: +1W6
     bool fell = damageFoe(t, dmg);
@@ -450,6 +480,28 @@ static void sleepSpell(u8 m)
     pause(100);
 }
 
+// Schriftrolle: Brennende Hände, 3W6 fire to every enemy, a GES save halves it. Anyone can read it.
+static void burningHands(u8 m)
+{
+    inventory_takeItem(ITEM_SCROLL);
+    uiPanel_drawInventory();
+    char l0[32], l1[32];
+    sprintf(l0, "%s liest die Rolle:", party.members[m].name);
+    show(l0, "Brennende Hände!", NULL);
+    pause(50);
+    u8 dmg = roll(6) + roll(6) + roll(6);
+    for (u8 f = 0; f < foeCount; f++)
+    {
+        if (!foes[f].hp) continue;
+        bool saved = roll(20) + 2 >= SCROLL_DC;
+        u8 d = saved ? dmg / 2 : dmg;
+        bool fell = damageFoe(f, d);
+        sprintf(l1, fell ? "%s: %d - fällt!" : saved ? "%s: %d (halbiert)" : "%s: %d Schaden", foes[f].name, d);
+        show("Flammen fächern auf!", l1, NULL);
+        pause(60);
+    }
+}
+
 static void mageArmor(u8 m)
 {
     Character *c = &party.members[m];
@@ -496,7 +548,8 @@ typedef enum
 {
     ACT_ATTACK, ACT_FEATURES, ACT_CANTRIPS, ACT_SPELLS, ACT_POTION, ACT_DEFEND,
     ACT_CLEAVE, ACT_TOPPLE, ACT_SECOND_WIND, ACT_HIDE, ACT_FIRE_BOLT, ACT_RAY_OF_FROST,
-    ACT_MISSILE, ACT_SLEEP, ACT_MAGE_ARMOR, ACT_LAY_ON_HANDS, ACT_DIVINE_SENSE, ACT_BACK
+    ACT_MISSILE, ACT_SLEEP, ACT_MAGE_ARMOR, ACT_LAY_ON_HANDS, ACT_DIVINE_SENSE, ACT_ITEMS,
+    ACT_SCROLL, ACT_BACK
 } Action;
 
 typedef struct
@@ -571,6 +624,13 @@ static bool perform(u8 m, Action act)
             if (!(c->buffs & BUFF_MAGE_ARMOR)) add(&sub, "Magierrüstung (1 ZP)", ACT_MAGE_ARMOR);
             add(&sub, "Zurück", ACT_BACK);
             return perform(m, ask("Welcher Zauber?", &sub));
+        case ACT_ITEMS:
+            sub.n = 0;
+            if (inventory.healingPotions) add(&sub, "Heiltrank", ACT_POTION);
+            if (inventory_hasItem(ITEM_SCROLL)) add(&sub, "Schriftrolle (Feuer)", ACT_SCROLL);
+            add(&sub, "Zurück", ACT_BACK);
+            return perform(m, ask("Welcher Gegenstand?", &sub));
+        case ACT_SCROLL:       burningHands(m); return TRUE;
         case ACT_CLEAVE:       cleave(m); return TRUE;
         case ACT_TOPPLE:       usedTopple[m] = TRUE; weaponAttack(m, chooseTarget(FALSE), STRIKE_TOPPLE); return TRUE;
         case ACT_SECOND_WIND:  secondWind(m); return FALSE;   // bonus action: the turn goes on
@@ -624,7 +684,7 @@ static void partyTurn(u8 m)
             add(&menu, "Angriff", ACT_ATTACK);
             if (hasFeatures(m)) add(&menu, "Fähigkeit", ACT_FEATURES);
         }
-        if (inventory.healingPotions) add(&menu, "Heiltrank", ACT_POTION);
+        if (inventory.healingPotions || inventory_hasItem(ITEM_SCROLL)) add(&menu, "Gegenstand", ACT_ITEMS);
         add(&menu, "Abwehr", ACT_DEFEND);
         if (perform(m, ask(l0, &menu))) return;
     }
@@ -646,26 +706,11 @@ static bool offerShield(u8 m, u8 total)
     return TRUE;
 }
 
-static void foeTurn(u8 f)
+// One attack of foe f against a random party member it can see.
+static void foeAttack(u8 f)
 {
     Foe *e = &foes[f];
     char l0[32], l1[32], l2[32];
-    if (e->status & FS_ASLEEP)
-    {
-        sprintf(l0, "%s schläft tief.", e->name);
-        show(l0, NULL, NULL);
-        pause(50);
-        return;
-    }
-    if (e->status & FS_PRONE)
-    {
-        e->status &= ~FS_PRONE;
-        sprintf(l0, "%s rappelt sich auf.", e->name);
-        show(l0, NULL, NULL);
-        pause(60);
-        return;
-    }
-
     u8 targets[PARTY_MAX], n = 0;
     for (u8 i = 0; i < PARTY_MAX; i++)
         if (party.members[i].active && party.members[i].hp && !hidden[i]) targets[n++] = i;
@@ -700,6 +745,8 @@ static void foeTurn(u8 f)
         return;
     }
     u8 dmg = roll(e->def->dmgDie) + e->def->dmgBonus;
+    if (e->def->fireDie) dmg += roll(e->def->fireDie);
+    if (r == 20) dmg += roll(e->def->dmgDie);
     c->hp = dmg >= c->hp ? 0 : c->hp - dmg;
     figures_shakeView();
     uiPanel_redrawChrome();
@@ -708,23 +755,45 @@ static void foeTurn(u8 f)
     pause(90);
 }
 
+static void foeTurn(u8 f)
+{
+    Foe *e = &foes[f];
+    char l0[32];
+    if (e->status & FS_ASLEEP)
+    {
+        sprintf(l0, "%s schläft tief.", e->name);
+        show(l0, NULL, NULL);
+        pause(50);
+        return;
+    }
+    if (e->status & FS_PRONE)
+    {
+        e->status &= ~FS_PRONE;
+        sprintf(l0, "%s rappelt sich auf.", e->name);
+        show(l0, NULL, NULL);
+        pause(60);
+        return;
+    }
+
+    for (u8 k = 0; k < e->def->attacks && partyStanding(); k++)
+        foeAttack(f);
+}
+
 // ---------------------------------------------------------------- the fight
 
 static void releaseFigures(void)
 {
     for (u8 i = 0; i < foeCount; i++)
-        SPR_releaseSprite(foes[i].spr);
-    SPR_releaseSprite(arrow);
+        figures_release(foes[i].spr);
+    figures_release(arrow);
     SPR_update();
 }
 
 static void gameOver(void)
 {
     releaseFigures();
-    const char *lines[3] = { "Deine Gruppe ist gefallen.", "Der Nautiloid stürzt", "weiter durch Avernus..." };
-    const char *options[1] = { "Neu beginnen" };
-    textbox_show(lines, 3, options, 1);
-    SYS_hardReset();
+    SYS_setVBlankCallback(NULL);
+    ab_gameOver("Deine Gruppe ist gefallen.", "Der Nautiloid stürzt", "weiter durch Avernus...");
 }
 
 void combat_run(const Player *p, const EnemyDef *const enemies[], u8 count, RoomObject *tank, u8 goldReward)
@@ -753,8 +822,17 @@ void combat_run(const Player *p, const EnemyDef *const enemies[], u8 count, Room
             strcpy(e->name, e->def->name);
     }
     // The marker uses colour 15 of whatever figure palette is loaded (its own isn't loaded).
-    arrow = SPR_addSprite(&fig_arrow_sprite, 0, 0, TILE_ATTR(PAL2, FALSE, FALSE, FALSE));
+    arrow = figures_addPlain(&fig_arrow_sprite, 0, 0, PAL2);
     SPR_setVisibility(arrow, HIDDEN);
+
+    bool burning = FALSE;
+    for (u8 i = 0; i < foeCount; i++) burning |= foes[i].def->burning;
+    if (burning)
+    {
+        PAL_getColors(FIRE_INDEX, fireColours, 3);
+        fireTimer = firePhase = 0;
+        SYS_setVBlankCallback(cycleFire);
+    }
 
     char l0[32];
     sprintf(l0, "Kampf gegen %d Gegner!", foeCount);
@@ -783,6 +861,7 @@ void combat_run(const Player *p, const EnemyDef *const enemies[], u8 count, Room
 
     while (TRUE)
     {
+        if (roundHook) roundHook();
         for (u8 i = 0; i < n; i++)
         {
             u8 who = order[i];
@@ -800,6 +879,7 @@ void combat_run(const Player *p, const EnemyDef *const enemies[], u8 count, Room
 
 won:
     releaseFigures();
+    SYS_setVBlankCallback(NULL);
     bool revived = FALSE;
     for (u8 i = 0; i < PARTY_MAX; i++)
         if (party.members[i].active && !party.members[i].hp)

@@ -111,7 +111,7 @@ void map_right(Facing f, s16 *dx, s16 *dy)
     *dy = fx;
 }
 
-void player_step(Player *p, s16 sign)
+bool player_step(Player *p, s16 sign)
 {
     s16 dx, dy;
     map_forward(p->facing, &dx, &dy);
@@ -121,7 +121,9 @@ void player_step(Player *p, s16 sign)
     {
         p->x = nx;
         p->y = ny;
+        return TRUE;
     }
+    return FALSE;
 }
 
 void player_turn(Player *p, s16 sign)

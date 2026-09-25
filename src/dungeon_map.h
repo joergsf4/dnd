@@ -33,7 +33,9 @@ typedef enum
     ROOM_COUNT
 } RoomId;
 
-#define ROOM_MAX_OBJECTS 12
+#define ROOM_MAX_OBJECTS 20   // per room (RAM state); each room file checks its count at compile time
+#define ROOM_OBJECTS_FIT(objects) \
+    _Static_assert(sizeof(objects) / sizeof((objects)[0]) <= ROOM_MAX_OBJECTS, "too many room objects")
 #define OBJFLAG_TRIGGERED 0x01 // a one-shot object has fired (loot taken, chest opened)
 #define OBJFLAG_BROKEN    0x02 // destroyed for good (the larva pool after it burst)
 #define OBJFLAG_MARKED    0x04 // a skill check revealed it (the larva pool's unstable shell)
@@ -65,6 +67,8 @@ typedef enum
     OBJ_SWITCH,            // Room 5: transformation switch (TRIGGERED: used)
     OBJ_CLERIC,            // Room 5: dead cleric carrying rune and key (TRIGGERED: searched)
     OBJ_ORNATE_CHEST,      // Room 5: locked chest, opens with the key (TRIGGERED: opened)
+    OBJ_TRANSPONDER,       // Room 6: connect its nerve strands to escape
+    OBJ_TENTACLE_CONSOLE,  // Room 6: scenery
     OBJ_KIND_COUNT
 } ObjectKind;
 
@@ -125,7 +129,7 @@ void map_left(Facing f, s16 *dx, s16 *dy);
 void map_right(Facing f, s16 *dx, s16 *dy);
 
 // attempts to step the player one cell forward (sign<0 for backward); no-op if blocked
-void player_step(Player *p, s16 sign);
+bool player_step(Player *p, s16 sign);   // TRUE if the player actually moved
 void player_turn(Player *p, s16 sign); // sign +1 = turn right (CW), -1 = turn left (CCW)
 
 #endif
