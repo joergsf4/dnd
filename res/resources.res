@@ -1,3 +1,7 @@
+// The club's logo for the intro (tools/make_logo.py from tools/rcd_logo.svg, both from the
+// Wanderburg project).
+IMAGE rcd_logo "gfx/rcd_logo.png" BEST
+
 // Title screen (tools/make_title.py), 16 colours on PAL0.
 IMAGE title_image "gfx/title.png" NONE
 
@@ -80,3 +84,4 @@ WAV sfx_gameover "sfx/sfx_gameover.wav" XGM2
 WAV sfx_menu "sfx/sfx_menu.wav" XGM2
 WAV sfx_quake "sfx/sfx_quake.wav" XGM2
 WAV sfx_item "sfx/sfx_item.wav" XGM2
+WAV sfx_intro "sfx/sfx_intro.wav" XGM2

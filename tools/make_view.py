@@ -818,51 +818,56 @@ def prop_hounds():
 
 
 def prop_cambions():
-    """Two cambions standing guard: red horned heads, black armour, wings folded behind."""
+    """Two cambions standing guard: red skin, black hair, silver armour over dark violet, red wings
+    spread behind, spears."""
     t = blank(T)
     shadow(t, 28)
     for cx in (20, 44):
-        for side in (-1, 1):                                   # folded wings behind
-            for y in range(18, 50):
-                w = max(0, 9 - abs(y - 26) // 3)
-                rect(t, cx + side * 4 if side > 0 else cx - 4 - w, y, cx + 4 + w if side > 0 else cx - 4, y + 1, CH0)
-        rect(t, cx - 5, 26, cx + 5, 46, CH1)                   # armour
-        rect(t, cx - 5, 26, cx - 3, 46, CH2)
-        rect(t, cx - 4, 46, cx - 1, 62, CH0)                   # legs
-        rect(t, cx + 1, 46, cx + 4, 62, CH0)
-        ellipse(t, cx, 20, 4, 5, MEM1)                         # head
+        for side in (-1, 1):                                   # wings spread behind
+            for y in range(12, 46):
+                w = max(0, 10 - abs(y - 20) // 3)
+                x0, x1 = (cx + 4, cx + 4 + w) if side > 0 else (cx - 4 - w, cx - 4)
+                rect(t, x0, y, x1, y + 1, MEM1 if (y + x0) % 5 else MEM0)
+        rect(t, cx - 5, 36, cx + 5, 50, FL0)                   # dark violet tunic
+        rect(t, cx - 5, 25, cx + 5, 37, CH3)                   # silver armour
+        rect(t, cx + 2, 25, cx + 5, 37, CH2)
+        rect(t, cx - 4, 50, cx - 1, 62, CH0)                   # legs
+        rect(t, cx + 1, 50, cx + 4, 62, CH0)
+        rect(t, cx - 4, 56, cx - 1, 60, CH3)                   # greaves
+        rect(t, cx + 1, 56, cx + 4, 60, CH3)
+        ellipse(t, cx, 19, 4, 5, MEM1)                         # red face
+        rect(t, cx - 4, 13, cx + 4, 16, BLACK)                 # black hair
         t[19][cx - 2] = t[19][cx + 2] = BONE                   # eyes
-        for side in (-1, 1):                                   # horns
-            for i in range(6):
-                t[16 - i][cx + side * (3 + i // 2)] = BONE
-        rect(t, cx + 7, 8, cx + 8, 60, CH2)                    # glaive
-        rect(t, cx + 6, 6, cx + 10, 12, CH3)
+        rect(t, cx + 7, 6, cx + 8, 62, CH0)                    # spear
+        rect(t, cx + 6, 3, cx + 9, 9, CH3)
     return t
 
 
 def prop_duel():
-    """Zhalk and the mind flayer locked in combat: the cambion's burning sword against psionic
-    blue light."""
+    """Zhalk and the mind flayer locked in combat: the cambion in silver with orange wings and a
+    glowing golden blade, against psionic blue light."""
     t = blank(T)
     shadow(t, 30)
-    # Zhalk, left: wings, black armour, red skin, horns
-    for y in range(12, 44):
-        w = max(0, 12 - abs(y - 20) // 2)
-        rect(t, 2, y, 2 + w, y + 1, CH0)
-    rect(t, 10, 24, 24, 46, CH1)
-    rect(t, 10, 24, 13, 46, CH2)
-    rect(t, 12, 46, 16, 62, CH0)
-    rect(t, 19, 46, 23, 62, CH0)
+    # Zhalk, left: wings, silver armour over a bare red chest, horns sweeping up
+    for y in range(6, 50):
+        w = max(0, 13 - abs(y - 16) // 3)
+        rect(t, 1, y, 1 + w, y + 1, MEM1 if y % 4 else MEM0)
+    rect(t, 10, 24, 24, 46, MEM1)                              # bare chest
+    rect(t, 8, 22, 13, 30, CH3)                                # pauldrons
+    rect(t, 21, 22, 26, 30, CH3)
+    rect(t, 10, 38, 24, 48, CH3)                               # plated skirt
+    rect(t, 10, 38, 24, 39, CH2)
+    rect(t, 12, 48, 16, 62, CH2)
+    rect(t, 19, 48, 23, 62, CH2)
     ellipse(t, 17, 17, 5, 6, MEM1)
     t[16][15] = t[16][19] = BONE
-    for side in (-1, 1):
-        for i in range(7):
-            t[12 - i][17 + side * (4 + i // 2)] = BONE
-    for i in range(22):                                        # the Everburn Blade, raised
-        x, y = 24 + i, 30 - i
-        rect(t, x, y, x + 2, y + 1, MEM2 if i % 2 else BONE)
-        if i % 3 == 0:
-            t[y - 2][x + 1] = MEM1
+    for side in (-1, 1):                                       # horns
+        for i in range(8):
+            t[12 - i][17 + side * (3 + i // 3)] = MEM0
+    for i in range(24):                                        # the Everburn Blade, raised, glowing
+        x, y = 24 + i, 34 - i
+        rect(t, x, y, x + 2, y + 1, GLINT if i % 3 else BONE)
+    t[33][24] = t[32][23] = MEM2                               # fire at the hilt
     # the mind flayer, right: robe, mauve head, tentacles, a hand full of blue light
     rect(t, 42, 26, 56, 62, CH1)
     rect(t, 42, 26, 45, 62, CH2)
@@ -875,26 +880,39 @@ def prop_duel():
         rect(t, 49 + dx, 23, 50 + dx, 32, FLESH)
     ellipse(t, 38, 28, 4, 4, BLUE)                             # psionic blast
     ellipse(t, 38, 28, 2, 2, GLINT)
-    for i in range(6):
-        t[28 + (i % 3) - 1][32 + i] = BLUE
     return t
 
 
 def prop_transponder():
-    """The transponder at the helm: a thick stalk of tentacles holding a glowing orb, nerve strands
-    hanging from it -- connect them and the ship tears itself away."""
+    """The transponder at the helm (after BG3): a dark blue, brain-like mass on the floor, thorny
+    tentacles rising from it to a knot under the ceiling, violet glow, red lights at its sides."""
     rng = random.Random(16)
     t = blank(T)
-    shadow(t, 20)
-    for k, dx in enumerate((-10, -5, 0, 5, 10)):               # tentacles twisting up
-        for y in range(20, 63):
-            x = 32 + dx * (1 - (y - 20) / 70) + 2 * math.sin(y / 4 + k)
-            rect(t, int(x) - 2, y, int(x) + 2, y + 1, FLESH if (y + k) % 6 else FL0)
-    ellipse(t, 32, 14, 11, 10, BLUE)                           # the orb
-    ellipse(t, 32, 14, 7, 6, TEAL)
-    ellipse(t, 29, 11, 3, 2, GLINT)
-    for _ in range(7):                                         # nerve strands hanging down
-        vein(t, rng, rng.randint(22, 42), 22, rng.randint(10, 24), BLUE)
+    shadow(t, 30)
+    for k, (x0, bend) in enumerate(((14, -6), (22, -2), (32, 0), (42, 2), (50, 6))):   # tentacles
+        for y in range(2, 44):
+            f = (44 - y) / 42                                  # 0 at the mass, 1 at the ceiling
+            x = x0 + bend * (1 - f) + (32 - x0) * f * 0.7 + 1.5 * math.sin(y / 3 + k)
+            w = 2 if f < 0.8 else 1
+            rect(t, int(x) - w, y, int(x) + w, y + 1, CH1 if (y + k) % 5 else CH2)
+            if y % 6 == k % 6 and 8 < y < 40:                  # thorns
+                t[y][int(x) + w + 1 if k % 2 else int(x) - w - 2] = CH0
+    ellipse(t, 32, 3, 14, 4, CH1)                              # the knot under the ceiling
+    for x in (22, 28, 36, 42):
+        t[4][x] = MEM2
+    for y in range(38, 63):                                    # the brain-like mass
+        for x in range(TEX):
+            if in_ellipse(x, y, 32, 52, 27, 13):
+                fold = int(3 * math.sin(x / 3.0) + 3 * math.sin(y / 2.0 + x / 5.0))
+                t[y][x] = CH2 if fold > 1 else CH1 if fold > -2 else CH0
+    ellipse(t, 32, 46, 10, 4, FLESH)                           # violet glow where the nerves join
+    ellipse(t, 32, 46, 5, 2, BLUE)
+    for side in (-1, 1):                                       # red lights on its sides
+        for k in range(4):
+            t[50 + k * 2][32 + side * (18 + k)] = MEM2
+            t[51 + k * 2][32 + side * (18 + k)] = MEM1
+    for _ in range(4):                                         # loose nerve strands
+        vein(t, rng, rng.randint(24, 40), 40, rng.randint(8, 14), BLUE)
     return t
 
 

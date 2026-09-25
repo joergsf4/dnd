@@ -44,16 +44,17 @@ TR, OUT_C = 0, 1
 # during Zhalk's fight, so his sword burns (flames anywhere else flicker along).
 HELL_PAL = [
     (0xFF, 0x00, 0xFF), (0x10, 0x08, 0x08),
-    (0xE8, 0x50, 0x38), (0xB8, 0x28, 0x20), (0x70, 0x14, 0x14),   # blood-red skin
-    (0x70, 0x68, 0x74), (0x3C, 0x34, 0x3C), (0x1C, 0x18, 0x1C),   # hell iron / black hide
-    (0xF8, 0xE0, 0x60), (0xF0, 0x90, 0x30), (0xD0, 0x40, 0x20),   # fire (cycled)
-    (0xD0, 0xB8, 0x98), (0x84, 0x6C, 0x54),                       # horn, bone
-    (0xA8, 0xB0, 0xC0),                                           # steel
-    (0x54, 0x28, 0x28),                                           # wing membrane
+    (0xE8, 0x60, 0x48), (0xB8, 0x30, 0x24), (0x70, 0x14, 0x14),   # blood-red skin
+    (0xE4, 0xE4, 0xEC), (0xA0, 0xA0, 0xB0), (0x58, 0x58, 0x68),   # silver armour (Zhalk, cambions)
+    (0xF8, 0xE8, 0x80), (0xF0, 0x98, 0x30), (0xD0, 0x40, 0x20),   # fire (cycled)
+    (0xD0, 0xB8, 0x98),                                           # horn, bone, teeth
+    (0x2C, 0x24, 0x2C),                                           # black: hide, hair, boots
+    (0x48, 0x24, 0x4C),                                           # dark violet cloth
+    (0xD0, 0x58, 0x34),                                           # wing membrane, orange-red
     (0xF8, 0xF0, 0x80),                                           # glowing eyes (accent)
 ]
-(H_RED_H, H_RED, H_RED_D, H_IRON_H, H_IRON, H_IRON_D, H_FIRE_Y, H_FIRE_O, H_FIRE_R, H_HORN,
- H_HORN_D, H_STEEL, H_WING, H_EYE) = range(2, 16)
+(H_RED_H, H_RED, H_RED_D, H_SILVER_H, H_SILVER, H_SILVER_D, H_FIRE_Y, H_FIRE_O, H_FIRE_R, H_HORN,
+ H_BLACK, H_CLOTH, H_WING, H_EYE) = range(2, 16)
 
 MF_PAL = [
     (0xFF, 0x00, 0xFF), (0x14, 0x0C, 0x1C),
@@ -194,19 +195,22 @@ def to_rgba(canvas, palette):
 
 # ---------------------------------------------------------------- creatures of Avernus
 def bat_wing(c, root, tip, low, bones=3):
+    """A bat wing: orange-red membrane, darker finger bones, a clawed tip."""
     c.poly([root, tip, low], H_WING)
     for k in range(bones):                                # the wing's finger bones
         t = (k + 1) / (bones + 1)
         c.line(root[0], root[1], tip[0] + (low[0] - tip[0]) * t, tip[1] + (low[1] - tip[1]) * t, H_RED_D)
-    c.line(root[0], root[1], tip[0], tip[1], H_HORN_D)
+    c.line(root[0], root[1], tip[0], tip[1], H_RED)
+    c.set(tip[0], tip[1] - 1, H_HORN)                     # claw at the top
 
 
-def horn(c, x, y, dx, length, thick):
-    """A horn curving up and back from (x, y); dx = -1 / +1 for the side."""
+def horn(c, x, y, dx, length, thick, col=H_HORN, dark=H_RED_D):
+    """A horn curving up and outwards from (x, y); dx = -1 / +1 for the side."""
     for i in range(length):
         t = i / max(1, length - 1)
         r = thick * (1 - t) + 0.6
-        c.ellipse(x + dx * (length * 0.5 * t + length * 0.4 * t * t), y - length * 0.8 * t + length * 0.3 * t * t, r, r, H_HORN if i % 3 else H_HORN_D)
+        c.ellipse(x + dx * (length * 0.35 * t + length * 0.25 * t * t), y - length * 0.9 * t + length * 0.25 * t * t,
+                  r, r, col if i % 3 else dark)
 
 
 def imp(frame):
@@ -224,16 +228,16 @@ def imp(frame):
     c.ellipse(16, 15, 6, 6, TMP)                          # head
     c.shade_region(TMP, H_RED_H, H_RED, H_RED_D, 16, 20, 7, 12)
     c.poly([(11, 11), (9, 4), (13, 9)], H_HORN)           # goat horns
-    c.poly([(21, 11), (23, 4), (19, 9)], H_HORN_D)
+    c.poly([(21, 11), (23, 4), (19, 9)], H_HORN)
     c.set(13, 15, H_EYE)                                  # eyes
     c.set(18, 15, H_EYE)
     c.rect(14, 18, 19, 19, H_RED_D)                       # grin
     c.set(15, 18, H_HORN)
     c.set(17, 18, H_HORN)
-    c.rect(26, 6, 27, 40, H_STEEL)                        # trident shaft
+    c.rect(26, 6, 27, 40, H_SILVER_D)                     # trident shaft
     for x in (24, 26, 28):
-        c.rect(x, 3, x + 1, 8, H_STEEL)
-    c.rect(24, 7, 29, 8, H_IRON_H)
+        c.rect(x, 3, x + 1, 8, H_SILVER)
+    c.rect(24, 7, 29, 8, H_SILVER_H)
     c.rect(21, 24, 26, 26, H_RED)                         # arm holding it
     c.outline()
     return c
@@ -246,10 +250,10 @@ def hound():
     for i in range(10):                                   # tail of flame
         c.ellipse(42 + i * 0.3, 18 - i * 1.2, 2.5 - i * 0.2, 2, (H_FIRE_R, H_FIRE_O, H_FIRE_Y)[i % 3])
     c.ellipse(28, 22, 15, 9, TMP)                         # body
-    c.shade_region(TMP, H_IRON_H, H_IRON, H_IRON_D, 26, 18, 16, 9)
+    c.shade_region(TMP, H_SILVER_D, H_BLACK, OUT_C, 26, 18, 16, 9)
     for x, bend in ((18, -2), (24, 1), (34, -1), (40, 2)):    # legs, claws
-        c.rect(x, 26, x + 4, 37, H_IRON_D)
-        c.rect(x + bend, 37, x + bend + 5, 39, H_IRON)
+        c.rect(x, 26, x + 4, 37, H_BLACK)
+        c.rect(x + bend, 37, x + bend + 5, 39, H_SILVER_D)
     for _ in range(6):                                    # magma cracks
         x, y = rng.randint(18, 40), rng.randint(16, 26)
         for k in range(rng.randint(4, 8)):
@@ -259,10 +263,10 @@ def hound():
     for x in range(16, 40, 3):                            # smouldering ridge on the back
         c.poly([(x, 15), (x + 2, 9 - (x % 2) * 2), (x + 3, 15)], H_FIRE_R)
     c.ellipse(11, 17, 9, 8, TMP)                          # head
-    c.shade_region(TMP, H_IRON_H, H_IRON, H_IRON_D, 9, 14, 9, 8)
-    c.poly([(5, 12), (7, 2), (10, 11)], H_IRON)           # ears
-    c.poly([(13, 11), (16, 3), (17, 12)], H_IRON_D)
-    c.rect(1, 18, 12, 23, H_IRON)                         # snout
+    c.shade_region(TMP, H_SILVER_D, H_BLACK, OUT_C, 9, 14, 9, 8)
+    c.poly([(5, 12), (7, 2), (10, 11)], H_BLACK)          # ears
+    c.poly([(13, 11), (16, 3), (17, 12)], H_BLACK)
+    c.rect(1, 18, 12, 23, H_BLACK)                        # snout
     c.rect(1, 22, 12, 26, H_FIRE_O)                       # open jaws full of fire
     c.rect(2, 23, 10, 25, H_FIRE_Y)
     for x in range(2, 12, 2):
@@ -274,89 +278,119 @@ def hound():
     return c
 
 
+def silver_plate(c, pts, cx, cy, rx, ry):
+    c.poly(pts, TMP)
+    c.shade_region(TMP, H_SILVER_H, H_SILVER, H_SILVER_D, cx, cy, rx, ry)
+
+
 def cambion():
-    """Cambion: horned, winged devil in lighter black armour, with a glaive."""
+    """Cambion (after the Monster Manual): red skin, black hair tied back, small horns, red bat
+    wings, a tail; silver scale armour over a dark violet tunic; a spear with a silver head."""
     c = Canvas(48, 96)
     for side in (-1, 1):
-        bat_wing(c, (24 + side * 6, 34), (24 + side * 24, 10), (24 + side * 20, 60))
-    c.rect(18, 62, 23, 90, H_IRON_D)                      # legs in iron
-    c.rect(25, 62, 30, 90, H_IRON_D)
-    c.rect(17, 88, 24, 95, H_IRON)
-    c.rect(24, 88, 31, 95, H_IRON)
-    c.poly([(15, 32), (33, 32), (32, 64), (16, 64)], TMP)   # armour
-    c.shade_region(TMP, H_IRON_H, H_IRON, H_IRON_D, 22, 44, 12, 18)
-    c.line(24, 34, 24, 62, H_IRON_D)
-    for side in (-1, 1):                                  # spiked pauldrons
-        c.poly([(24 + side * 6, 30), (24 + side * 16, 30), (24 + side * 19, 24), (24 + side * 13, 36)], H_IRON)
-        c.line(24 + side * 16, 30, 24 + side * 19, 24, H_IRON_H)
-    c.rect(10, 36, 14, 58, H_RED)                         # red arms
+        bat_wing(c, (24 + side * 6, 32), (24 + side * 23, 4), (24 + side * 20, 58))
+    for i in range(30):                                   # tail, curling out to the side
+        t = i / 29
+        c.ellipse(30 + 14 * t, 64 + 20 * t - 12 * t * t, 1.8 - t, 1.5, H_RED)
+    c.poly([(16, 56), (32, 56), (35, 80), (13, 80)], H_CLOTH)   # tunic, ragged hem
+    for x in range(14, 35, 4):
+        c.poly([(x, 80), (x + 2, 86), (x + 4, 80)], H_CLOTH)
+    c.rect(18, 76, 23, 90, H_BLACK)                       # legs, dark cloth
+    c.rect(25, 76, 30, 90, H_BLACK)
+    silver_plate(c, [(16, 84), (24, 84), (24, 93), (16, 93)], 18, 86, 6, 6)   # greaves, boots
+    silver_plate(c, [(24, 84), (32, 84), (32, 93), (24, 93)], 26, 86, 6, 6)
+    c.rect(16, 93, 24, 96, H_BLACK)
+    c.rect(24, 93, 32, 96, H_BLACK)
+    silver_plate(c, [(15, 32), (33, 32), (32, 56), (16, 56)], 20, 40, 12, 14)   # scale armour
+    for y in range(36, 56, 3):                            # scales
+        for x in range(17 + (y // 3) % 2 * 2, 32, 4):
+            c.set(x, y, H_SILVER_D)
+    silver_plate(c, [(14, 52), (34, 52), (32, 58), (16, 58)], 20, 54, 12, 4)   # belt plate
+    for side in (-1, 1):                                  # pointed pauldrons
+        silver_plate(c, [(24 + side * 6, 31), (24 + side * 15, 30), (24 + side * 17, 25), (24 + side * 12, 37)],
+                     24 + side * 10, 30, 7, 5)
+    c.rect(10, 36, 14, 58, H_RED)                         # red arms with dark tattoos
     c.rect(34, 36, 38, 58, H_RED_D)
-    c.rect(39, 6, 41, 92, H_HORN_D)                       # glaive shaft...
-    c.poly([(38, 6), (44, 0), (44, 14), (40, 16)], H_STEEL)   # ...and blade
-    c.line(44, 0, 44, 14, H_HORN)
-    c.rect(34, 50, 41, 55, H_RED)                         # hand on the shaft
+    for y in range(40, 56, 4):
+        c.set(11, y, H_BLACK); c.set(12, y + 1, H_BLACK); c.set(35, y + 1, H_BLACK)
+    silver_plate(c, [(9, 46), (15, 46), (15, 52), (9, 52)], 11, 48, 3, 3)      # bracers
+    silver_plate(c, [(33, 46), (39, 46), (39, 52), (33, 52)], 35, 48, 3, 3)
+    c.line(44, 2, 34, 94, H_BLACK, 2)                     # spear, held diagonally...
+    c.poly([(43, 0), (47, 0), (46, 9), (43, 9)], H_SILVER)    # ...with a silver head
+    c.line(47, 0, 46, 9, H_SILVER_H)
+    c.rect(35, 54, 40, 58, H_RED)                         # hand on the shaft
     c.rect(21, 25, 27, 32, H_RED_D)                       # neck
     c.ellipse(24, 18, 6, 8, TMP)                          # head
     c.shade_region(TMP, H_RED_H, H_RED, H_RED_D, 22, 16, 7, 9)
-    horn(c, 19, 12, -1, 10, 1.6)
-    horn(c, 29, 12, 1, 10, 1.6)
+    c.ellipse(24, 12, 7, 5, H_BLACK)                      # black hair, slicked back
+    c.rect(27, 12, 32, 30, H_BLACK)                       # ponytail
+    c.poly([(17, 17), (13, 13), (18, 21)], H_RED)         # pointed ears
+    c.poly([(31, 17), (35, 13), (30, 21)], H_RED_D)
+    horn(c, 20, 11, -1, 5, 1.0)                           # small horns
+    horn(c, 28, 11, 1, 5, 1.0)
     c.rect(20, 17, 23, 18, H_EYE)                         # glowing eyes
     c.rect(25, 17, 28, 18, H_EYE)
-    c.rect(21, 22, 27, 23, H_RED_D)                       # sneer
+    c.rect(21, 22, 27, 23, H_RED_D)                       # snarl
     c.outline()
     return c
 
 
 def zhalk():
-    """Kommandant Zhalk: a hulking cambion, huge horns and wings, spiked black hell-iron with
-    skulls, and the Everburn Blade -- a greatsword wrapped in fire (the fire ramp is cycled)."""
+    """Kommandant Zhalk (after BG3): a hulking cambion with red skin, great horns sweeping up,
+    huge orange-red wings, spiked silver armour with an open chest and riveted pauldrons, and the
+    Everburn Blade -- a long glowing golden blade, fire licking round the hilt (the fire ramp is
+    cycled)."""
     c = Canvas(64, 112)
     for side in (-1, 1):
-        bat_wing(c, (32 + side * 8, 40), (32 + side * 32, 6), (32 + side * 28, 76), 4)
-    c.rect(22, 76, 29, 106, H_IRON_D)                     # legs
-    c.rect(35, 76, 42, 106, H_IRON_D)
-    c.poly([(20, 104), (30, 104), (31, 111), (18, 111)], H_IRON)
-    c.poly([(34, 104), (44, 104), (46, 111), (33, 111)], H_IRON)
-    c.poly([(17, 38), (47, 38), (45, 78), (19, 78)], TMP)   # armour
-    c.shade_region(TMP, H_IRON_H, H_IRON, H_IRON_D, 28, 52, 16, 22)
-    for y in range(44, 76, 8):                            # plates with spikes
-        c.line(19, y, 45, y, H_IRON_D)
-    c.ellipse(32, 60, 4, 4, H_HORN)                       # a skull on the belt
-    c.rect(30, 59, 32, 60, H_IRON_D); c.rect(33, 59, 35, 60, H_IRON_D)
-    for side in (-1, 1):                                  # huge spiked pauldrons with skulls
-        cx = 32 + side * 15
-        c.ellipse(cx, 40, 10, 7, TMP)
-        c.shade_region(TMP, H_IRON_H, H_IRON, H_IRON_D, cx - 3, 38, 10, 7)
-        for k in range(3):
-            c.poly([(cx - 6 + k * 5, 36), (cx - 4 + k * 5 + side * 2, 26 - k), (cx - 2 + k * 5, 36)], H_IRON_H)
-        c.ellipse(cx, 42, 3, 3, H_HORN)
-        c.set(cx - 1, 42, H_IRON_D); c.set(cx + 1, 42, H_IRON_D)
-    c.rect(8, 44, 14, 70, H_RED)                          # arms, red and massive
-    c.rect(50, 44, 56, 70, H_RED_D)
-    # the Everburn Blade, raised diagonally, the blade wrapped in flames
-    for i in range(64):
-        x, y = 56 - i * 0.66, 70 - i * 1.08
-        if i < 6:
-            c.rect(x, y, x + 3, y + 2, H_HORN_D)          # grip
-            continue
-        c.rect(x - 1, y, x + 5, y + 2, H_STEEL if i % 2 else H_FIRE_Y)
-        if i % 3 == 0:                                    # tongues of fire licking up the blade
-            fx = x + (4 if i % 6 else -2)
-            c.poly([(fx - 2, y + 1), (fx + (2 if i % 6 else -3), y - 7), (fx + 2, y + 1)],
-                   (H_FIRE_O, H_FIRE_R, H_FIRE_Y)[(i // 3) % 3])
-    c.rect(50, 66, 60, 69, H_IRON_H)                      # crossguard
-    c.rect(49, 69, 57, 74, H_RED)                         # fist on the grip
-    c.rect(27, 29, 37, 38, H_RED_D)                       # neck
-    c.ellipse(32, 22, 9, 11, TMP)                         # head
-    c.shade_region(TMP, H_RED_H, H_RED, H_RED_D, 30, 20, 10, 12)
-    horn(c, 25, 14, -1, 16, 2.4)
-    horn(c, 39, 14, 1, 16, 2.4)
+        bat_wing(c, (32 + side * 9, 38), (32 + side * 31, 2), (32 + side * 27, 88), 4)
+    c.rect(22, 78, 29, 102, TMP)                          # legs in silver greaves
+    c.rect(35, 78, 42, 102, TMP)
+    c.shade_region(TMP, H_SILVER_H, H_SILVER, H_SILVER_D, 28, 86, 10, 14)
+    c.rect(20, 102, 30, 108, H_SILVER_D)
+    c.rect(34, 102, 44, 108, H_SILVER_D)
+    c.rect(21, 108, 29, 111, H_RED)                       # bare red feet
+    c.rect(35, 108, 43, 111, H_RED)
+    c.poly([(20, 62), (44, 62), (46, 84), (18, 84)], TMP) # plated skirt
+    c.shade_region(TMP, H_SILVER_H, H_SILVER, H_SILVER_D, 28, 70, 14, 12)
+    for y in range(66, 84, 4):
+        c.line(19, y, 45, y, H_SILVER_D)
+    c.poly([(21, 40), (43, 40), (44, 62), (20, 62)], H_RED)   # bare chest...
+    c.shade_region(H_RED, H_RED_H, H_RED, H_RED_D, 28, 48, 12, 12)
+    c.line(32, 44, 32, 60, H_RED_D)
+    c.rect(22, 56, 42, 62, H_SILVER_D)                    # ...a spiked belt
+    for x in range(22, 42, 4):
+        c.poly([(x, 56), (x + 2, 52), (x + 3, 56)], H_SILVER)
+    for side in (-1, 1):                                  # huge riveted pauldrons with spikes
+        cx = 32 + side * 14
+        c.ellipse(cx, 40, 11, 8, TMP)
+        c.ellipse(cx + side * 2, 46, 8, 7, TMP)
+        c.shade_region(TMP, H_SILVER_H, H_SILVER, H_SILVER_D, cx - 3, 38, 11, 8)
+        for k in range(4):
+            c.poly([(cx - 7 + k * 4, 35), (cx - 6 + k * 4 + side * 2, 26 - k), (cx - 4 + k * 4, 35)], H_SILVER_H)
+        for rx, ry in ((-4, 40), (0, 43), (4, 40), (side * 3, 47)):
+            c.set(cx + rx, ry, H_SILVER_D)                # rivet holes
+    c.rect(6, 48, 12, 72, H_RED)                          # arms, bracers
+    c.rect(52, 48, 58, 72, H_RED_D)
+    c.rect(6, 60, 12, 68, H_SILVER)
+    c.rect(52, 60, 58, 68, H_SILVER)
+    # the Everburn Blade, held across the body: glowing gold, flames round the hilt
+    for i in range(62):
+        x, y = 10 + i * 0.86, 76 - i * 0.62
+        c.rect(x, y, x + 3, y + 2, H_FIRE_Y if i % 5 else H_SILVER_H)
+        if i < 14 and i % 2 == 0:
+            c.poly([(x, y), (x - 2 + (i % 4), y - 6), (x + 3, y)], (H_FIRE_O, H_FIRE_R)[(i // 2) % 2])
+    c.rect(7, 73, 15, 79, H_SILVER_D)                     # crossguard and fist
+    c.rect(4, 76, 11, 81, H_RED)
+    c.rect(26, 28, 38, 40, H_RED_D)                       # neck
+    c.ellipse(32, 21, 9, 11, TMP)                         # head
+    c.shade_region(TMP, H_RED_H, H_RED, H_RED_D, 30, 19, 10, 12)
+    c.poly([(23, 20), (18, 15), (24, 24)], H_RED)         # pointed ears
+    c.poly([(41, 20), (46, 15), (40, 24)], H_RED_D)
+    horn(c, 26, 12, -1, 18, 2.6, H_RED_D, H_BLACK)        # great horns sweeping up
+    horn(c, 38, 12, 1, 18, 2.6, H_RED_D, H_BLACK)
     c.rect(26, 20, 30, 22, H_EYE)                         # glowing eyes
     c.rect(34, 20, 38, 22, H_EYE)
-    c.rect(26, 27, 38, 30, H_RED_D)                       # grin full of fangs
-    for x in range(27, 38, 2):
-        c.set(x, 27, H_HORN)
-        c.set(x + 1, 29, H_HORN)
+    c.rect(28, 27, 37, 28, H_RED_D)                       # a cold smile
     c.outline()
     return c
 

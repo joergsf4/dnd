@@ -24,6 +24,7 @@ typedef enum
     SFX_MENU,       // menu cursor
     SFX_QUAKE,      // the ship shudders (ending, Zhalk's arrival)
     SFX_ITEM,       // loot
+    SFX_INTRO,      // the club logo sweeps in (from Wanderburg)
     SFX_COUNT
 } SfxId;
 

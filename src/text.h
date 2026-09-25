@@ -12,6 +12,9 @@
 // colours). Call once at boot, before any text is drawn.
 void text_init(void);
 
+// Puts the text palette back into PAL3 after something borrowed it (the intro's logo).
+void text_resetPalette(void);
+
 void text_draw(const char *utf8, u16 x, u16 y);
 
 // Number of on-screen characters (an umlaut is 2 bytes of UTF-8 but 1 character).

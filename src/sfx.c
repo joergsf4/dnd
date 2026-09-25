@@ -25,6 +25,7 @@ static const Sfx sounds[SFX_COUNT] =
     { sfx_menu,      sizeof(sfx_menu),      2 },
     { sfx_quake,     sizeof(sfx_quake),     11 },
     { sfx_item,      sizeof(sfx_item),      5 },
+    { sfx_intro,     sizeof(sfx_intro),     12 },
 };
 
 static MusicId currentMusic = MUSIC_NONE;

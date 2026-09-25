@@ -140,6 +140,8 @@ together in Room 1 (the "Klonkammer" — see `BeschreibungInhaltVerticalSlice.md
       the view redraws (DMA vs. the Z80).
 
 ## Gotchas worth remembering
+- After regenerating `res/view/*.bin` (tools/make_view.py) run `rm -rf out/res` before
+  `./build.sh`: the build doesn't always notice changed BIN resources (the old props stayed).
 - rescomp keeps a PNG's padded palette: `VDP_drawImageEx(..., loadpal = TRUE)` then writes more than
   16 colours (over PAL1-PAL3, the text went black). Load images' palettes by hand with
   `PAL_setPalette` (16 colours), as src/title.c does.

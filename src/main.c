@@ -14,6 +14,7 @@
 #include "room6.h"
 #include "countdown.h"
 #include "title.h"
+#include "intro.h"
 #include "sfx.h"
 #include "figures.h"
 #include "encounter.h"
@@ -60,6 +61,7 @@ int main(bool hardReset)
     text_init();
     sfx_init();
 
+    intro_run();
     music_play(MUSIC_TITLE);   // also through the creation screen
     title_run();
     u8 portrait;

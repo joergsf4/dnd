@@ -9,8 +9,13 @@ static const u16 textPalette[16] = {
 void text_init(void)
 {
     VDP_loadFont(&font_de, DMA);
-    PAL_setPalette(PAL3, textPalette, DMA);
+    text_resetPalette();
     VDP_setTextPalette(PAL3);
+}
+
+void text_resetPalette(void)
+{
+    PAL_setPalette(PAL3, textPalette, DMA);
 }
 
 // UTF-8 is 0xC3 followed by one of these for the German letters; mapped to the font slots

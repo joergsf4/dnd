@@ -97,6 +97,7 @@ src/
   room5.c/.h             Room 5 ("Labor"): cleric, ornate chest, transformation
   room6.c/.h             Room 6 ("Brücke"): countdown, Zhalk, transponder
   countdown.c/.h         Room 6's rounds until the crash
+  intro.c/.h             The club logo at power-on (from Wanderburg)
   title.c/.h             Title screen
   sfx.c/.h               Music and sound effects (XGM2)
   ending.c/.h            The escape sequence and the "ENDE DES PROLOGS" screen
@@ -129,6 +130,7 @@ tools/
   make_figures.py          Generates the figure sprites and busts (one palette per figure)
   make_portraits.py        Generates the nine hero portraits and their avatars
   make_title.py            Generates the title screen image (gfx/title.png)
+  make_logo.py             The club logo (gfx/rcd_logo.png) from rcd_logo.svg (both from Wanderburg)
   generate_music.py        Composes the songs (PSG VGM), imports the title theme's MIDI
   generate_sfx.py          Synthesises the sound effects (8-bit WAV)
   emutest.py               Headless BlastEm test scenarios with screenshots
@@ -136,7 +138,8 @@ tools/
 
 ## Current state
 
-Boots into the title screen (`src/title.c`, image from `tools/make_title.py`: the Nautiloid
+Boots with the club's logo (Retro Computer Dresden, `src/intro.c`, taken over 1:1 from the
+Wanderburg project: the logo sweeps in behind a white shine), then the title screen (`src/title.c`, image from `tools/make_title.py`: the Nautiloid
 before the burning sky of Avernus), START leads to the hero creation screen: class (Kämpfer/Schurke/Magier, their features listed) with
 up/down, one of three portraits per class with left/right, Start confirms. That creates the one starting party member,
 auto-named after the class — then into Room 1, the Klonkammer (6x5): the

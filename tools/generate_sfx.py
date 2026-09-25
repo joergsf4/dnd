@@ -231,6 +231,21 @@ def sfx_item(rng):
                   tone(0.14, 1760, 1760, "square", decay=4.0, duty=0.25))
 
 
+def sfx_intro(rng):
+    """Intro logo sweep (taken over 1:1 from the Wanderburg project): a bright rising shimmer that ends in a soft chord."""
+    n = n_samples(1.3)
+    sweep = []
+    phase = 0.0
+    for i in range(n):
+        t = i / n
+        f = 300 * (12 ** t)                                  # glides up about 3.5 octaves
+        phase += f / RATE
+        sweep.append(math.sin(TWO_PI * phase) * math.sin(math.pi * t) ** 1.5)
+    chord = mix(tone(0.6, 523, 523, "tri", decay=3.0, attack=0.01), tone(0.6, 659, 659, "tri", decay=3.0, attack=0.01),
+                tone(0.6, 784, 784, "tri", decay=3.0, attack=0.01))
+    return mix(sweep, concat(silence(0.75), gain(chord, 0.9)))
+
+
 SOUNDS = {
     "sfx_hit": sfx_hit,
     "sfx_miss": sfx_miss,
@@ -247,6 +262,7 @@ SOUNDS = {
     "sfx_menu": sfx_menu,
     "sfx_quake": sfx_quake,
     "sfx_item": sfx_item,
+    "sfx_intro": sfx_intro,
 }
 
 

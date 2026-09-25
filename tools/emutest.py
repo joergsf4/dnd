@@ -7,7 +7,7 @@ is needed (and none is available in this sandbox).
     python3 tools/emutest.py create              # just the character creation screen
     python3 tools/emutest.py look                # Room 1: look around from the spawn point
     python3 tools/emutest.py tour                # Room 1: views from two opposite corners
-    python3 tools/emutest.py title               # title screen, then the creation screen
+    python3 tools/emutest.py title               # club logo, title screen, then the creation screen
     python3 tools/emutest.py portraits           # creation screen: all 9 hero portraits, then in game
     python3 tools/emutest.py room1               # Room 1: interact with every object
     python3 tools/emutest.py room2               # through the door: Room 2, Myrnath, back to Room 1
@@ -134,10 +134,11 @@ def act(b, key, settle=15):
 
 
 def skip_title(b):
-    """Past the title screen (START) onto the creation screen. Booting takes a while (the XGM2
-    sound driver loads first), so wait before pressing."""
+    """Past the club logo and the title screen (START each) onto the creation screen. Booting takes
+    a while (the XGM2 sound driver loads first), so wait before pressing."""
     b.frames(150)
-    act(b, "gamepads.1.start", 30)
+    act(b, "gamepads.1.start", 60)          # skips the logo intro
+    act(b, "gamepads.1.start", 30)          # the title
 
 
 def create_hero(b, cls_down=0):
@@ -250,7 +251,11 @@ def main():
             return
 
         if args.scenario == "title":
-            b.frames(150)
+            b.frames(60)
+            b.shot("intro_sweep")               # the club logo sweeping in
+            b.frames(120)
+            b.shot("intro_logo")
+            b.frames(150)                       # the intro ends by itself
             b.shot("title")
             act(b, "gamepads.1.start", 30)
             b.shot("title_to_create")
