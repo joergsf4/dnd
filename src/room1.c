@@ -108,10 +108,16 @@ static const char *const room1Grid[6] = {
     "11111111",
 };
 
+// Objects must sit ON a wall cell (see dungeon_objects.h) -- x=0/x=7 and y=0/y=5 are the only
+// cells room1Grid actually marks '1'. An earlier version placed the tank/chest one row inside
+// that border (3,1)/(4,4), which are open floor: the object still "worked" (map_objectAt doesn't
+// care about the grid), but the *real* wall was then 2 cells further back, so the tank rendered
+// small at ring 1 with ceiling/floor visible around it instead of filling ring 0 -- confirmed by
+// screenshot, looked like a "cut-out" of the wall instead of a wall filling the player's view.
 static const RoomObject room1Objects[] = {
-    { 3, 1, OBJ_LARVA_TANK,         0,      0, 0 }, // north wall, directly ahead of spawn
+    { 3, 0, OBJ_LARVA_TANK,         0,      0, 0 }, // north wall, directly ahead of spawn
     { 7, 2, OBJ_RESTORATION_SHRINE, 0,      0, 0 }, // east wall
-    { 4, 4, OBJ_CARTILAGE_CHEST,    0,      0, 0 }, // south wall
+    { 4, 5, OBJ_CARTILAGE_CHEST,    0,      0, 0 }, // south wall
     { 0, 2, OBJ_MINDFLAYER_CORPSE,  0,      0, 0 }, // west wall
     { 0, 3, OBJ_DOOR_EXIT,          ROOM_2, 0, 0 }, // west wall; ROOM_2 isn't built yet
 };
@@ -120,7 +126,7 @@ const RoomDef ROOM1 = {
     .roomId = ROOM_1,
     .w = 8, .h = 6,
     .grid = room1Grid,
-    .startX = 3, .startY = 2, .startFacing = FACE_NORTH,
+    .startX = 3, .startY = 1, .startFacing = FACE_NORTH, // 1 cell south of the tank, on the wall
     .objectCount = 5,
     .objects = room1Objects,
     .onInteract = room1_onInteract,

@@ -181,11 +181,19 @@ def main():
             b.shot("r1_larva_done")
 
             # --- walk to the mindflayer corpse (west wall, (0,2)) ---
-            # Note: consecutive press() calls need a frames() gap between them, or the ROM's
-            # edge-detection (pressed = joy & ~prevJoy) can miss the release/re-press entirely
-            # if BlastEm's bindup+binddown land within the same polled frame -- cost an hour to
-            # a mis-diagnosed "movement bug" that was actually just this script under-walking.
-            b.press("gamepads.1.left")         # north -> west
+            # Spawn is (3,1) facing north, on the tank's wall -- go south one cell first to get
+            # off that wall before turning west. Note: consecutive press() calls need a frames()
+            # gap between them, or the ROM's edge-detection (pressed = joy & ~prevJoy) can miss
+            # the release/re-press entirely if BlastEm's bindup+binddown land within the same
+            # polled frame -- cost an hour to a mis-diagnosed "movement bug" that was actually
+            # just this script under-walking.
+            b.press("gamepads.1.right")        # north -> east
+            b.frames(6)
+            b.press("gamepads.1.right")        # east -> south
+            b.frames(6)
+            b.press("gamepads.1.up", 6)        # step south: (3,1) -> (3,2)
+            b.frames(6)
+            b.press("gamepads.1.right")        # south -> west
             b.frames(6)
             b.press("gamepads.1.up", 6)        # step west: (3,2) -> (2,2)
             b.frames(6)
