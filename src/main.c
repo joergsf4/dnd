@@ -21,6 +21,7 @@
 #include "abilities.h"
 #include "input.h"
 #include "text.h"
+#include "automap.h"
 
 // Sprite tiles are reserved just below the font; the default 420 would collide with the view's two
 // 560-tile buffers (dungeon_view.c). Avatars take 9 tiles each, figures up to 120 (a bust), a
@@ -119,6 +120,12 @@ int main(bool hardReset)
         if (pressed & BUTTON_B)
         {
             ab_partyMenu(&player);
+            afterModal(&player);
+        }
+
+        if (pressed & BUTTON_C)
+        {
+            automap_screen(&player);
             afterModal(&player);
         }
 

@@ -18,4 +18,9 @@ void dungeonView_render(const Player *p);
 // and redraws -- only if one of them was in sight at the last render. Called on a timer.
 bool dungeonView_animate(const Player *p);
 
+// For other screens drawn into the view area (the automap): the RAM pixel buffer, 28x20 tiles in
+// VDP tile order, and showing it (DMA into the hidden tile set, swapped in at the next vblank).
+u8 *dungeonView_buffer(void);
+void dungeonView_present(void);
+
 #endif

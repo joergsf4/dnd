@@ -78,6 +78,12 @@ RoomObject *map_roomObjects(u8 *count)
     return currentRoom ? roomState[currentRoom->roomId] : NULL;
 }
 
+const RoomObject *map_roomStateOf(RoomId id, u8 *count)
+{
+    *count = roomVisited[id] && roomTable[id] ? roomTable[id]->objectCount : 0;
+    return roomState[id];
+}
+
 bool map_isWall(s16 x, s16 y)
 {
     if (!currentRoom || x < 0 || y < 0 || x >= currentRoom->w || y >= currentRoom->h) return TRUE;

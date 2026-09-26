@@ -120,6 +120,7 @@ src/
   abilities.c/.h         Class features shared by combat and dungeon, party menu (B)
   equipment.c/.h         Weapons, armour, shields: slots, proficiencies, the equipment screen
   input.c/.h             Latched button presses for the dungeon loop
+  automap.c/.h           The automap: cells uncovered as they're seen, the map screen (C)
   combat.c/.h            Turn-based menu combat (see "Combat")
   encounter.c/.h         Enemy groups in the dungeon: closing in, starting fights
   figures.c/.h           Figure sprites in front of the view (dialogue scenes, combat)
@@ -176,7 +177,7 @@ with its own avatar. Also: three vivisection tables, a lectern grown from the fl
 the walls, and the door north to the outer deck. Doors work
 both ways: going through one puts the player in front of the matching door in the other room
 (`map_enterRoom`), and every room keeps its objects' state. D-Pad Up/Down walks forward/back, Left/Right turns 90°, A interacts with
-whatever's directly ahead. The right panel shows the live party (avatar + name/KP/ZP, empty slots
+whatever's directly ahead, B opens the party menu, C the automap. The right panel shows the live party (avatar + name/KP/ZP, empty slots
 as "---LEER---"), live inventory, and a facing/coordinates status line.
 
 Adapted from the design document for the grid engine: no climbing passage or other non-grid
@@ -206,6 +207,17 @@ the lab: a dead cleric carrying the Eldritch rune and an ornate key, an ornate c
 turns her into a mind flayer before the party's eyes (the view flickers purple), "Vernichten"
 switches the pod off. With the rune in the socket, Schattenherz is free and joins (the party's
 paladin, she heals with Heilende Hände). Key items show in the panel while carried.
+
+## Automap
+
+Every room starts dark on the map and uncovers itself as it's explored (`src/automap.c`). The
+renderer reports every cell a column's ray crosses up to and including the first wall it hits --
+exactly what's on screen -- plus the 8 cells around the party; a bit per cell and room remembers
+it. C opens the map screen: it's drawn in the view palette straight into the view's RAM buffer
+(`dungeonView_buffer`/`dungeonView_present`), with the cell size that fits the room (16 px, the
+bridge 10 px). Walls, doors (blue), hull breaches, objects as marks, the party as an arrow; enemy
+groups only while they're in sight (they roam). Left/right leafs through the rooms seen so far.
+Rooms may be at most 16x16 cells (`AUTOMAP_MAX_W/H`).
 
 ## Combat
 

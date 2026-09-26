@@ -96,6 +96,7 @@ void uiPanel_redrawChrome(void)
     text_draw("GEHEN/DREHEN", UI_PANEL_COL, 23);
     text_draw("A: BENUTZEN", UI_PANEL_COL, 24);
     text_draw("B: GRUPPE", UI_PANEL_COL, 25);
+    text_draw("C: KARTE", UI_PANEL_COL, 26);
 }
 
 void uiPanel_drawStatus(const Player *p)

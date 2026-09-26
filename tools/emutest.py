@@ -250,7 +250,7 @@ def walk(b, n):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("scenario", choices=["title", "create", "portraits", "look", "tour", "room1", "room2", "room3", "room45", "room6", "zhalk", "crash"])
+    ap.add_argument("scenario", choices=["title", "create", "portraits", "look", "tour", "room1", "room2", "room3", "room45", "room6", "zhalk", "crash", "map", "map6"])
     ap.add_argument("--class", dest="cls", type=int, default=0, choices=[0, 1, 2],
                      help="0 fighter (default), 1 rogue, 2 mage")
     args = ap.parse_args()
@@ -292,6 +292,45 @@ def main():
             b.shot("portrait_chosen")
             act(b, "gamepads.1.start", 30)
             b.shot("portrait_in_game")           # Room 1 intro, avatar in the panel
+            return
+
+        if args.scenario == "map":
+            # The automap (C): right after the start only what's in view is uncovered, more after
+            # turning around and walking; then in Room 2, leafing back to Room 1.
+            start_game(b, args.cls)
+            act(b, "gamepads.1.c", 20)
+            b.shot("map_start")
+            act(b, "gamepads.1.c", 20)
+            for _ in range(2):
+                act(b, "gamepads.1.right")         # face north
+            walk(b, 2)
+            act(b, "gamepads.1.c", 20)
+            b.shot("map_walked")
+            act(b, "gamepads.1.b", 20)
+            b.shot("map_closed")
+            act(b, "gamepads.1.right")             # north -> east
+            walk(b, 2)                             # (5,1)
+            act(b, "gamepads.1.left")              # the far side of the room
+            act(b, "gamepads.1.left")
+            act(b, "gamepads.1.left")
+            walk(b, 4)                             # west along the north side
+            act(b, "gamepads.1.c", 20)
+            b.shot("map_more")
+            act(b, "gamepads.1.c", 20)
+            return
+
+        if args.scenario == "map6":
+            # The automap on the bridge (enemies in sight), then leafing through the rooms seen.
+            to_room6(b, args.cls)
+            for _ in range(8):                      # the bridge's intro boxes
+                act(b, "gamepads.1.a", 30)
+            act(b, "gamepads.1.c", 20)
+            b.shot("map6_bridge")
+            for k in range(5):
+                act(b, "gamepads.1.right", 20)
+                b.shot(f"map6_room{k}")
+            act(b, "gamepads.1.c", 20)
+            b.shot("map6_closed")
             return
 
         if args.scenario == "look":

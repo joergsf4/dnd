@@ -123,6 +123,9 @@ RoomObject *map_objectAt(s16 x, s16 y);
 // reveal or move objects, and for enemy movement.
 RoomObject *map_roomObjects(u8 *count);
 
+// Any visited room's objects in RAM (count 0 if it hasn't been visited) -- for the automap.
+const RoomObject *map_roomStateOf(RoomId id, u8 *count);
+
 bool map_isWall(s16 x, s16 y);
 void map_forward(Facing f, s16 *dx, s16 *dy);
 void map_left(Facing f, s16 *dx, s16 *dy);

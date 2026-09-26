@@ -3,6 +3,7 @@
 #include "view_gen.h"
 #include "encounter.h"
 #include "input.h"
+#include "automap.h"
 
 // First-person view, Eye of the Beholder / Dungeon Master style.
 //
@@ -35,6 +36,7 @@ void viewMaskSpan(u8 *dst, const u8 *src, u32 rows, u32 r0);   // src/view_draw.
 static u8 viewBuf[VIEW_BYTES] __attribute__((aligned(4)));
 static u8 cellTex[VIEW_DMAX + 1][2 * VIEW_LMAX + 1];   // 0 = open, else texture + 1
 static u8 cellProp[VIEW_DMAX + 1][2 * VIEW_LMAX + 1];  // 0 = none, else prop + 1
+static u8 cellSeen[VIEW_DMAX + 1][2 * VIEW_LMAX + 1];  // a ray reached it: on screen (automap)
 static u8 wallH[VIEW_PAIRS];   // per column pair: rows above the horizon of the wall drawn, 0 = none
 static u8 frontSet;
 static bool mirror;
@@ -166,7 +168,10 @@ void dungeonView_render(const Player *p)
         }
     }
 
+    memset(cellSeen, 0, sizeof(cellSeen));
+    cellSeen[0][VIEW_LMAX] = 1;
     u8 ahead = cellTex[1][VIEW_LMAX];
+    if (ahead) cellSeen[1][VIEW_LMAX] = 1;
     if (ahead)  // a wall right in front covers the whole view: take the pre-rendered image
         memcpy(viewBuf, viewAdjacent + (u32) (ahead - 1) * VIEW_BYTES, VIEW_BYTES);
     else
@@ -180,6 +185,7 @@ void dungeonView_render(const Player *p)
         wallH[pc] = 0;
         for (; e < end; e++)
         {
+            cellSeen[(u8) e->d][(u8) (e->l + VIEW_LMAX)] = 1;
             u8 t = cellTex[(u8) e->d][(u8) (e->l + VIEW_LMAX)];
             if (t)
             {
@@ -208,6 +214,26 @@ void dungeonView_render(const Player *p)
         }
     }
 
+    // The automap: what the rays reached, and the cells right around the party.
+    automap_beginSight();
+    for (s16 d = 0; d <= VIEW_DMAX; d++)
+        for (s16 l = -VIEW_LMAX; l <= VIEW_LMAX; l++)
+            if (cellSeen[d][l + VIEW_LMAX])
+                automap_see(p->x + fx * d + rx * l, p->y + fy * d + ry * l);
+    for (s16 dy = -1; dy <= 1; dy++)
+        for (s16 dx = -1; dx <= 1; dx++)
+            automap_see(p->x + dx, p->y + dy);
+
+    dungeonView_present();
+}
+
+u8 *dungeonView_buffer(void)
+{
+    return viewBuf;
+}
+
+void dungeonView_present(void)
+{
     u8 back = frontSet ^ 1;
     u16 base = VIEW_TILE_BASE + back * VIEW_TILES;
     VDP_loadTileData((const u32 *) viewBuf, base, VIEW_TILES, DMA);
