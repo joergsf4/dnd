@@ -62,6 +62,17 @@ The look follows BG3's Nautiloid (reference shots in `screenso/`): near-black ch
 glowing red membranes between them, a fleshy mauve floor, cold blue light, and every object
 grown rather than built.
 
+**Animations** are frames baked like everything else (`tools/make_view.py`): the hull breach
+(4 frames: a dragon circling far away, the haze flickering), fire (3), the restoration station
+(pulsing, and contracting with glittering particles when used), the transponder and the bridge's
+consoles (glow, blinking lights). Frames of one texture/prop are consecutive in view_gen.h;
+`dungeon_view.c` picks them by an animation counter, and `dungeonView_animate` (every 8 frames,
+main.c) steps it and redraws -- only while one of them is in sight.
+
+Input in the dungeon is latched (`src/input.c`): SGDK reads the pads only in
+`SYS_doVBlankProcess`, so a short press during a redraw (3-5 frames) used to get lost; the renderer
+polls between column batches, props and the buffer swap.
+
 To change textures, the backdrop, the palette or the draw distance: edit `tools/make_view.py` and
 re-run it (`python3 tools/make_view.py --preview` also writes sample renders to
 `out/view_preview/` without building the ROM).
@@ -108,6 +119,7 @@ src/
   ending.c/.h            The escape sequence and the "ENDE DES PROLOGS" screen
   abilities.c/.h         Class features shared by combat and dungeon, party menu (B)
   equipment.c/.h         Weapons, armour, shields: slots, proficiencies, the equipment screen
+  input.c/.h             Latched button presses for the dungeon loop
   combat.c/.h            Turn-based menu combat (see "Combat")
   encounter.c/.h         Enemy groups in the dungeon: closing in, starting fights
   figures.c/.h           Figure sprites in front of the view (dialogue scenes, combat)

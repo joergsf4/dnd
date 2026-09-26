@@ -3,6 +3,8 @@
 #include "party.h"
 #include "ui_panel.h"
 #include "sfx.h"
+#include "dungeon_view.h"
+#include "figures.h"
 
 RoomObject *dungeonObjects_interactTarget(const Player *p)
 {
@@ -24,9 +26,16 @@ void dungeonObjects_tryDoor(Player *p, RoomObject *obj)
     map_enterRoom(target, p, map_currentRoom()->roomId);
 }
 
-void dungeonObjects_useShrine(void)
+void dungeonObjects_useShrine(Player *p, RoomObject *shrine)
 {
     sfx_play(SFX_HEAL);
+    static const u8 squeeze[] = { 1, 2, 2, 1, 0 };     // the frames of the contraction (param1)
+    for (u8 i = 0; i < sizeof(squeeze); i++)
+    {
+        shrine->param1 = squeeze[i];
+        dungeonView_render(p);
+        figures_wait(6);
+    }
     for (u8 i = 0; i < PARTY_MAX; i++)
     {
         if (party.members[i].active)

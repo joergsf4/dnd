@@ -14,4 +14,8 @@ void dungeonView_init(void);
 // render plus one vblank (the buffer swap); call after moves/turns and interactions only.
 void dungeonView_render(const Player *p);
 
+// Steps the animations (the hull breach, fire, the restoration station, the bridge's consoles)
+// and redraws -- only if one of them was in sight at the last render. Called on a timer.
+bool dungeonView_animate(const Player *p);
+
 #endif

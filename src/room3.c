@@ -87,7 +87,7 @@ static void room3_onInteract(Player *p, RoomObject *obj)
         case OBJ_BREACH:
             say("Durch den Riss: Avernus.", "Felsen treiben im Glühen,", "fern kreist ein Drache.");
             break;
-        case OBJ_RESTORATION_SHRINE: dungeonObjects_useShrine(); break;
+        case OBJ_RESTORATION_SHRINE: dungeonObjects_useShrine(p, obj); break;
         case OBJ_DOOR_EXIT:          dungeonObjects_tryDoor(p, obj); break;
         default: break;
     }

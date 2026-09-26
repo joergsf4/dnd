@@ -2,6 +2,7 @@
 #include "game.h"
 #include "view_gen.h"
 #include "encounter.h"
+#include "input.h"
 
 // First-person view, Eye of the Beholder / Dungeon Master style.
 //
@@ -40,13 +41,28 @@ static bool mirror;
 static s16 lastX = -1, lastY = -1;
 static Facing lastFacing;
 
+// Animation: textures and props with several frames (tools/make_view.py) show the one picked by
+// animFrame; dungeonView_animate steps it and redraws, but only while one of them is in sight.
+static u8 animFrame;
+static bool animInSight;
+
+static const u8 fireFrames[] = { PROP_FIRE, PROP_FIRE_F1, PROP_FIRE_F2 };
+static const u8 shrineFrames[] = { PROP_SHRINE, PROP_SHRINE_F1, PROP_SHRINE_SQUEEZE1, PROP_SHRINE_SQUEEZE2 };
+#define BREACH_FRAMES (TEX_BREACH_F3 - TEX_BREACH + 1)
+
+static bool animated(const RoomObject *o)
+{
+    return o->kind == OBJ_BREACH || o->kind == OBJ_FIRE || o->kind == OBJ_RESTORATION_SHRINE
+        || o->kind == OBJ_TRANSPONDER || o->kind == OBJ_TENTACLE_CONSOLE;
+}
+
 static u8 objectTexture(const RoomObject *o)
 {
     switch (o->kind)
     {
         case OBJ_DOOR_EXIT: return TEX_DOOR;
         case OBJ_TABLET:    return TEX_TABLET;
-        case OBJ_BREACH:    return TEX_BREACH;
+        case OBJ_BREACH:    return TEX_BREACH + animFrame % BREACH_FRAMES;
         default:            return TEX_WALL;
     }
 }
@@ -58,7 +74,8 @@ static u8 objectProp(const RoomObject *o)
         case OBJ_LARVA_TANK:         return (o->flags & OBJFLAG_BROKEN) ? PROP_POOL_BROKEN : PROP_POOL;
         case OBJ_MINDFLAYER_CORPSE:  return PROP_CORPSE;
         case OBJ_CARTILAGE_CHEST:    return (o->flags & OBJFLAG_TRIGGERED) ? PROP_CHEST_OPEN : PROP_CHEST;
-        case OBJ_RESTORATION_SHRINE: return PROP_SHRINE;
+        case OBJ_RESTORATION_SHRINE:                     // param1: squeezing (dungeonObjects_useShrine)
+            return shrineFrames[o->param1 ? 1 + o->param1 : animFrame % 2];
         case OBJ_POD_OPEN:           return PROP_POD_OPEN;
         case OBJ_MYRNATH:            return (o->flags & OBJFLAG_TRIGGERED) ? PROP_MYRNATH_DEAD : PROP_MYRNATH;
         case OBJ_OP_TABLE:           return PROP_OP_TABLE;
@@ -71,10 +88,10 @@ static u8 objectProp(const RoomObject *o)
                 case ENC_ZHALK:    return PROP_DUEL;
                 default:           return PROP_IMPS;
             }
-        case OBJ_TRANSPONDER:        return PROP_TRANSPONDER;
-        case OBJ_TENTACLE_CONSOLE:   return PROP_TENTACLE_CONSOLE;
+        case OBJ_TRANSPONDER:        return animFrame % 2 ? PROP_TRANSPONDER_F1 : PROP_TRANSPONDER;
+        case OBJ_TENTACLE_CONSOLE:   return animFrame % 2 ? PROP_TENTACLE_CONSOLE_F1 : PROP_TENTACLE_CONSOLE;
         case OBJ_ACID_TANK:          return (o->flags & OBJFLAG_BROKEN) ? PROP_TANK_BROKEN : PROP_TANK;
-        case OBJ_FIRE:               return PROP_FIRE;
+        case OBJ_FIRE:               return fireFrames[animFrame % 3];
         case OBJ_POD_SEALED:
             return (o->flags & OBJFLAG_TRIGGERED) ? PROP_POD_BROKEN : (o->flags & OBJFLAG_MARKED) ? PROP_POD_DEAD : PROP_POD_SEALED;
         case OBJ_SHADOWHEART_POD:    return (o->flags & OBJFLAG_TRIGGERED) ? PROP_POD_OPEN : PROP_POD_SHADOWHEART;
@@ -128,6 +145,7 @@ void dungeonView_render(const Player *p)
     }
 
     s16 fx, fy, rx, ry;
+    animInSight = FALSE;
     map_forward(p->facing, &fx, &fy);
     map_right(p->facing, &rx, &ry);
     for (s16 d = 0; d <= VIEW_DMAX; d++)
@@ -138,6 +156,7 @@ void dungeonView_render(const Player *p)
             s16 cy = p->y + fy * d + ry * l;
             u8 t = 0, prop = 0;
             RoomObject *o = map_objectAt(cx, cy);
+            if (o && animated(o) && d <= VIEW_DMAX && (d > 0 || l == 0)) animInSight = TRUE;
             if (map_isWall(cx, cy))
                 t = 1 + (o ? objectTexture(o) : TEX_WALL);
             else if (o)
@@ -155,6 +174,7 @@ void dungeonView_render(const Player *p)
 
     for (u16 pc = 0; !ahead && pc < VIEW_PAIRS; pc++)
     {
+        if ((pc & 15) == 0) input_poll();   // a redraw takes frames: don't miss a short press
         const ViewEvent *e = &viewEvents[viewColStart[pc]];
         const ViewEvent *end = &viewEvents[viewColStart[pc + 1]];
         wallH[pc] = 0;
@@ -172,6 +192,7 @@ void dungeonView_render(const Player *p)
         }
     }
 
+    input_poll();
     // Props: far to near, so nearer ones cover farther ones. Only |l| <= d can be on screen.
     for (s16 d = VIEW_DMAX; !ahead && d >= 1; d--)
     {
@@ -180,7 +201,10 @@ void dungeonView_render(const Player *p)
         {
             u8 prop = cellProp[d][l + VIEW_LMAX];
             if (prop)
+            {
                 drawProp(prop - 1, d, l);
+                input_poll();
+            }
         }
     }
 
@@ -188,6 +212,15 @@ void dungeonView_render(const Player *p)
     u16 base = VIEW_TILE_BASE + back * VIEW_TILES;
     VDP_loadTileData((const u32 *) viewBuf, base, VIEW_TILES, DMA);
     SYS_doVBlankProcess();
+    input_poll();
     VDP_fillTileMapRectInc(BG_B, TILE_ATTR_FULL(PAL0, FALSE, FALSE, FALSE, base), 0, 0, VIEW_TW, VIEW_TH);
     frontSet = back;
+}
+
+bool dungeonView_animate(const Player *p)
+{
+    if (!animInSight) return FALSE;
+    animFrame++;
+    dungeonView_render(p);
+    return TRUE;
 }

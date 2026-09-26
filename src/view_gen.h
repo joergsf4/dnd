@@ -16,7 +16,10 @@
 #define TEX_DOOR 1
 #define TEX_TABLET 2
 #define TEX_BREACH 3
-#define TEX_COUNT 4
+#define TEX_BREACH_F1 4
+#define TEX_BREACH_F2 5
+#define TEX_BREACH_F3 6
+#define TEX_COUNT 7
 #define PROP_POOL 0
 #define PROP_POOL_BROKEN 1
 #define PROP_CHEST 2
@@ -52,7 +55,14 @@
 #define PROP_DUEL 32
 #define PROP_TRANSPONDER 33
 #define PROP_TENTACLE_CONSOLE 34
-#define PROP_COUNT 35
+#define PROP_FIRE_F1 35
+#define PROP_FIRE_F2 36
+#define PROP_SHRINE_F1 37
+#define PROP_SHRINE_SQUEEZE1 38
+#define PROP_SHRINE_SQUEEZE2 39
+#define PROP_TRANSPONDER_F1 40
+#define PROP_TENTACLE_CONSOLE_F1 41
+#define PROP_COUNT 42
 #define VIEW_HALF_K 56   // a wall at depth z is 2 * VIEW_HALF_K / z rows high
 #define VIEW_CY 80
 
@@ -941,7 +951,7 @@ static const ViewEvent viewEvents[866] = {
 
 // Props: record offset in viewProps per prop and distance (d = 1..VIEW_DMAX), and the column
 // pair of a prop's centre d cells ahead and l to the right (index l + VIEW_LMAX).
-static const u32 viewPropOffset[35][6] = {
+static const u32 viewPropOffset[42][6] = {
     { 0, 0, 5548, 6946, 7596, 7962 },
     { 0, 8208, 13446, 14800, 15428, 15776 },
     { 0, 16012, 20546, 21720, 22278, 22568 },
@@ -977,6 +987,13 @@ static const u32 viewPropOffset[35][6] = {
     { 0, 255306, 264138, 266488, 267548, 268162 },
     { 0, 268550, 276902, 279032, 280026, 280596 },
     { 0, 280970, 284316, 285172, 285582, 285826 },
+    { 0, 285994, 290428, 291590, 292102, 292412 },
+    { 0, 292606, 296994, 298232, 298800, 299110 },
+    { 0, 299282, 305872, 307612, 308418, 308836 },
+    { 0, 309134, 314926, 316560, 317334, 317738 },
+    { 0, 317984, 323692, 325286, 325954, 326324 },
+    { 0, 326554, 334906, 337036, 338030, 338600 },
+    { 0, 338974, 342320, 343176, 343586, 343830 },
 };
 static const s16 viewPropCenter[6][11] = {
     { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },

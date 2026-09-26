@@ -230,11 +230,16 @@ def tex_tablet():
     return t
 
 
-def tex_breach():
+BREACH_FRAMES = 4
+
+
+def tex_breach(frame=0):
     """A tear in the hull (Room 3): ragged chitin edges, and outside the burning sky of Avernus --
-    glowing red haze, black rocks drifting in it, a dragon's silhouette far away."""
+    glowing red haze, black rocks drifting in it, a dragon far away. Animated (BREACH_FRAMES):
+    the dragon circles, beating its wings, and the haze flickers."""
     rng = random.Random(12)
     t = organic_wall(12)
+    sky = random.Random(100 + frame)                       # the flickering haze, per frame
     edge = []
     for y in range(TEX):                                   # ragged outline of the hole
         w = 22 + int(6 * math.sin(y / 5.0)) + rng.randint(-2, 2)
@@ -244,7 +249,7 @@ def tex_breach():
     for y in range(TEX):
         for x in range(TEX):
             if abs(x - 32) < edge[y]:
-                v = y + ((x * 5 + y * 3) % 7) - 3 + rng.randint(-3, 3)   # dithered bands
+                v = y + ((x * 5 + y * 3 + frame * 2) % 7) - 3 + sky.randint(-3, 3)   # dithered bands
                 c = MEM2 if v > 42 else MEM1 if v > 20 else MEM0   # sky: hotter towards below
                 t[y][x] = c
             elif abs(x - 32) < edge[y] + 2:
@@ -254,13 +259,18 @@ def tex_breach():
             for x in range(TEX):
                 if abs(x - 32) < edge[y] and (x - cx) ** 2 + ((y - cy) * 1.3) ** 2 < r * r:
                     t[y][x] = BLACK
-    for dx, dy in ((0, 0), (1, 0), (2, 0), (-1, -1), (-2, -2), (3, -1), (4, -2), (1, 1)):
-        t[14 + dy][36 + dx] = BLACK                        # a dragon, wings spread
+    a = frame * math.tau / BREACH_FRAMES                   # the dragon circles far away
+    bx, by = int(32 + 11 * math.cos(a)), int(15 + 4 * math.sin(a))
+    wings = ((-1, -1), (-2, -2), (3, -1), (4, -2)) if frame % 2 == 0 else ((-1, 1), (-2, 1), (3, 1), (4, 1))
+    for dx, dy in ((0, 0), (1, 0), (2, 0), (1, 1)) + wings:
+        t[by + dy][bx + dx] = BLACK
     return t
 
 
-TEXTURES = [tex_wall(), tex_door(), tex_tablet(), tex_breach()]
-TEX_NAMES = ["TEX_WALL", "TEX_DOOR", "TEX_TABLET", "TEX_BREACH"]
+# Animation frames follow their first frame directly, so dungeon_view.c can add the frame number.
+TEXTURES = [tex_wall(), tex_door(), tex_tablet()] + [tex_breach(f) for f in range(BREACH_FRAMES)]
+TEX_NAMES = ["TEX_WALL", "TEX_DOOR", "TEX_TABLET", "TEX_BREACH"] + \
+            [f"TEX_BREACH_F{f}" for f in range(1, BREACH_FRAMES)]
 
 # ---------------------------------------------------------------- props (free-standing objects)
 # A prop stands in the middle of a floor cell, drawn as an upright billboard one cell wide and one
@@ -390,8 +400,9 @@ def prop_corpse():
     return t
 
 
-def prop_shrine():
-    """Restoration station: a big blue glowing tentacle bladder on a ribbed chitin stalk."""
+def prop_shrine(state=0):
+    """Restoration station: a big blue glowing tentacle bladder on a ribbed chitin stalk.
+    state 0/1: the idle pulse; 2/3: it contracts when touched and puffs out glittering particles."""
     t = blank(T)
     shadow(t, 18)
     for dx, bend in ((-12, -6), (-7, -3), (7, 3), (12, 6)):   # roots spreading into the floor
@@ -403,15 +414,30 @@ def prop_shrine():
         t[y][31 + w] = CH0
         if y % 5 == 0:
             rect(t, 32 - w, y, 32 + w, y + 1, CH0)         # ribs
+    squeeze = max(0, state - 1)                            # 0, 1, 2
+    rx, ry = 19 - squeeze * 3, 16 - squeeze * 3
     for x, h in ((13, 16), (18, 22), (44, 22), (49, 16)):  # tentacles hanging from the bladder
-        rect(t, x, 26, x + 2, 26 + h, BLUE)
-        t[26 + h][x + (2 if x < 32 else -1)] = BLUE        # curled tip
-    ellipse(t, 32, 21, 19, 16, BLUE)                       # bladder
-    ellipse(t, 32, 27, 16, 8, TEAL)                        # darker underside
-    ellipse(t, 32, 21, 17, 12, BLUE)
+        x += (squeeze * 2) if x < 32 else -(squeeze * 2)   # drawn in as it contracts
+        rect(t, x, 26, x + 2, 26 + h - squeeze * 3, BLUE)
+        t[26 + h - squeeze * 3][x + (2 if x < 32 else -1)] = BLUE
+    ellipse(t, 32, 21 + squeeze, rx, ry, BLUE)             # bladder
+    ellipse(t, 32, 27, rx - 3, 8 - squeeze, TEAL)          # darker underside
+    ellipse(t, 32, 21 + squeeze, rx - 2, ry - 4, BLUE)
     for i in range(5):                                     # veins over it
-        vein(t, random.Random(20 + i), 20 + i * 6, 8, 12, TEAL)
-    ellipse(t, 26, 15, 6, 4, GLINT)                        # glow highlight
+        vein(t, random.Random(20 + i), 20 + i * 6 + squeeze, 8 + squeeze * 2, 12 - squeeze * 2, TEAL)
+    ellipse(t, 26 + squeeze, 15 + squeeze, 6 - squeeze + (1 if state == 1 else 0), 4, GLINT)   # glow
+    if state == 1:                                         # the pulse: a brighter rim
+        for k in range(12):
+            a = k * math.tau / 12
+            t[int(21 + (ry + 1) * math.sin(a))][int(32 + (rx + 1) * math.cos(a))] = TEAL
+    if squeeze:                                            # glittering healing particles
+        rng = random.Random(40 + state)
+        for _ in range(10 + squeeze * 8):
+            a = rng.random() * math.tau
+            r = rx + 2 + rng.random() * (6 + squeeze * 6)
+            x, y = int(32 + r * math.cos(a)), int(20 + r * 0.8 * math.sin(a))
+            if 0 <= x < TEX and 0 <= y < TEX:
+                t[y][x] = GLINT if rng.random() < 0.6 else BLUE
     return t
 
 
@@ -547,9 +573,13 @@ def prop_lectern():
     return t
 
 
-def prop_fire():
-    """Burning wreckage on the floor: charred chitin, flames licking up from it."""
-    rng = random.Random(13)
+FIRE_FRAMES = 3
+
+
+def prop_fire(frame=0):
+    """Burning wreckage on the floor: charred chitin, flames licking up from it. Animated
+    (FIRE_FRAMES): the flames and embers change, the debris stays."""
+    rng = random.Random(13 + frame * 31)
     t = blank(T)
     shadow(t, 26)
     for x0, x1, y0 in ((8, 30, 52), (26, 56, 55), (14, 44, 58)):   # charred debris
@@ -883,7 +913,7 @@ def prop_duel():
     return t
 
 
-def prop_transponder():
+def prop_transponder(frame=0):
     """The transponder at the helm (after BG3): a dark blue, brain-like mass on the floor, thorny
     tentacles rising from it to a knot under the ceiling, violet glow, red lights at its sides."""
     rng = random.Random(16)
@@ -905,26 +935,29 @@ def prop_transponder():
             if in_ellipse(x, y, 32, 52, 27, 13):
                 fold = int(3 * math.sin(x / 3.0) + 3 * math.sin(y / 2.0 + x / 5.0))
                 t[y][x] = CH2 if fold > 1 else CH1 if fold > -2 else CH0
-    ellipse(t, 32, 46, 10, 4, FLESH)                           # violet glow where the nerves join
-    ellipse(t, 32, 46, 5, 2, BLUE)
-    for side in (-1, 1):                                       # red lights on its sides
+    ellipse(t, 32, 46, 10 + frame * 2, 4 + frame, FLESH)       # violet glow, pulsing
+    ellipse(t, 32, 46, 5 + frame, 2, BLUE if frame == 0 else GLINT)
+    for side in (-1, 1):                                       # red lights on its sides, blinking
         for k in range(4):
-            t[50 + k * 2][32 + side * (18 + k)] = MEM2
-            t[51 + k * 2][32 + side * (18 + k)] = MEM1
+            on = (k + frame) % 2 == 0
+            t[50 + k * 2][32 + side * (18 + k)] = MEM2 if on else MEM0
+            t[51 + k * 2][32 + side * (18 + k)] = MEM1 if on else CH0
     for _ in range(4):                                         # loose nerve strands
         vein(t, rng, rng.randint(24, 40), 40, rng.randint(8, 14), BLUE)
     return t
 
 
-def prop_tentacle_console():
-    """A console of the ship: tentacles around a knot of glowing red nodes."""
+def prop_tentacle_console(frame=0):
+    """A console of the ship: tentacles around a knot of glowing red nodes (blinking in turn)."""
     t = blank(T)
     stalk(t, 40, 3)
     ellipse(t, 32, 36, 14, 8, FLESH)
     ellipse(t, 32, 34, 11, 5, FL2)
-    for cx in (24, 32, 40):
-        ellipse(t, cx, 34, 2, 2, MEM2)
-        t[33][cx] = GLINT
+    for k, cx in enumerate((24, 32, 40)):
+        lit = (k + frame) % 2 == 0
+        ellipse(t, cx, 34, 2, 2, MEM2 if lit else MEM0)
+        if lit:
+            t[33][cx] = GLINT
     for dx in (-13, 13):                                       # tentacles reaching up
         for i in range(14):
             t[34 - i][32 + dx + int(2 * math.sin(i / 2))] = FLESH
@@ -939,7 +972,10 @@ PROPS = [prop_pool(False), prop_pool(True), prop_chest(False), prop_chest(True),
          prop_pod_sealed("woman"), prop_pod_sealed("flayer"), prop_pod_sealed("woman", CH1),
          prop_switch(False), prop_switch(True), prop_cleric(), prop_ornate_chest(False),
          prop_ornate_chest(True), prop_hounds(), prop_cambions(), prop_duel(), prop_transponder(),
-         prop_tentacle_console()]
+         prop_tentacle_console(),
+         # animation frames (dungeon_view.c picks them by the animation counter)
+         prop_fire(1), prop_fire(2), prop_shrine(1), prop_shrine(2), prop_shrine(3),
+         prop_transponder(1), prop_tentacle_console(1)]
 PROP_NAMES = ["PROP_POOL", "PROP_POOL_BROKEN", "PROP_CHEST", "PROP_CHEST_OPEN", "PROP_CORPSE",
               "PROP_SHRINE", "PROP_POD_OPEN", "PROP_POD_BROKEN", "PROP_MYRNATH", "PROP_MYRNATH_DEAD",
               "PROP_OP_TABLE", "PROP_LECTERN", "PROP_FIRE", "PROP_TANK", "PROP_TANK_BROKEN", "PROP_IMPS",
@@ -947,7 +983,9 @@ PROP_NAMES = ["PROP_POOL", "PROP_POOL_BROKEN", "PROP_CHEST", "PROP_CHEST_OPEN", 
               "PROP_POD_CONSOLE_LIT", "PROP_BUTTON_CONSOLE", "PROP_POD_WOMAN", "PROP_POD_FLAYER",
               "PROP_POD_DARK", "PROP_SWITCH", "PROP_SWITCH_USED", "PROP_CLERIC", "PROP_ORNATE_CHEST",
               "PROP_ORNATE_CHEST_OPEN", "PROP_HOUNDS", "PROP_CAMBIONS", "PROP_DUEL", "PROP_TRANSPONDER",
-              "PROP_TENTACLE_CONSOLE"]
+              "PROP_TENTACLE_CONSOLE",
+              "PROP_FIRE_F1", "PROP_FIRE_F2", "PROP_SHRINE_F1", "PROP_SHRINE_SQUEEZE1",
+              "PROP_SHRINE_SQUEEZE2", "PROP_TRANSPONDER_F1", "PROP_TENTACLE_CONSOLE_F1"]
 
 
 def bake_prop(sprite, d):
@@ -1282,6 +1320,14 @@ def preview(bd, cols):
         im.putdata([RGB[c] for row in render(bd, cols, room, {(1, 0): i, (3, 1): i}) for c in row])
         sheet.paste(im, ((i % 4) * VW, (i // 4) * VH))
     sheet.save(os.path.join(outdir, "props.png"))
+    anim = [(3 + f, None) for f in range(BREACH_FRAMES)] + [(None, i) for i in range(len(PROPS) - 7, len(PROPS))]
+    sheet = Image.new("RGB", (VW * 4, VH * ((len(anim) + 3) // 4)))
+    for i, (tex, prop) in enumerate(anim):
+        im = Image.new("RGB", (VW, VH))
+        img = render(bd, cols, {(1, 0): tex}) if tex is not None else render(bd, cols, room, {(1, 0): prop})
+        im.putdata([RGB[c] for row in img for c in row])
+        sheet.paste(im, ((i % 4) * VW, (i // 4) * VH))
+    sheet.save(os.path.join(outdir, "anim.png"))
     print(f"previews in {outdir}")
 
 

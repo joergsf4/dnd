@@ -158,10 +158,27 @@ def start_game(b, cls_down=0):
 
 
 def to_room3(b, cls_down=0):
-    """New game, straight through Rooms 1 and 2 (Myrnath left alone) to Room 3's door."""
+    """New game: the chest in Room 1 (the hero's gear, put on), then through Rooms 1 and 2
+    (Myrnath left alone) to Room 3's door."""
     start_game(b, cls_down)
+    act(b, "gamepads.1.left")                  # south -> east
+    walk(b, 2)                                 # (5,3)
+    act(b, "gamepads.1.left")                  # east -> north
+    walk(b, 2)                                 # (5,1)
+    act(b, "gamepads.1.right")                 # north -> east, the chest
+    act(b, "gamepads.1.a")
+    act(b, "gamepads.1.a")                     # "Gleich anlegen?"
+    act(b, "gamepads.1.a", 20)                 # Ja: the equipment screen
+    for k in range(3):                         # weapon, armour, shield: the first that fits
+        if k:
+            act(b, "gamepads.1.down", 8)
+        act(b, "gamepads.1.a")
+        act(b, "gamepads.1.a")
+    act(b, "gamepads.1.b", 20)
+    act(b, "gamepads.1.right")                 # east -> south
+    walk(b, 2)                                 # (5,3)
     act(b, "gamepads.1.right")                 # south -> west
-    walk(b, 2)                                 # (1,3)
+    walk(b, 4)                                 # (1,3)
     act(b, "gamepads.1.right")                 # west -> north
     walk(b, 2)                                 # (1,1)
     act(b, "gamepads.1.left")                  # north -> west, door to Room 2
@@ -184,7 +201,7 @@ def to_room6(b, cls_down=0):
     for _ in range(9):                         # Lae'zel's scene, the imps' entrance
         act(b, "gamepads.1.a", 40)
     b.frames(150)
-    for _ in range(40):                        # the fight
+    for _ in range(80):                        # the fight
         act(b, "gamepads.1.a", 45)
     walk(b, 7)                                 # (2,1)
     act(b, "gamepads.1.a", 20)                 # Room 4
@@ -352,7 +369,7 @@ def main():
             act(b, "gamepads.1.left")          # south -> east
             act(b, "gamepads.1.left")          # east -> north
             b.shot("r1_at_shrine")
-            act(b, "gamepads.1.a")
+            act(b, "gamepads.1.a", 80)         # the bladder contracts first (~50 frames)
             b.shot("r1_shrine")                # KP back to full
             act(b, "gamepads.1.a")
 
@@ -525,7 +542,7 @@ def main():
             b.shot("r3_imps")                  # imps revealed in the corridor
             act(b, "gamepads.1.a", 150)        # they close in -> fight starts
             b.shot("r3_fight_start")
-            for i in range(40):
+            for i in range(80):
                 act(b, "gamepads.1.a", 45)
                 if i % 3 == 2:
                     b.shot(f"r3_fight_{i:02d}")
@@ -539,7 +556,7 @@ def main():
             for _ in range(7):                 # Lae'zel's scene
                 act(b, "gamepads.1.a", 40)
             b.frames(150)                      # imps close in
-            for _ in range(40):                # the fight
+            for _ in range(80):                # the fight
                 act(b, "gamepads.1.a", 45)
             b.shot("r45_after_fight")
             walk(b, 7)                         # (2,1)
@@ -637,7 +654,7 @@ def main():
         if args.scenario in ("room6", "zhalk", "crash"):
             to_room6(b, args.cls)
             b.shot("r6_arrive")
-            for i in range(5):                 # intro: bridge, mind flayer (2), Zhalk, countdown
+            for i in range(6):                 # intro: bridge, mind flayer (2), Zhalk, countdown, hint
                 act(b, "gamepads.1.a", 40)
                 b.shot(f"r6_intro{i}")
             b.shot("r6_start")                 # ABSTURZ: 10 in the panel

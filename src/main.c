@@ -19,6 +19,7 @@
 #include "figures.h"
 #include "encounter.h"
 #include "abilities.h"
+#include "input.h"
 #include "text.h"
 
 // Sprite tiles are reserved just below the font; the default 420 would collide with the view's two
@@ -28,13 +29,14 @@
                                 // takes the top 96, the view 16 + 2 x 560 below
 
 #define ENEMY_STEP_FRAMES 45
+#define ANIM_FRAMES 8          // a new animation frame (and a redraw, if any is in sight) every 8
 
 static const RoomDef *shownRoom;
 
 // Redraws the view and panel status. When the player has just arrived in a different room (game
 // start, or through a door), also runs that room's onEnter hook -- after the new view is on
 // screen, so an arrival text shows over the room rather than a blank view.
-static void redrawWorld(Player *p)
+static bool redrawWorld(Player *p)
 {
     dungeonView_render(p);
     uiPanel_drawStatus(p);
@@ -48,8 +50,19 @@ static void redrawWorld(Player *p)
         {
             room->onEnter(p);
             uiPanel_redrawChrome();
+            return TRUE;
         }
     }
+    return FALSE;
+}
+
+// After a menu, text or fight: the presses that belonged to it must not count in the dungeon,
+// but a press made during the redraw that follows must.
+static void afterModal(Player *p)
+{
+    input_takePresses();
+    if (redrawWorld(p)) input_takePresses();
+    uiPanel_redrawChrome();
 }
 
 int main(bool hardReset)
@@ -85,12 +98,11 @@ int main(bool hardReset)
     map_loadRoom(&ROOM1, &player);
     redrawWorld(&player);
 
-    u16 prevJoy = JOY_readJoypad(JOY_1);
-    u16 enemyTimer = 0;
+    input_takePresses();
+    u16 enemyTimer = 0, animTimer = 0;
     while (TRUE)
     {
-        u16 joy = JOY_readJoypad(JOY_1);
-        u16 pressed = joy & ~prevJoy;
+        u16 pressed = input_takePresses();
         bool moved = FALSE;
 
         if (pressed & (BUTTON_UP | BUTTON_DOWN))
@@ -107,8 +119,7 @@ int main(bool hardReset)
         if (pressed & BUTTON_B)
         {
             ab_partyMenu(&player);
-            redrawWorld(&player);
-            uiPanel_redrawChrome();
+            afterModal(&player);
         }
 
         if (pressed & BUTTON_A)
@@ -117,8 +128,7 @@ int main(bool hardReset)
             if (target)
             {
                 map_currentRoom()->onInteract(&player, target);
-                redrawWorld(&player);
-                uiPanel_redrawChrome();
+                afterModal(&player);
             }
         }
 
@@ -133,13 +143,17 @@ int main(bool hardReset)
         if (foe)
         {
             encounter_fight(&player, foe);
-            redrawWorld(&player);
-            uiPanel_redrawChrome();
+            afterModal(&player);
             enemyTimer = 0;
         }
 
+        if (++animTimer >= ANIM_FRAMES)
+        {
+            animTimer = 0;
+            dungeonView_animate(&player);
+        }
+
         countdown_update();
-        prevJoy = joy;
         SPR_update();
         SYS_doVBlankProcess();
     }

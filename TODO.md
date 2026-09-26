@@ -119,6 +119,10 @@ together in Room 1 (the "Klonkammer" — see `BeschreibungInhaltVerticalSlice.md
 - [ ] Room 6's countdown timer display (see roadmap above).
 
 ## Art
+- [x] Animated textures/props: hull breach (dragon), fire, restoration station (idle pulse and
+      contraction when used), transponder, bridge consoles.
+- [ ] More animation candidates: membranes pulsing (every wall -- would redraw constantly;
+      palette cycling on the MEM colours instead?), the larva pool bubbling, imps' wings.
 - [ ] Real wall/floor/ceiling art — textures are procedural placeholders in `tools/make_view.py`
       (64x64, palette indices into the 16-colour view palette, organic Nautiloid look). Could load
       hand-drawn indexed PNGs there instead; the rest of the pipeline stays the same.
@@ -146,6 +150,10 @@ together in Room 1 (the "Klonkammer" — see `BeschreibungInhaltVerticalSlice.md
       the view redraws (DMA vs. the Z80).
 
 ## Gotchas worth remembering
+- SGDK reads the joypads only in `SYS_doVBlankProcess`. Anything that runs for several frames
+  without it (a redraw) must poll (`input_poll`), or short presses vanish.
+- After a menu/text/fight in the dungeon loop, forget its presses right away (`afterModal` in
+  main.c) -- not after the following redraw, or the player's next press is thrown away too.
 - After regenerating `res/view/*.bin` (tools/make_view.py) run `rm -rf out/res` before
   `./build.sh`: the build doesn't always notice changed BIN resources (the old props stayed).
 - rescomp keeps a PNG's padded palette: `VDP_drawImageEx(..., loadpal = TRUE)` then writes more than

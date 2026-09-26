@@ -13,7 +13,8 @@ RoomObject *dungeonObjects_interactTarget(const Player *p);
 // room's exit door needs this same not-built-yet check before it's actually wired up.
 void dungeonObjects_tryDoor(Player *p, RoomObject *obj);
 
-// Restoration station: heals every party member's KP and ZP fully (reusable).
-void dungeonObjects_useShrine(void);
+// Restoration station: it contracts, puffing out glittering particles, and heals every party
+// member's KP and ZP fully (reusable).
+void dungeonObjects_useShrine(Player *p, RoomObject *shrine);
 
 #endif

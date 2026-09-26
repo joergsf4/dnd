@@ -113,7 +113,7 @@ static void room1_onInteract(Player *p, RoomObject *obj)
         case OBJ_LARVA_TANK:         onLarvaPool(obj); break;
         case OBJ_MINDFLAYER_CORPSE:  onCorpse(obj); break;
         case OBJ_CARTILAGE_CHEST:    onChest(obj); break;
-        case OBJ_RESTORATION_SHRINE: dungeonObjects_useShrine(); break;
+        case OBJ_RESTORATION_SHRINE: dungeonObjects_useShrine(p, obj); break;
         case OBJ_POD_OPEN:
             say("Deine Kapsel. Glibbrige", "Reste kleben noch am Glas.", "Hier kamst du heraus.");
             break;
