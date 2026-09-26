@@ -9,6 +9,7 @@
 #include "dungeon_objects.h"
 #include "sfx.h"
 #include "game.h"
+#include "party.h"
 
 // Every text line must fit the textbox: at most 27 characters on screen (an umlaut counts as one),
 // menu options at most 24.
@@ -60,6 +61,9 @@ static void onEnter(Player *p)
     combat_setRoundHook(countdown_round);
     say("Der Nautiloid stürzt!", "10 RUNDEN BIS ZUM ABSTURZ", "(3 Schritte = 1 Runde)");
     say("Im Westen ringt Zhalk mit", "dem Gedankenschinder. Wer", "sich ihm nähert, kämpft.");
+    for (u8 i = 0; i < PARTY_MAX; i++)   // a hint at the BG3 trick (Befehl, src/combat.c)
+        if (party.members[i].active && party.members[i].cls == CLASS_SHADOWHEART)
+            say("SCHATTEN flüstert: \"Ein", "Befehl von mir, und er", "lässt die Klinge fallen.\"");
 }
 
 static void onTransponder(void)

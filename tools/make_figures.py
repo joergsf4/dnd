@@ -9,7 +9,7 @@ index 0 transparent, 1 outline, 15 a bright accent (the combat target marker is 
     res/gfx/fig_imp.png              Niederer Kobold (imp), 32x48, 3 frames of wing beat
     res/gfx/fig_hound.png            Höllenhund, 48x40
     res/gfx/fig_cambion.png          Cambion, 48x96
-    res/gfx/fig_zhalk.png            Kommandant Zhalk, 64x112, the Everburn Blade in his hand
+    res/gfx/fig_zhalk.png            Kommandant Zhalk, 64x112: the Everburn Blade in his hand; disarmed
     res/gfx/fig_mindflayer_bust.png  the mind flayer on the bridge, 80x96 close-up
     res/gfx/fig_laezel.png           Lae'zel, full figure 48x96 (she lands in front of you)
     res/gfx/fig_laezel_bust.png      Lae'zel, 80x96 close-up while she speaks
@@ -335,11 +335,11 @@ def cambion():
     return c
 
 
-def zhalk():
+def zhalk(armed=True):
     """Kommandant Zhalk (after BG3): a hulking cambion with red skin, great horns sweeping up,
     huge orange-red wings, spiked silver armour with an open chest and riveted pauldrons, and the
     Everburn Blade -- a long glowing golden blade, fire licking round the hilt (the fire ramp is
-    cycled)."""
+    cycled). Frame 2 (armed=False): Schattenherz's "Befehl: Fallenlassen!" -- an empty fist."""
     c = Canvas(64, 112)
     for side in (-1, 1):
         bat_wing(c, (32 + side * 9, 38), (32 + side * 31, 2), (32 + side * 27, 88), 4)
@@ -373,14 +373,20 @@ def zhalk():
     c.rect(52, 48, 58, 72, H_RED_D)
     c.rect(6, 60, 12, 68, H_SILVER)
     c.rect(52, 60, 58, 68, H_SILVER)
-    # the Everburn Blade, held across the body: glowing gold, flames round the hilt
-    for i in range(62):
-        x, y = 10 + i * 0.86, 76 - i * 0.62
-        c.rect(x, y, x + 3, y + 2, H_FIRE_Y if i % 5 else H_SILVER_H)
-        if i < 14 and i % 2 == 0:
-            c.poly([(x, y), (x - 2 + (i % 4), y - 6), (x + 3, y)], (H_FIRE_O, H_FIRE_R)[(i // 2) % 2])
-    c.rect(7, 73, 15, 79, H_SILVER_D)                     # crossguard and fist
-    c.rect(4, 76, 11, 81, H_RED)
+    if armed:
+        # the Everburn Blade, held across the body: glowing gold, flames round the hilt
+        for i in range(62):
+            x, y = 10 + i * 0.86, 76 - i * 0.62
+            c.rect(x, y, x + 3, y + 2, H_FIRE_Y if i % 5 else H_SILVER_H)
+            if i < 14 and i % 2 == 0:
+                c.poly([(x, y), (x - 2 + (i % 4), y - 6), (x + 3, y)], (H_FIRE_O, H_FIRE_R)[(i // 2) % 2])
+        c.rect(7, 73, 15, 79, H_SILVER_D)                 # crossguard and fist
+        c.rect(4, 76, 11, 81, H_RED)
+    else:
+        c.rect(5, 72, 13, 79, H_RED)                      # the empty fist, clenched in rage
+        c.line(6, 75, 12, 75, H_RED_D)
+        c.line(6, 77, 12, 77, H_RED_D)
+        c.rect(52, 72, 59, 78, H_RED_D)                   # and the other one
     c.rect(26, 28, 38, 40, H_RED_D)                       # neck
     c.ellipse(32, 21, 9, 11, TMP)                         # head
     c.shade_region(TMP, H_RED_H, H_RED, H_RED_D, 30, 19, 10, 12)
@@ -740,7 +746,7 @@ if __name__ == "__main__":
     save([imp(0), imp(1), imp(2)], "fig_imp.png", HELL_PAL)
     save([hound()], "fig_hound.png", HELL_PAL)
     save([cambion()], "fig_cambion.png", HELL_PAL)
-    save([zhalk()], "fig_zhalk.png", HELL_PAL)
+    save([zhalk(), zhalk(False)], "fig_zhalk.png", HELL_PAL)
     save([mindflayer_bust()], "fig_mindflayer_bust.png", MF_PAL)
     save([laezel()], "fig_laezel.png", LZ_PAL)
     save([laezel_bust()], "fig_laezel_bust.png", LZ_PAL)

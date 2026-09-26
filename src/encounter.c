@@ -107,11 +107,39 @@ void encounter_fight(Player *p, RoomObject *group)
 
     const Encounter *e = &encounters[group->param0];
     music_play(MUSIC_COMBAT);
-    combat_run(p, e->enemies, e->count, tank, e->gold);
-    group->kind = OBJ_NONE;
+    bool won = combat_run(p, e->enemies, e->count, tank, e->gold, e->chase == 0);
     music_playRoom(map_currentRoom()->roomId);
 
-    if (group->param0 == ENC_ZHALK)
+    if (!won)   // got away: the group stays, the party steps back out of its reach
+    {
+        group->flags &= ~OBJFLAG_HIDDEN;
+        for (u8 f = 0; f < 4; f++)
+        {
+            s16 dx, dy;
+            map_forward((Facing) f, &dx, &dy);
+            s16 x = p->x + dx, y = p->y + dy;
+            if (!map_isWall(x, y) && !map_objectAt(x, y) && dist(x, y, group->x, group->y) > 1)
+            {
+                p->x = x;
+                p->y = y;
+                break;
+            }
+        }
+        return;
+    }
+    group->kind = OBJ_NONE;
+
+    if (group->param0 == ENC_ZHALK && combat_foeFled())
+    {
+        const char *lines[3] = { "Zhalk stürzt sich durch", "den Riss hinaus - fort ist", "er. Ihr lebt noch!" };
+        textbox_show(lines, 3, NULL, 0);
+    }
+    else if (group->param0 == ENC_ZHALK && equip_partyHas(EQ_EVERBURN))
+    {
+        const char *lines[2] = { "Zhalk fällt - ohne seine", "Klinge. Die habt ihr ja." };
+        textbox_show(lines, 2, NULL, 0);
+    }
+    else if (group->param0 == ENC_ZHALK)
     {
         inventory_addEquip(EQ_EVERBURN);
         uiPanel_drawInventory();

@@ -61,7 +61,7 @@ together in Room 1 (the "Klonkammer" — see `BeschreibungInhaltVerticalSlice.md
       downs a party member per turn. Tune after play-testing.
 
 ## Room-by-room roadmap (light — detailed planning happens per room, not now)
-- [ ] **Room 6** (timed boss): a persistent countdown on the panel. With combat in place, "rounds"
+- [x] **Room 6** (timed boss): a persistent countdown on the panel. With combat in place, "rounds"
       can be combat rounds plus steps outside fights; bigger figures (Zhalk 48x64 in the doc, far
       larger on our screen) may need drawing into the view instead of hardware sprites (sprite
       VRAM is 256 tiles, see main.c).
@@ -92,7 +92,7 @@ together in Room 1 (the "Klonkammer" — see `BeschreibungInhaltVerticalSlice.md
 - [ ] D&D-derived stat block (STR/DEX/CON/INT/WIS/CHA, AC, saving throws) — the current model is
       class + HP/MP + three small (1-5) skill-check modifiers, not real ability scores. Decide how
       much of real D&D rules to keep vs. simplify.
-- [ ] The scroll from Room 5 has no use yet (a one-shot combat spell would fit).
+- [x] The scroll from Room 5: Brennende Hände, once, in a fight (Gegenstand).
 - [x] Equipment: weapon/armour/shield per character, backpack, equipment screen (B > Ausrüstung),
       5e proficiencies; the hero starts with nothing and finds his gear in Room 1's chest.
 - [ ] Not in yet: two-handed weapons (Großschwert + Schild is allowed), weight, selling/buying,
@@ -116,7 +116,7 @@ together in Room 1 (the "Klonkammer" — see `BeschreibungInhaltVerticalSlice.md
 - [ ] Compass.
 - [ ] Persistent message log (the message area is currently only used while a textbox is open).
 - [x] Automap (C): the whole dungeon, uncovered as seen, scrollable — see README.md, "Automap".
-- [ ] Room 6's countdown timer display (see roadmap above).
+- [x] Room 6's countdown timer display (see roadmap above).
 
 ## Art
 - [x] Animated textures/props: hull breach (dragon), fire, restoration station (idle pulse and

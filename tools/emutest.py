@@ -693,7 +693,8 @@ def main():
         if args.scenario in ("room6", "zhalk", "crash"):
             to_room6(b, args.cls)
             b.shot("r6_arrive")
-            for i in range(6):                 # intro: bridge, mind flayer (2), Zhalk, countdown, hint
+            for i in range(7):                 # intro: bridge, mind flayer (2), Zhalk, countdown, hint,
+                                               # Schattenherz's hint at Befehl
                 act(b, "gamepads.1.a", 40)
                 b.shot(f"r6_intro{i}")
             b.shot("r6_start")                 # ABSTURZ: 10 in the panel

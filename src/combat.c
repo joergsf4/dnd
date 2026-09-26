@@ -8,6 +8,8 @@
 #include "dungeon_view.h"
 #include "sfx.h"
 #include "game.h"
+#include "equipment.h"
+#include "dice.h"
 
 // Every text line must fit the message area: at most 27 characters (an umlaut counts as one),
 // menu options at most 24. Names are at most 8 characters ("KOBOLD A", "LAE'ZEL", "SCHATTEN"),
@@ -18,10 +20,10 @@
 // class's features (Fähigkeit / Zauber), Heiltrank, Abwehr.
 
 // Level-1-friendly versions of the Monster Manual (and BG3) values.
-const EnemyDef ENEMY_IMP     = { "KOBOLD", 9, 13, 4, 4, 2, 0, 1, &fig_imp_sprite, 124, FALSE };
-const EnemyDef ENEMY_HOUND   = { "HUND", 12, 13, 4, 6, 2, 0, 1, &fig_hound_sprite, 140, FALSE };
-const EnemyDef ENEMY_CAMBION = { "DÄMON", 16, 15, 5, 8, 3, 0, 1, &fig_cambion_sprite, 142, FALSE };
-const EnemyDef ENEMY_ZHALK   = { "ZHALK", 45, 17, 6, 10, 4, 4, 2, &fig_zhalk_sprite, 150, TRUE };
+const EnemyDef ENEMY_IMP     = { "KOBOLD", 9, 13, 4, 4, 2, 0, 1, 1, &fig_imp_sprite, 124, FALSE };
+const EnemyDef ENEMY_HOUND   = { "HUND", 12, 13, 4, 6, 2, 0, 1, 1, &fig_hound_sprite, 140, FALSE };
+const EnemyDef ENEMY_CAMBION = { "DÄMON", 16, 15, 5, 8, 3, 0, 1, 2, &fig_cambion_sprite, 142, FALSE };
+const EnemyDef ENEMY_ZHALK   = { "ZHALK", 45, 17, 6, 10, 4, 4, 2, 3, &fig_zhalk_sprite, 150, TRUE };
 
 #define VIEW_CENTER_X 112   // the view is 224 px wide (view_gen.h)
 #define TANK_AC     5
@@ -31,10 +33,13 @@ const EnemyDef ENEMY_ZHALK   = { "ZHALK", 45, 17, 6, 10, 4, 4, 2, &fig_zhalk_spr
 #define SLEEP_DICE  5       // Schlaf: 5W8 hit points of enemies fall asleep
 
 #define SCROLL_DC  13        // Brennende Hände: GES save for half damage
+#define COMMAND_DC 13        // Befehl: WEI save
+#define ZHALK_UNARMED 1      // fig_zhalk's frame without the Everburn Blade
 
 #define FS_ASLEEP 0x01      // skips its turns until hurt; attacks against it have advantage
 #define FS_PRONE  0x02      // attacks against it have advantage; spends its next turn getting up
 #define FS_SLOWED 0x04      // Kältestrahl: its next attack has disadvantage
+#define FS_DISARMED 0x08    // Befehl "Fallenlassen!": fists only (1W4, no fire)
 
 typedef struct
 {
@@ -58,8 +63,15 @@ static bool defending[PARTY_MAX];    // Abwehr: +2 AC until their next turn
 static bool hidden[PARTY_MAX];       // Verstecken: can't be targeted, next attack with advantage
 static bool shielded[PARTY_MAX];     // Schild: +5 AC until their next turn
 static bool usedSecondWind[PARTY_MAX], usedCleave[PARTY_MAX], usedTopple[PARTY_MAX];
+static bool usedCommand[PARTY_MAX];  // Befehl: once per fight
+static bool fled, fleeAllowed, foeFled;
 
 static void (*roundHook)(void);
+
+bool combat_foeFled(void)
+{
+    return foeFled;
+}
 
 void combat_setRoundHook(void (*hook)(void))
 {
@@ -68,7 +80,7 @@ void combat_setRoundHook(void (*hook)(void))
 
 static u8 roll(u8 die)
 {
-    return (random() % die) + 1;
+    return dice_roll(die);
 }
 
 // The Everburn Blade's flames (and every other fire in the figure palette) flicker: the three fire
@@ -85,6 +97,12 @@ static void cycleFire(void)
     u16 rotated[3];
     for (u8 i = 0; i < 3; i++) rotated[i] = fireColours[(i + firePhase) % 3];
     PAL_setColors(FIRE_INDEX, rotated, 3, CPU);
+}
+
+static void stopFire(void)
+{
+    SYS_setVBlankCallback(NULL);
+    PAL_setColors(FIRE_INDEX, fireColours, 3, CPU);
 }
 
 // A d20 with advantage (mode > 0: the better of two) or disadvantage (mode < 0: the worse);
@@ -261,6 +279,24 @@ static u8 weaponDie(const Character *c)
 
 typedef enum { STRIKE_NORMAL, STRIKE_TOPPLE } Strike;
 
+// The easter egg: whoever wields Zhalk's Everburn Blade never misses and fells anything in one blow
+// -- Spalten burns through every enemy at once.
+static bool wieldsEverburn(const Character *c)
+{
+    return c->equip[SLOT_WEAPON] == EQ_EVERBURN;
+}
+
+static void everburnStrike(const char *l0, u8 f)
+{
+    char l1[32];
+    sprintf(l1, "%s: %d Schaden.", foes[f].name, foes[f].hp);
+    damageFoe(f, foes[f].hp);
+    sfx_play(SFX_SPELL);
+    show(l0, "Die Immerbrand lodert auf!", l1);
+    pause(70);
+    announceFall(l0, "Die Immerbrand lodert auf!", f);
+}
+
 static void weaponAttack(u8 m, u8 t, Strike strike)
 {
     Character *c = &party.members[m];
@@ -275,6 +311,12 @@ static void weaponAttack(u8 m, u8 t, Strike strike)
     hidden[m] = FALSE;                                   // attacking gives the hiding place away
 
     char l0[32], l1[32], l2[32];
+    if (wieldsEverburn(c))
+    {
+        sprintf(l0, "%s greift %s an.", c->name, e->name);
+        everburnStrike(l0, t);
+        return;
+    }
     const char *label;
     u8 r = d20(mode, &label);
     u8 total = r + c->atk;
@@ -322,6 +364,11 @@ static void cleave(u8 m)
     {
         Foe *e = &foes[f];
         if (!e->hp) continue;
+        if (wieldsEverburn(c))
+        {
+            everburnStrike(l0, f);
+            continue;
+        }
         const char *label;
         u8 r = d20((e->status & (FS_ASLEEP | FS_PRONE)) ? 1 : 0, &label);
         u8 total = r + c->atk;
@@ -554,6 +601,83 @@ static void divineSense(void)
     pause(150);
 }
 
+// Befehl (the BG3 trick on the Nautiloid): one word the foe must obey unless it makes a WEI save.
+// "Fallenlassen!" on Zhalk drops the Everburn Blade -- and the party grabs it.
+typedef enum { WORD_DROP, WORD_GROVEL, WORD_FLEE } Word;
+
+static void command(u8 m, u8 f, Word word)
+{
+    Character *c = &party.members[m];
+    Foe *e = &foes[f];
+    usedCommand[m] = TRUE;
+    static const char *const shout[3] = { "\"FALLENLASSEN!\"", "\"NIEDER!\"", "\"FLIEH!\"" };
+    char l0[32], l1[32], l2[32];
+    sprintf(l0, "%s: %s", c->name, shout[word]);
+    sfx_play(SFX_SPELL);
+    u8 r = roll(20);
+    s16 total = r + e->def->wis;
+    bool resists = total >= COMMAND_DC;
+    sprintf(l1, "%s WEI %d%+d = %d", e->name, r, e->def->wis, total);
+    if (resists)
+    {
+        sprintf(l2, "%s widersteht!", e->name);
+        show(l0, l1, l2);
+        pause(110);
+        return;
+    }
+    switch (word)
+    {
+        case WORD_DROP:
+            if (e->def->sprite == &fig_hound_sprite)
+            {
+                sprintf(l2, "%s hat nichts im Maul.", e->name);
+                break;
+            }
+            if (e->status & FS_DISARMED)
+            {
+                sprintf(l2, "%s hat nichts mehr.", e->name);
+                break;
+            }
+            e->status |= FS_DISARMED;
+            if (e->def == &ENEMY_ZHALK)
+            {
+                SPR_setFrame(e->spr, ZHALK_UNARMED);
+                stopFire();
+                sprintf(l2, "Die Klinge fällt klirrend!");
+                show(l0, l1, l2);
+                sfx_play(SFX_ITEM);
+                pause(110);
+                u8 g = m;                         // a fighter grabs it if there's one
+                for (u8 i = 0; i < PARTY_MAX; i++)
+                    if (party.members[i].active && party.members[i].hp && ab_isFighter(&party.members[i]))
+                    {
+                        g = i;
+                        break;
+                    }
+                inventory_addEquip(EQ_EVERBURN);
+                uiPanel_redrawChrome();
+                sprintf(l0, "%s schnappt sich", party.members[g].name);
+                show(l0, "die Klinge! Zhalk tobt:", "\"GIB SIE HER, WURM!\"");
+                pause(150);
+                return;
+            }
+            sprintf(l2, "%s lässt die Waffe fallen.", e->name);
+            break;
+        case WORD_GROVEL:
+            e->status |= FS_PRONE;
+            sprintf(l2, "%s wirft sich zu Boden.", e->name);
+            break;
+        default:                                  // it runs off the bridge -- no loot from it
+            e->hp = 0;
+            foeFled = TRUE;
+            SPR_setVisibility(e->spr, HIDDEN);
+            sprintf(l2, "%s flieht Hals über Kopf!", e->name);
+            break;
+    }
+    show(l0, l1, l2);
+    pause(110);
+}
+
 // ---------------------------------------------------------------- the party's turn
 
 typedef enum
@@ -561,7 +685,7 @@ typedef enum
     ACT_ATTACK, ACT_FEATURES, ACT_CANTRIPS, ACT_SPELLS, ACT_POTION, ACT_DEFEND,
     ACT_CLEAVE, ACT_TOPPLE, ACT_SECOND_WIND, ACT_HIDE, ACT_FIRE_BOLT, ACT_RAY_OF_FROST,
     ACT_MISSILE, ACT_SLEEP, ACT_MAGE_ARMOR, ACT_LAY_ON_HANDS, ACT_DIVINE_SENSE, ACT_ITEMS,
-    ACT_SCROLL, ACT_BACK
+    ACT_SCROLL, ACT_COMMAND, ACT_DROP, ACT_GROVEL, ACT_FLEE_WORD, ACT_TACTICS, ACT_RUN, ACT_BACK
 } Action;
 
 typedef struct
@@ -600,6 +724,7 @@ static void featureMenu(u8 m, Menu *menu)
     {
         if (c->mp) add(menu, "Heilende Hände", ACT_LAY_ON_HANDS);
         add(menu, "Göttlicher Sinn", ACT_DIVINE_SENSE);
+        if (!usedCommand[m]) add(menu, "Befehl", ACT_COMMAND);
     }
     add(menu, "Zurück", ACT_BACK);
 }
@@ -654,6 +779,28 @@ static bool perform(u8 m, Action act)
         case ACT_MAGE_ARMOR:   mageArmor(m); return TRUE;
         case ACT_LAY_ON_HANDS: layOnHands(m); return TRUE;
         case ACT_DIVINE_SENSE: divineSense(); return TRUE;
+        case ACT_COMMAND:
+            sub.n = 0;
+            add(&sub, "\"Fallenlassen!\"", ACT_DROP);
+            add(&sub, "\"Nieder!\"", ACT_GROVEL);
+            add(&sub, "\"Flieh!\"", ACT_FLEE_WORD);
+            add(&sub, "Zurück", ACT_BACK);
+            return perform(m, ask("Welcher Befehl?", &sub));
+        case ACT_DROP:         command(m, chooseTarget(FALSE), WORD_DROP); return TRUE;
+        case ACT_GROVEL:       command(m, chooseTarget(FALSE), WORD_GROVEL); return TRUE;
+        case ACT_FLEE_WORD:    command(m, chooseTarget(FALSE), WORD_FLEE); return TRUE;
+        case ACT_TACTICS:
+            sub.n = 0;
+            add(&sub, "Abwehr", ACT_DEFEND);
+            add(&sub, "Fliehen", ACT_RUN);
+            add(&sub, "Zurück", ACT_BACK);
+            return perform(m, ask("Abwehr oder Flucht?", &sub));
+        case ACT_RUN:
+            fled = TRUE;
+            sprintf(l0, "%s ruft: \"Rückzug!\"", c->name);
+            show(l0, "Ihr weicht zurück.", NULL);
+            pause(80);
+            return TRUE;
         case ACT_POTION:
         {
             Character *t = ab_pickMember("Wer bekommt den Heiltrank?");
@@ -698,7 +845,10 @@ static void partyTurn(u8 m)
             if (hasFeatures(m)) add(&menu, "Fähigkeit", ACT_FEATURES);
         }
         if (inventory.healingPotions || inventory_hasItem(ITEM_SCROLL)) add(&menu, "Gegenstand", ACT_ITEMS);
-        add(&menu, "Abwehr", ACT_DEFEND);
+        if (fleeAllowed)
+            add(&menu, "Abwehr/Flucht", ACT_TACTICS);
+        else
+            add(&menu, "Abwehr", ACT_DEFEND);
         if (perform(m, ask(l0, &menu))) return;
     }
 }
@@ -735,7 +885,7 @@ static void foeAttack(u8 f)
         pause(60);
         return;
     }
-    u8 m = targets[random() % n];
+    u8 m = targets[dice_roll(n) - 1];
     Character *c = &party.members[m];
 
     const char *label;
@@ -759,9 +909,10 @@ static void foeAttack(u8 f)
         pause(40);
         return;
     }
-    u8 dmg = roll(e->def->dmgDie) + e->def->dmgBonus;
-    if (e->def->fireDie) dmg += roll(e->def->fireDie);
-    if (r == 20) dmg += roll(e->def->dmgDie);
+    u8 die = (e->status & FS_DISARMED) ? 4 : e->def->dmgDie;
+    u8 dmg = roll(die) + e->def->dmgBonus;
+    if (e->def->fireDie && !(e->status & FS_DISARMED)) dmg += roll(e->def->fireDie);
+    if (r == 20) dmg += roll(die);
     c->hp = dmg >= c->hp ? 0 : c->hp - dmg;
     sfx_play(SFX_HURT);
     figures_shakeView();
@@ -808,13 +959,30 @@ static void releaseFigures(void)
 static void gameOver(void)
 {
     releaseFigures();
-    SYS_setVBlankCallback(NULL);
+    stopFire();
     ab_gameOver("Deine Gruppe ist gefallen.", "Der Nautiloid stürzt", "weiter durch Avernus...");
 }
 
-void combat_run(const Player *p, const EnemyDef *const enemies[], u8 count, RoomObject *tank, u8 goldReward)
+// No permanent death outside a total defeat: whoever fell gets up with 1 KP.
+static bool reviveFallen(void)
+{
+    bool revived = FALSE;
+    for (u8 i = 0; i < PARTY_MAX; i++)
+        if (party.members[i].active && !party.members[i].hp)
+        {
+            party.members[i].hp = 1;
+            revived = TRUE;
+        }
+    return revived;
+}
+
+bool combat_run(const Player *p, const EnemyDef *const enemies[], u8 count, RoomObject *tank, u8 goldReward,
+                bool canFlee)
 {
     viewer = p;
+    fled = foeFled = FALSE;
+    fleeAllowed = canFlee;
+    memset(usedCommand, 0, sizeof(usedCommand));
     tankObj = tank;
     foeCount = count > COMBAT_MAX_ENEMIES ? COMBAT_MAX_ENEMIES : count;
     memset(defending, 0, sizeof(defending));
@@ -832,6 +1000,11 @@ void combat_run(const Player *p, const EnemyDef *const enemies[], u8 count, Room
         e->status = 0;
         e->cx = VIEW_CENTER_X + (2 * i - (foeCount - 1)) * FOE_SPACING / 2;
         e->spr = figures_add(e->def->sprite, e->cx, e->def->bottom);
+        if (e->def == &ENEMY_ZHALK && equip_partyHas(EQ_EVERBURN))   // it was taken from him
+        {
+            e->status = FS_DISARMED;
+            SPR_setFrame(e->spr, ZHALK_UNARMED);
+        }
         if (foeCount > 1)
             sprintf(e->name, "%s %c", e->def->name, 'A' + i);
         else
@@ -842,10 +1015,10 @@ void combat_run(const Player *p, const EnemyDef *const enemies[], u8 count, Room
     SPR_setVisibility(arrow, HIDDEN);
 
     bool burning = FALSE;
-    for (u8 i = 0; i < foeCount; i++) burning |= foes[i].def->burning;
+    for (u8 i = 0; i < foeCount; i++) burning |= foes[i].def->burning && !(foes[i].status & FS_DISARMED);
+    PAL_getColors(FIRE_INDEX, fireColours, 3);
     if (burning)
     {
-        PAL_getColors(FIRE_INDEX, fireColours, 3);
         fireTimer = firePhase = 0;
         SYS_setVBlankCallback(cycleFire);
     }
@@ -890,19 +1063,22 @@ void combat_run(const Player *p, const EnemyDef *const enemies[], u8 count, Room
 
             if (!partyStanding()) gameOver();
             if (!foesLeft()) goto won;
+            if (fled) goto away;
         }
     }
 
+away:
+    releaseFigures();
+    stopFire();
+    reviveFallen();
+    uiPanel_redrawChrome();
+    show(NULL, NULL, NULL);                      // clears the message area
+    return FALSE;
+
 won:
     releaseFigures();
-    SYS_setVBlankCallback(NULL);
-    bool revived = FALSE;
-    for (u8 i = 0; i < PARTY_MAX; i++)
-        if (party.members[i].active && !party.members[i].hp)
-        {
-            party.members[i].hp = 1;             // no permanent death outside a total defeat
-            revived = TRUE;
-        }
+    stopFire();
+    bool revived = reviveFallen();
     inventory_addGold(goldReward);
     uiPanel_redrawChrome();
 
@@ -910,4 +1086,5 @@ won:
     char l1[32];
     sprintf(l1, "Beute: %d Gold.", goldReward);
     say("Sieg!", goldReward ? l1 : NULL, revived ? "Bewusstlose kommen zu sich." : NULL);
+    return TRUE;
 }

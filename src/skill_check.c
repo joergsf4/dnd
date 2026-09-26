@@ -1,4 +1,5 @@
 #include "skill_check.h"
+#include "dice.h"
 #include "textbox.h"
 #include "text.h"
 #include "abilities.h"
@@ -34,7 +35,7 @@ bool skillCheck_run(Character *actor, Attribute attr, u8 threshold)
     // a short flourish: a few flickering fake rolls before the real one settles
     for (u8 i = 0; i < 16; i++)
     {
-        sprintf(buf, "[%s-PROBE] WÜRFELT... %2d", attrLabel[attr], (random() % 20) + 1);
+        sprintf(buf, "[%s-PROBE] WÜRFELT... %2d", attrLabel[attr], dice_roll(20));
         text_draw(buf, 1, TEXTBOX_ROW);
         waitFrames(4);
     }
@@ -42,7 +43,7 @@ bool skillCheck_run(Character *actor, Attribute attr, u8 threshold)
     // Expertise: the Schurke adds it to every GES check (Fingerfertigkeit, Heimlichkeit).
     bool expertise = actor->cls == CLASS_ROGUE && attr == ATTR_DEX;
     u8 mod = attrValue(actor, attr) + (expertise ? EXPERTISE_BONUS : 0);
-    u8 roll = (random() % 20) + 1;
+    u8 roll = dice_roll(20);
     u8 total = roll + mod;
     bool success = total >= threshold;
 

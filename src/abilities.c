@@ -4,12 +4,13 @@
 #include "ui_panel.h"
 #include "sfx.h"
 #include "equipment.h"
+#include "dice.h"
 
 // Every text line must fit the textbox: at most 27 characters on screen (an umlaut counts as one).
 
 static u8 roll(u8 die)
 {
-    return (random() % die) + 1;
+    return dice_roll(die);
 }
 
 static void say(const char *l0, const char *l1, const char *l2)

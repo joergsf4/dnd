@@ -265,7 +265,9 @@ No feats at level 1, so the classes are their features (`src/abilities.h` has th
 - **Paladin** (Schattenherz -- a cleric in BG3, a paladin here): heavy armour (AC 18),
   *Heilende Hände* (Lay on Hands: a pool of 5 KP, spent freely, revives the fallen; HH in the
   panel), *Göttlicher Sinn* (in a fight: the enemies' hit points; in the dungeon: fiends in the
-  room and their direction, hidden ones too).
+  room and their direction, hidden ones too), and -- borrowed from BG3's cleric, for the famous
+  trick -- *Befehl* once per fight: "Fallenlassen!", "Nieder!" (prone) or "Flieh!" (it leaves
+  the fight, no loot), unless the target makes a WEI save against 13.
 
 The restoration stations are the long rest: full KP, ZP and HH. **B** in the dungeon opens the
 party menu: Ausrüstung, Heiltrank, Fähigkeiten (Magierrüstung, Heilende Hände, Göttlicher Sinn).
@@ -306,7 +308,13 @@ On arrival the mind flayer (bust) and Zhalk (figure) speak, then the **countdown
 (`src/countdown.c`): 10 rounds, a round being a combat round or three steps (30 feet); the panel
 shows "ABSTURZ: n" (row 21, blinking at 3 and below). After round 5 two cambions storm in from
 behind. At zero the ship crashes: game over. Beating Zhalk wins the Immerbrand-Klinge (into
-the backpack: W10 + W4 fire for whoever can wield it). Connecting the transponder's nerve strands
+the backpack, for whoever can wield it). Or the BG3 trick: Schattenherz (she hints
+at it on arrival) commands him "Fallenlassen!" -- the blade drops (his figure's second frame, an
+empty fist; the fire stops cycling), a fighter grabs it, and "Abwehr/Flucht" -> "Fliehen" gets
+the party out of his reach (only in fights with enemies that stay put: Zhalk). He fights on with
+his fists (W4) if he's met again. The easter egg: whoever wields the Everburn Blade never misses
+and fells any enemy with one blow -- Spalten burns through all of them at once. Dice come from `src/dice.c` (xorshift; SGDK's random() alone
+gave correlated rolls within a fight). Connecting the transponder's nerve strands
 plays the ending (`src/ending.c`): the ship tears itself away, the screen quakes and flashes, it
 crashes on the Sword Coast -- then "ENDE DES PROLOGS" with the party, gold and gems.
 
