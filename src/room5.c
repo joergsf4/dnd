@@ -59,7 +59,7 @@ static void onSwitch(Player *p, RoomObject *obj)
 {
     if (obj->flags & OBJFLAG_TRIGGERED)
     {
-        say("Der Schalter ist tot.", NULL, NULL);
+        say("Der Knorpelschalter ist", "erschlafft.", NULL);
         return;
     }
     const char *lines[2] = { "Ein Schalter aus Knorpel,", "verbunden mit der Kapsel." };
