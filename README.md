@@ -213,11 +213,13 @@ paladin, she heals with Heilende Hände). Key items show in the panel while carr
 Every room starts dark on the map and uncovers itself as it's explored (`src/automap.c`). The
 renderer reports every cell a column's ray crosses up to and including the first wall it hits --
 exactly what's on screen -- plus the 8 cells around the party; a bit per cell and room remembers
-it. C opens the map screen: it's drawn in the view palette straight into the view's RAM buffer
-(`dungeonView_buffer`/`dungeonView_present`), with the cell size that fits the room (16 px, the
-bridge 10 px). Walls, doors (blue), hull breaches, objects as marks, the party as an arrow; enemy
-groups only while they're in sight (they roam). Left/right leafs through the rooms seen so far.
-Rooms may be at most 16x16 cells (`AUTOMAP_MAX_W/H`).
+it. C opens the map screen: the whole dungeon as one map (`roomOrigin` places the rooms so that
+neighbours share the wall cell their doors sit in; a short passage joins Room 1's west door to
+Room 2's south door), 8 px per cell, drawn in the view palette straight into the view's RAM
+buffer (`dungeonView_buffer`/`dungeonView_present`). At 15x46 cells it's taller than the view, so
+it opens centred on the party and up/down scrolls. Walls, doors (blue), hull breaches, objects as
+marks, the party as an arrow; enemy groups only while they're in sight (they roam). Rooms may be
+at most 16x16 cells (`AUTOMAP_MAX_W/H`); a new room needs its place in `roomOrigin`.
 
 ## Combat
 

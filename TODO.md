@@ -115,7 +115,7 @@ together in Room 1 (the "Klonkammer" — see `BeschreibungInhaltVerticalSlice.md
 - [x] Message area / menus (`src/textbox.c`) — see above.
 - [ ] Compass.
 - [ ] Persistent message log (the message area is currently only used while a textbox is open).
-- [x] Automap (C): uncovered as seen, leaf through visited rooms — see README.md, "Automap".
+- [x] Automap (C): the whole dungeon, uncovered as seen, scrollable — see README.md, "Automap".
 - [ ] Room 6's countdown timer display (see roadmap above).
 
 ## Art

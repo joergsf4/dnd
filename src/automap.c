@@ -6,8 +6,8 @@
 #include "view_gen.h"
 #include "input.h"
 
-// The map is drawn into the view's pixel buffer (dungeonView_buffer) in the view palette (PAL0),
-// so each room gets the cell size that fits it best, and shown through the view's double buffer.
+// The map is drawn into the view's pixel buffer (dungeonView_buffer) in the view palette (PAL0)
+// and shown through the view's double buffer.
 
 // View palette indices (tools/make_view.py)
 #define C_BLACK 0
@@ -23,8 +23,6 @@
 #define C_BONE  12
 #define C_BLUE  13
 #define C_GLINT 15
-
-#define MAX_CELL 16   // pixels; smaller when the room doesn't fit the view that way
 
 static u16 seen[ROOM_COUNT][AUTOMAP_MAX_H];   // a bit per cell: uncovered
 static u16 sight[AUTOMAP_MAX_H];              // the current room's cells in sight right now
@@ -65,6 +63,7 @@ static u8 *buf;
 
 static void pixel(s16 x, s16 y, u8 col)
 {
+    if (x < 0 || y < 0 || x >= VIEW_W || y >= VIEW_H) return;
     u8 *b = buf + ((y >> 3) * VIEW_TW + (x >> 3)) * 32 + (y & 7) * 4 + ((x & 7) >> 1);
     *b = (x & 1) ? (*b & 0xF0) | col : (*b & 0x0F) | (col << 4);
 }
@@ -75,6 +74,8 @@ static void rect(s16 x0, s16 y0, s16 w, s16 h, u8 col)
 {
     u8 pair = col | (col << 4);
     s16 x1 = x0 + w;
+    if (y0 < 0) { h += y0; y0 = 0; }
+    if (y0 + h > VIEW_H) h = VIEW_H - y0;
     for (s16 y = y0; y < y0 + h; y++)
     {
         s16 x = x0;
@@ -97,7 +98,7 @@ static void mark(s16 x, s16 y, s16 cs, s16 inset, u8 rim, u8 fill)
 // The party: an arrow pointing the way it faces.
 static void arrow(s16 x, s16 y, s16 cs, Facing f)
 {
-    s16 n = cs - 4;
+    s16 n = cs - 2;
     for (s16 b = 0; b < n; b++)          // b: from the tip back
         for (s16 a = 0; a < n; a++)      // a: across
         {
@@ -112,7 +113,7 @@ static void arrow(s16 x, s16 y, s16 cs, Facing f)
                 case FACE_EAST:  px = n - 1 - b; py = a;         break;
                 default:         px = b;         py = a;         break;
             }
-            pixel(x + 2 + px, y + 2 + py, C_GLINT);
+            pixel(x + 1 + px, y + 1 + py, C_GLINT);
         }
 }
 
@@ -157,32 +158,49 @@ static void drawObject(const RoomObject *o, s16 x, s16 y, s16 cs, bool current, 
     }
 }
 
+// The dungeon as one map: where each room lies (the cell of its top left corner). Neighbouring
+// rooms share the wall cell their doors sit in; only Room 1's west door and Room 2's south door
+// don't line up, so a short passage joins them.
+static const s8 roomOrigin[ROOM_COUNT][2] = {
+    { 6, 39 },   // Klonkammer
+    { 0, 30 },   // Operationssaal
+    { 2, 21 },   // Außendeck
+    { 0, 13 },   // Kapselsaal
+    { 8, 15 },   // Labor
+    { 0, 0 },    // Brücke
+};
+#define WORLD_W 15
+#define WORLD_H 46
+static const s8 passage[][2] = { { 5, 40 }, { 4, 40 }, { 4, 39 }, { 4, 38 } };   // Room 1 <-> 2
+
+#define CELL 8                    // pixels per cell
+#define ORIGIN_X ((VIEW_W - WORLD_W * CELL) / 2)
+
+static s16 scrollY;               // pixels of the map above the top of the view
+
+static void drawFloor(s16 x, s16 y, s16 cs)
+{
+    rect(x, y, cs, cs, C_FL0);
+    rect(x + 1, y + 1, cs - 1, cs - 1, C_FL1);
+}
+
 static void drawRoom(const RoomDef *room, const Player *p)
 {
-    buf = dungeonView_buffer();
-    memset(buf, 0, VIEW_BYTES);
     RoomId r = room->roomId;
     bool current = room == map_currentRoom();
-
-    s16 cs = VIEW_W / room->w;
-    if (VIEW_H / room->h < cs) cs = VIEW_H / room->h;
-    if (cs > MAX_CELL) cs = MAX_CELL;
-    cs &= ~1;                                          // even, so rect() mostly writes whole bytes
-    s16 ox = ((VIEW_W - cs * room->w) / 2) & ~1;
-    s16 oy = (VIEW_H - cs * room->h) / 2;
+    s16 ox = ORIGIN_X + roomOrigin[r][0] * CELL;
+    s16 oy = roomOrigin[r][1] * CELL - scrollY;
+    if (oy + room->h * CELL <= 0 || oy >= VIEW_H) return;
 
     for (s16 cy = 0; cy < room->h; cy++)
         for (s16 cx = 0; cx < room->w; cx++)
         {
             if (!known(r, cx, cy)) continue;
-            s16 x = ox + cx * cs, y = oy + cy * cs;
+            s16 x = ox + cx * CELL, y = oy + cy * CELL;
             if (room->grid[cy][cx] == '1')
-                drawWall(x, y, cs);
+                drawWall(x, y, CELL);
             else
-            {
-                rect(x, y, cs, cs, C_FL0);
-                rect(x + 1, y + 1, cs - 1, cs - 1, C_FL1);
-            }
+                drawFloor(x, y, CELL);
         }
 
     u8 count;
@@ -191,10 +209,25 @@ static void drawRoom(const RoomDef *room, const Player *p)
     {
         const RoomObject *o = &objects[i];
         if (o->kind == OBJ_NONE || (o->flags & OBJFLAG_HIDDEN) || !known(r, o->x, o->y)) continue;
-        drawObject(o, ox + o->x * cs, oy + o->y * cs, cs, current, o->x, o->y);
+        drawObject(o, ox + o->x * CELL, oy + o->y * CELL, CELL, current, o->x, o->y);
     }
 
-    if (current) arrow(ox + p->x * cs, oy + p->y * cs, cs, p->facing);
+    if (current) arrow(ox + p->x * CELL, oy + p->y * CELL, CELL, p->facing);
+}
+
+static void drawDungeon(const Player *p)
+{
+    buf = dungeonView_buffer();
+    memset(buf, 0, VIEW_BYTES);
+    if (anySeen(ROOM_1) && anySeen(ROOM_2))           // walked through
+        for (u8 i = 0; i < sizeof(passage) / sizeof(passage[0]); i++)
+            drawFloor(ORIGIN_X + passage[i][0] * CELL, passage[i][1] * CELL - scrollY, CELL);
+    for (u8 r = 0; r < ROOM_COUNT; r++)
+    {
+        const RoomDef *room = map_findRoom((RoomId) r);
+        if (room && anySeen((RoomId) r) && room != map_currentRoom()) drawRoom(room, p);
+    }
+    drawRoom(map_currentRoom(), p);                    // last: its doors and the party on top
     dungeonView_present();
 }
 
@@ -206,48 +239,47 @@ static void clearBox(void)
         text_draw("                            ", 0, TEXTBOX_ROW + r);
 }
 
-static void drawText(RoomId r, bool browse)
+static void drawText(void)
 {
     char s[48];
     clearBox();
-    sprintf(s, "KARTE: %s", roomName[r]);
+    sprintf(s, "KARTE - HIER: %s", roomName[map_currentRoom()->roomId]);
     text_draw(s, 1, TEXTBOX_ROW);
     text_draw("PFEIL: IHR   ROT: GEGNER", 1, TEXTBOX_ROW + 2);
     text_draw("BLAU: TÜR    HELL: DINGE", 1, TEXTBOX_ROW + 3);
-    if (browse) text_draw("LINKS/RECHTS: RÄUME", 1, TEXTBOX_ROW + 6);
+    text_draw("HOCH/RUNTER: BLÄTTERN", 1, TEXTBOX_ROW + 6);
     text_draw("B/C: ZURÜCK", 1, TEXTBOX_ROW + 7);
 }
 
-// The next room with anything seen in it, in direction dir.
-static RoomId nextRoom(RoomId r, s8 dir)
-{
-    for (u8 k = 0; k < ROOM_COUNT; k++)
-    {
-        r = (RoomId) ((r + ROOM_COUNT + dir) % ROOM_COUNT);
-        if (anySeen(r) && map_findRoom(r)) return r;
-    }
-    return r;
-}
+#define SCROLL_MAX (WORLD_H * CELL - VIEW_H)
+#define SCROLL_STEP (6 * CELL)
 
 void automap_screen(const Player *p)
 {
-    RoomId r = map_currentRoom()->roomId;
-    bool browse = nextRoom(r, 1) != r;
+    const RoomDef *room = map_currentRoom();
+    scrollY = (roomOrigin[room->roomId][1] + p->y) * CELL + CELL / 2 - VIEW_H / 2;   // the party in the middle
+    if (scrollY < 0) scrollY = 0;
+    if (scrollY > SCROLL_MAX) scrollY = SCROLL_MAX;
     sfx_play(SFX_MENU);
-    drawRoom(map_currentRoom(), p);
-    drawText(r, browse);
+    drawDungeon(p);
+    drawText();
 
-    input_takePresses();   // latched: a press made while a room is being drawn still counts
+    input_takePresses();   // latched: a press made while the map is being drawn still counts
     while (TRUE)
     {
         u16 pressed = input_takePresses();
         if (pressed & (BUTTON_B | BUTTON_C)) break;
-        if (browse && (pressed & (BUTTON_LEFT | BUTTON_RIGHT)))
+        if (pressed & (BUTTON_UP | BUTTON_DOWN))
         {
-            r = nextRoom(r, (pressed & BUTTON_LEFT) ? -1 : 1);
-            sfx_play(SFX_MENU);
-            drawRoom(map_findRoom(r), p);   // takes a few frames: the name follows the map
-            drawText(r, browse);
+            s16 y = scrollY + ((pressed & BUTTON_UP) ? -SCROLL_STEP : SCROLL_STEP);
+            if (y < 0) y = 0;
+            if (y > SCROLL_MAX) y = SCROLL_MAX;
+            if (y != scrollY)
+            {
+                scrollY = y;
+                sfx_play(SFX_MENU);
+                drawDungeon(p);
+            }
         }
         SPR_update();
         SYS_doVBlankProcess();

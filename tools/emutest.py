@@ -296,7 +296,7 @@ def main():
 
         if args.scenario == "map":
             # The automap (C): right after the start only what's in view is uncovered, more after
-            # turning around and walking; then in Room 2, leafing back to Room 1.
+            # turning around and walking.
             start_game(b, args.cls)
             act(b, "gamepads.1.c", 20)
             b.shot("map_start")
@@ -320,15 +320,15 @@ def main():
             return
 
         if args.scenario == "map6":
-            # The automap on the bridge (enemies in sight), then leafing through the rooms seen.
+            # The automap on the bridge (enemies in sight), then scrolling down the whole dungeon.
             to_room6(b, args.cls)
             for _ in range(8):                      # the bridge's intro boxes
                 act(b, "gamepads.1.a", 30)
             act(b, "gamepads.1.c", 20)
             b.shot("map6_bridge")
             for k in range(5):
-                act(b, "gamepads.1.right", 20)
-                b.shot(f"map6_room{k}")
+                act(b, "gamepads.1.down", 20)
+                b.shot(f"map6_down{k}")
             act(b, "gamepads.1.c", 20)
             b.shot("map6_closed")
             return
