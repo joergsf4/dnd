@@ -1,5 +1,6 @@
 #include "room3.h"
 #include "textbox.h"
+#include "skill_check.h"
 #include "party.h"
 #include "ui_panel.h"
 #include "figures.h"
@@ -50,9 +51,21 @@ static void onEnter(Player *p)
     laezel = figures_addBust(&fig_laezel_bust_sprite);
     say("LAE'ZEL: \"Ein Überlebender!", "Halt still... Dein Kopf", "pulsiert.\"");
     const char *lines[2] = { "\"Du bist infiziert -", "genau wie ich!\"" };
-    const char *options[2] = { "\"Gemeinsam kämpfen!\"", "\"Wer bist du überhaupt?\"" };
-    if (textbox_show(lines, 2, options, 2) == 1)
-        say("\"Ich bin Lae'zel von den", "Githyanki. Diskutiert wird", "später!\"");
+    const char *options[3] = { "\"Gemeinsam kämpfen!\"", "\"Wer bist du überhaupt?\"", "Waffe ziehen [STÄ]" };
+    switch (textbox_show(lines, 2, options, 3))
+    {
+        case 1:
+            say("\"Ich bin Lae'zel von den", "Githyanki. Diskutiert wird", "später!\"");
+            break;
+        case 2:                                   // design doc, Szene 3 (original)
+            if (skillCheck_run(&party.members[0], ATTR_STR, 12))
+                say("LAE'ZEL grinst: \"Ha! Du", "hast Biss, Istik. Den", "brauchen wir gleich.\"");
+            else
+                say("LAE'ZEL: \"Steck das weg,", "bevor du dich selbst", "schneidest, Istik.\"");
+            break;
+        default:
+            break;
+    }
     say("\"Erst schlagen wir uns zum", "Steuerpult durch!\"", NULL);
 
     figures_release(laezel);

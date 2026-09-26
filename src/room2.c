@@ -49,6 +49,10 @@ static void recruitWir(void)
     uiPanel_initSprites();
     uiPanel_redrawChrome();
     say("\"Wir\" schließt sich", "deiner Gruppe an.", NULL);
+    if (lobotomised)
+        say("WIR: \"...Befehl?\"", NULL, NULL);
+    else
+        say("WIR: \"Wir sind frei! Zum", "Steuer, schnell - bevor", "die Meister zurückkehren!\"");
 }
 
 static void onMyrnath(RoomObject *obj)
@@ -64,10 +68,37 @@ static void onMyrnath(RoomObject *obj)
         return;
     }
 
+    // Design doc, Szene 2 (original): investigating the brain first makes the careful way easier.
+    static bool investigated, understood;
     const char *lines[3] = { "Ein Elf, der Schädel offen.", "Eine Stimme in deinem Kopf:", "\"Befreie uns! Zum Ruder!\"" };
-    const char *options[4] = { "Schädel aufbrechen [STÄ]", "Behutsam lösen [GES]", "Gehirn zerquetschen", "Ignorieren" };
-    u8 choice = textbox_show(lines, 3, options, 4);
-    if (choice == 3) return;
+    enum { INVESTIGATE, FREE, CRUSH, IGNORE, BREAK, LOOSEN };
+    const char *options[4];
+    u8 acts[4], n = 0;
+    if (!investigated) { options[n] = "Gehirn untersuchen [INT]"; acts[n++] = INVESTIGATE; }
+    options[n] = "Befreien..."; acts[n++] = FREE;
+    options[n] = "Gehirn zerquetschen"; acts[n++] = CRUSH;
+    options[n] = "Ignorieren"; acts[n++] = IGNORE;
+    u8 act = acts[textbox_show(lines, 3, options, n)];
+    if (act == IGNORE) return;
+    if (act == INVESTIGATE)
+    {
+        investigated = TRUE;
+        understood = skillCheck_run(&party.members[0], ATTR_INT, 10);
+        if (understood)
+            say("Die Nervenstränge sind nur", "lose verankert. Behutsam", "gelöst, gleitet es heraus.");
+        else
+            say("Ein Gewirr aus Nerven und", "Schleim. Du wirst daraus", "nicht schlau.");
+        return;
+    }
+    if (act == FREE)
+    {
+        const char *how[1] = { "Wie befreien?" };
+        const char *ways[3] = { "Schädel aufbrechen [STÄ]", understood ? "Behutsam lösen [GES-4]" : "Behutsam lösen [GES]", "Zurück" };
+        u8 way = textbox_show(how, 1, ways, 3);
+        if (way == 2) return;
+        act = way == 0 ? BREAK : LOOSEN;
+    }
+    u8 choice = act == CRUSH ? 2 : act == BREAK ? 0 : 1;
 
     // From here on the elf is lost whatever happens: the brain was all that kept him going.
     obj->flags |= OBJFLAG_TRIGGERED;
@@ -80,7 +111,7 @@ static void onMyrnath(RoomObject *obj)
 
     // A failed check kills the brain (as in BG3); there's no second attempt.
     bool freed = choice == 0 ? skillCheck_run(&party.members[0], ATTR_STR, 12)
-                             : skillCheck_run(&party.members[0], ATTR_DEX, 12);
+                             : skillCheck_run(&party.members[0], ATTR_DEX, understood ? 8 : 12);
     if (!freed)
     {
         obj->flags |= OBJFLAG_BROKEN;

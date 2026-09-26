@@ -51,3 +51,10 @@ Character *party_addMember(CharClass cls)
     party.count++;
     return c;
 }
+
+bool party_has(CharClass cls)
+{
+    for (u8 i = 0; i < PARTY_MAX; i++)
+        if (party.members[i].active && party.members[i].cls == cls) return TRUE;
+    return FALSE;
+}

@@ -52,4 +52,7 @@ void party_init(void);
 // Returns it, or NULL if the party is already full.
 Character *party_addMember(CharClass cls);
 
+// Is a (conscious or not) member of this class in the party? For companions' remarks.
+bool party_has(CharClass cls);
+
 #endif

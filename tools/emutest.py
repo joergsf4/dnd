@@ -232,7 +232,7 @@ def to_room6(b, cls_down=0):
     walk(b, 4)                                 # (3,3)
     act(b, "gamepads.1.a")                     # pod console
     act(b, "gamepads.1.a", 20)                 # Rune einsetzen
-    for _ in range(4):                         # Puff!, her thanks, joining
+    for _ in range(6):                         # Puff!, her thanks, joining, Lae'zel and her
         act(b, "gamepads.1.a", 40)
     act(b, "gamepads.1.right")                 # west -> north
     walk(b, 1)                                 # (3,2); a pod stands at (3,1)
@@ -485,6 +485,8 @@ def main():
             walk(b, 2)                         # (4,4)
             act(b, "gamepads.1.a", 10)
             b.shot("r2_myrnath_menu")
+            act(b, "gamepads.1.down", 6)       # Befreien...
+            act(b, "gamepads.1.a", 10)
             act(b, "gamepads.1.a", 90)         # Schädel aufbrechen [STÄ]
             b.frames(90)
             b.shot("r2_check_result")          # "... auf vier Beinen!" (or the brain died)
@@ -619,7 +621,8 @@ def main():
             walk(b, 2)                         # (3,3)
             act(b, "gamepads.1.left")          # north -> west, pod console
             act(b, "gamepads.1.a")
-            b.shot("r4_socket_empty")
+            b.shot("r4_socket_empty")          # no rune: tadpole, force, leave
+            act(b, "gamepads.1.up", 6)         # Weggehen
             act(b, "gamepads.1.a")
             act(b, "gamepads.1.right")         # west -> north
             walk(b, 1)                         # (3,2)
@@ -629,6 +632,9 @@ def main():
             act(b, "gamepads.1.a", 30)
             b.shot("r4_shadowheart_pod")
             act(b, "gamepads.1.a")
+            b.shot("r4_pod_menu")              # Wer bist du? / Runen untersuchen / Keine Zeit
+            act(b, "gamepads.1.a")             # "Wer bist du?"
+            b.shot("r4_pod_name")
             act(b, "gamepads.1.a")
 
             act(b, "gamepads.1.left")          # south -> east
@@ -687,6 +693,9 @@ def main():
             act(b, "gamepads.1.a")
             act(b, "gamepads.1.a")
             b.shot("r4_joined")
+            act(b, "gamepads.1.a")
+            b.shot("r4_laezel_remark")
+            act(b, "gamepads.1.a")
             act(b, "gamepads.1.a")
             b.shot("r45_final")
 

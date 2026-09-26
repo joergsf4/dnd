@@ -208,6 +208,16 @@ turns her into a mind flayer before the party's eyes (the view flickers purple),
 switches the pod off. With the rune in the socket, Schattenherz is free and joins (the party's
 paladin, she heals with Heilende Hände). Key items show in the panel while carried.
 
+## Dialogue options from BG3
+
+Beyond the design doc's demake menus, the original's options (doc, "Original (BG3)") are in too:
+Myrnath's brain can be investigated first (INT 10: the careful way gets easier, GES 8 instead of
+12; the ways to free it moved into "Befreien..."), Lae'zel can be threatened (STÄ 12, she answers
+either way), Schattenherz's pod has a menu (her name, the runes studied with INT 10, "Keine
+Zeit!"), and the pod console opens with the tadpole's power as well as with the rune. Lae'zel and
+Schattenherz snipe at each other when she joins, "Wir" comments telepathically (freed, Room 4,
+the bridge) and Zhalk taunts the party before his fight.
+
 ## Automap
 
 Every room starts dark on the map and uncovers itself as it's explored (`src/automap.c`). The

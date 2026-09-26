@@ -1,6 +1,7 @@
 #include "room4.h"
 #include "textbox.h"
 #include "party.h"
+#include "skill_check.h"
 #include "inventory.h"
 #include "ui_panel.h"
 #include "figures.h"
@@ -34,6 +35,8 @@ static void onEnter(Player *p)
     if (introShown) return;
     introShown = TRUE;
     say("Eine Halle voller", "versiegelter Kapseln. Eine", "Konsole pulsiert im Takt.");
+    if (party_has(CLASS_WIR))
+        say("WIR: \"Die Frau in der", "Kapsel. Nützlich. Befreie", "sie.\"");
 }
 
 static void onShadowheartPod(RoomObject *obj)
@@ -45,7 +48,33 @@ static void onShadowheartPod(RoomObject *obj)
     }
     figures_shakeView();
     say("Eine Frau hämmert gegen die", "Scheibe: \"Hol mich hier", "raus!\"");
-    say("\"Die Konsole daneben", "braucht einen Schlüssel!\"", NULL);
+
+    // Design doc, Szene 4 (original): ask her name, study the runes, or leave her be.
+    static bool asked, studied;
+    const char *lines[2] = { "\"Die Konsole daneben", "braucht einen Schlüssel!\"" };
+    enum { ASK, STUDY, NO_TIME };
+    const char *options[3];
+    u8 acts[3], n = 0;
+    if (!asked) { options[n] = "\"Wer bist du?\""; acts[n++] = ASK; }
+    if (!studied) { options[n] = "Runen untersuchen [INT]"; acts[n++] = STUDY; }
+    options[n] = "\"Keine Zeit!\""; acts[n++] = NO_TIME;
+    switch (acts[textbox_show(lines, 2, options, n)])
+    {
+        case ASK:
+            asked = TRUE;
+            say("\"Schattenherz. Und jetzt", "hol mich raus, bevor die", "Kaulquappe mich frisst!\"");
+            break;
+        case STUDY:
+            studied = TRUE;
+            if (skillCheck_run(&party.members[0], ATTR_INT, 10))
+                say("Die Siegel gehorchen einer", "Eldritch-Rune - oder dem", "Willen eines Illithiden.");
+            else
+                say("Verschlungene Zeichen.", "Du wirst nicht schlau", "daraus.");
+            break;
+        default:
+            say("SCHATTEN: \"Warte! Lass", "mich nicht hier drin!\"", NULL);
+            break;
+    }
 }
 
 // Schattenherz is free: she steps out in front of the player, thanks them and joins.
@@ -53,7 +82,6 @@ static void freeShadowheart(Player *p, RoomObject *console)
 {
     console->flags |= OBJFLAG_TRIGGERED;
     findObject(OBJ_SHADOWHEART_POD)->flags |= OBJFLAG_TRIGGERED;
-    inventory_takeItem(ITEM_RUNE);
     uiPanel_drawInventory();
     dungeonView_render(p);
     say("Puff! Die Kapsel öffnet", "sich zischend.", NULL);
@@ -71,6 +99,11 @@ static void freeShadowheart(Player *p, RoomObject *console)
     uiPanel_initSprites();
     uiPanel_redrawChrome();
     say("SCHATTENHERZ tritt der", "Gruppe bei!", NULL);
+    if (party_has(CLASS_LAEZEL))                  // BG3: they can't stand each other
+    {
+        say("LAE'ZEL: \"Eine Dienerin", "der Shar. Ich behalte sie", "im Auge.\"");
+        say("SCHATTEN: \"Und ich dich.", "Charmant wie immer.\"", NULL);
+    }
 }
 
 static void onPodConsole(Player *p, RoomObject *obj)
@@ -80,18 +113,37 @@ static void onPodConsole(Player *p, RoomObject *obj)
         say("Die Rune glüht im Sockel.", NULL, NULL);
         return;
     }
-    if (!inventory_hasItem(ITEM_RUNE))
+    // Design doc, Szene 4 (original): the rune, the tadpole's power (BG3: an illithid WEI check
+    // against 2 -- here it simply works, and it's unsettling), or force.
+    bool rune = inventory_hasItem(ITEM_RUNE);
+    const char *withRune[2] = { "Ein runder Sockel - genau", "die Form der Rune." };
+    const char *noRune[2] = { "Ein runder Sockel fehlt.", "Vielleicht im Nebenraum?" };
+    enum { RUNE, TADPOLE, FORCE, LEAVE };
+    const char *options[4];
+    u8 acts[4], n = 0;
+    if (rune) { options[n] = "Rune einsetzen"; acts[n++] = RUNE; }
+    options[n] = "Kaulquappe nutzen"; acts[n++] = TADPOLE;
+    options[n] = "Gewalt anwenden [STÄ]"; acts[n++] = FORCE;
+    options[n] = "Weggehen"; acts[n++] = LEAVE;
+    switch (acts[textbox_show(rune ? withRune : noRune, 2, options, n)])
     {
-        say("Ein runder Sockel fehlt.", "Vielleicht im Nebenraum?", NULL);
-        return;
-    }
-    const char *lines[2] = { "Ein runder Sockel - genau", "die Form der Rune." };
-    const char *options[3] = { "Rune einsetzen", "Gewalt anwenden [STÄ]", "Weggehen" };
-    switch (textbox_show(lines, 2, options, 3))
-    {
-        case 0: freeShadowheart(p, obj); break;
-        case 1: say("Die Konsole funkelt,", "nichts passiert.", NULL); break;
-        default: break;
+        case RUNE:
+            inventory_takeItem(ITEM_RUNE);
+            freeShadowheart(p, obj);
+            break;
+        case TADPOLE:
+            figures_shakeView();
+            say("Du legst die Hand auf. In", "deinem Kopf windet sich", "etwas - und greift zu.");
+            say("Die Konsole gehorcht dir", "wie einem Meister...", NULL);
+            if (party_has(CLASS_WIR))
+                say("WIR: \"Ja... Du spürst es", "auch. Die Kraft der", "Meister.\"");
+            freeShadowheart(p, obj);
+            break;
+        case FORCE:
+            say("Die Konsole funkelt,", "nichts passiert.", NULL);
+            break;
+        default:
+            break;
     }
 }
 

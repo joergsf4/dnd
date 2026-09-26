@@ -106,6 +106,13 @@ void encounter_fight(Player *p, RoomObject *group)
             tank = &objects[i];
 
     const Encounter *e = &encounters[group->param0];
+    static bool zhalkSpoke;
+    if (group->param0 == ENC_ZHALK && !zhalkSpoke)   // BG3: "Your skull will be my trophy!"
+    {
+        zhalkSpoke = TRUE;
+        const char *lines[3] = { "ZHALK wirbelt herum: \"Noch", "mehr Gewürm? Euer Schädel", "wird meine Trophäe!\"" };
+        textbox_show(lines, 3, NULL, 0);
+    }
     music_play(MUSIC_COMBAT);
     bool won = combat_run(p, e->enemies, e->count, tank, e->gold, e->chase == 0);
     music_playRoom(map_currentRoom()->roomId);

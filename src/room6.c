@@ -61,9 +61,10 @@ static void onEnter(Player *p)
     combat_setRoundHook(countdown_round);
     say("Der Nautiloid stürzt!", "10 RUNDEN BIS ZUM ABSTURZ", "(3 Schritte = 1 Runde)");
     say("Im Westen ringt Zhalk mit", "dem Gedankenschinder. Wer", "sich ihm nähert, kämpft.");
-    for (u8 i = 0; i < PARTY_MAX; i++)   // a hint at the BG3 trick (Befehl, src/combat.c)
-        if (party.members[i].active && party.members[i].cls == CLASS_SHADOWHEART)
-            say("SCHATTEN flüstert: \"Ein", "Befehl von mir, und er", "lässt die Klinge fallen.\"");
+    if (party_has(CLASS_WIR))
+        say("WIR: \"Das Steuer! Verbinde", "uns mit dem Transponder,", "schnell!\"");
+    if (party_has(CLASS_SHADOWHEART))   // a hint at the BG3 trick (Befehl, src/combat.c)
+        say("SCHATTEN flüstert: \"Ein", "Befehl von mir, und er", "lässt die Klinge fallen.\"");
 }
 
 static void onTransponder(void)
