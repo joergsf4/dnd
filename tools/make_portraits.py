@@ -10,7 +10,7 @@ screen. Each portrait is an 80x96 bust in the style of the companions' busts
 goes into PAL3 once the hero is chosen: PAL3 is the text palette, but the font only uses colour 15,
 so every palette here keeps 15 white and has 1-14 to itself (1 is the outline).
 
-    Kämpfer: a scarred veteran in plate; a blonde warrior with a braid, chain mail and furs;
+    Kämpfer: a bald veteran with a grey beard and an earring; a blonde warrior with a braid, chain mail and furs;
              a dwarf with a braided red beard and a helmet
     Schurke: a hooded rogue with a scarf over his face; a dark-skinned rogue with gold earrings
              and leather straps; an elf with silver hair and a green cloak
@@ -54,18 +54,35 @@ class Pal:
 
 # ---------------------------------------------------------------- body parts
 def head(c, skin, cx=40, cy=40, rx=14, ry=18, jaw=0.45, ears=None):
-    """Neck, face (shaded from the upper left) and optionally ears ('human' / 'elf')."""
+    """Neck, face and optionally ears ('human' / 'elf'). The face is lit from the front-left: the
+    shadow lies as a band along the right edge and under the chin -- a diagonal split through the
+    face read like a mask."""
     hi, mid, lo = skin
     if ears == "human":
-        c.ellipse(cx - rx, cy + 3, 3, 5, mid)
-        c.ellipse(cx + rx, cy + 3, 3, 5, lo)
+        c.ellipse(cx - rx, cy + 3, 2.5, 4.5, mid)
+        c.ellipse(cx + rx, cy + 3, 2.5, 4.5, lo)
     elif ears == "elf":
         F.ear(c, (cx - rx + 1, cy - 5), (cx - rx + 1, cy + 5), (cx - rx - 13, cy - 16), mid, hi)
         F.ear(c, (cx + rx - 1, cy - 5), (cx + rx - 1, cy + 5), (cx + rx + 13, cy - 16), lo, mid)
-    c.rect(cx - 7, cy + 12, cx + 7, cy + 30, F.TMP)
+    c.rect(cx - 7, cy + 12, cx + 7, cy + 26, mid)       # neck, shaded on the right
+    c.rect(cx + 3, cy + 12, cx + 7, cy + 26, lo)
     F.face(c, cx, cy, rx, ry, jaw)
-    c.shade_region(F.TMP, hi, mid, lo, cx - 2, cy, rx + 2, ry + 4)
-    c.rect(cx - 6, cy + 18, cx + 6, cy + 21, lo)          # shadow under the chin
+    for y in range(c.h):
+        for x in range(c.w):
+            if c.px[y][x] != F.TMP:
+                continue
+            nx = (x + 0.5 - cx) / rx
+            ny = (y + 0.5 - cy) / ry
+            if nx > 0.62 or ny > 0.86:
+                col = lo
+            elif nx < -0.2 and -0.6 < ny < 0.45:
+                col = hi
+            else:
+                col = mid
+            if 0.55 < nx <= 0.62 and (x + y) % 2:          # one dithered pixel into the shadow
+                col = lo
+            c.px[y][x] = col
+    c.rect(cx - 6, cy + 18, cx + 6, cy + 20, lo)         # shadow under the chin
 
 
 def eyes(c, iris, lid, brow, cy=40, glint=WHITE, brow_angle=0, white=None):
@@ -187,27 +204,69 @@ def beard(c, ramp, full=True, braided_band=None):
     c.rect(37, 55, 44, 56, F.OUT_C)                       # the mouth, just a line
 
 
+def face_details(c, skin, iris, brow, lip, cy=40, frown=1):
+    hi, mid, lo = skin
+    c.line(29, cy - 4 + frown, 37, cy - 4 - frown, brow)  # brows
+    c.line(29, cy - 5 + frown, 37, cy - 5 - frown, brow)
+    c.line(43, cy - 4 - frown, 51, cy - 4 + frown, brow)
+    c.line(43, cy - 5 - frown, 51, cy - 5 + frown, brow)
+    c.rect(30, cy - 2, 38, cy - 1, lo)                    # shadow under the brow
+    c.rect(42, cy - 2, 50, cy - 1, lo)
+    F.almond_eye(c, 31, cy, iris, F.OUT_C, white=hi, glint=WHITE)
+    F.almond_eye(c, 43, cy, iris, F.OUT_C, white=hi, glint=WHITE)
+    c.line(40, cy + 2, 40, cy + 8, mid)                   # nose: ridge lit, side shaded
+    c.line(41, cy + 3, 42, cy + 8, lo)
+    c.rect(38, cy + 9, 43, cy + 10, lo)
+    c.rect(36, cy + 14, 45, cy + 15, F.OUT_C)             # mouth line
+    c.rect(37, cy + 15, 44, cy + 16, lip)                 # lower lip
+
+
+def short_beard(c, ramp, cy=40):
+    """A trimmed full beard: solid, following the jaw, lighter where the light falls."""
+    for y in range(cy + 6, cy + 22):
+        for x in range(22, 59):
+            if c.get(x, y) in (F.TR,):
+                continue
+            k = (y - cy) / 18.0
+            half = 14 - max(0, (y - cy - 8)) * 0.55
+            if abs(x + 0.5 - 40) < half and (y > cy + 11 or abs(x + 0.5 - 40) > 9):
+                c.set(x, y, ramp[1] if x < 44 else ramp[2])
+    for x in range(33, 48):                                # moustache
+        c.set(x, cy + 12, ramp[1])
+        c.set(x, cy + 13, ramp[1] if x < 44 else ramp[2])
+    c.rect(36, cy + 14, 45, cy + 15, F.OUT_C)             # the mouth in it
+    for x in range(26, 40, 3):                             # a little texture on the lit side
+        y = cy + 16 + (x % 2)
+        if c.get(x, y) == ramp[1]:
+            c.set(x, y, ramp[0])
+
+
 # ---------------------------------------------------------------- the portraits
 def fighter_1():
-    """A scarred veteran: short dark hair, stubble, plate armour, a red tabard."""
+    """A bald veteran: a shaven head, a grey stubble beard drawn as a solid
+    shape, dark skin, a gold earring, a scar across the cheek, a leather gorget over mail."""
     p, c = Pal(), F.Canvas(80, 96)
-    skin = p.ramp((0xEC, 0xBC, 0x9C), (0xC8, 0x90, 0x70), (0x8C, 0x5C, 0x44))
-    hair = p.ramp((0x6C, 0x48, 0x30), (0x44, 0x2C, 0x1C), (0x28, 0x18, 0x10))
-    steel = p.ramp((0xF0, 0xF0, 0xF8), (0xA0, 0xA8, 0xBC), (0x58, 0x60, 0x74))
-    red = p((0xB0, 0x28, 0x28))
-    leather = p((0x5C, 0x38, 0x24))
-    iris = p((0x5C, 0x7C, 0x98))
+    skin = p.ramp((0xB0, 0x7C, 0x5C), (0x88, 0x58, 0x3C), (0x58, 0x38, 0x28))
+    grey = p.ramp((0xC8, 0xC8, 0xC0), (0x90, 0x90, 0x8C), (0x5C, 0x5C, 0x5C))
+    steel = p.ramp((0xE8, 0xEC, 0xF4), (0x98, 0xA0, 0xB4), (0x54, 0x5C, 0x70))
+    leather = p.ramp((0x9C, 0x68, 0x40), (0x6C, 0x44, 0x28), (0x40, 0x28, 0x18))
+    gold = p((0xE8, 0xB8, 0x48))
+    iris = leather[2]
     torso(c, steel)
-    c.poly([(34, 70), (46, 70), (48, 96), (32, 96)], red)
-    c.line(40, 72, 40, 95, hair[2])
-    pauldrons(c, steel)
-    collar(c, leather)
-    head(c, skin, ears="human", jaw=0.35)
-    hair_cap(c, hair, hairline=26, part=True)
-    beard(c, hair, full=False)
-    eyes(c, iris, F.OUT_C, hair[2], brow_angle=1, white=skin[0])
-    nose_mouth(c, skin[2], skin[2])
-    c.line(49, 32, 45, 50, red)                           # the scar over his eye
+    chain(c, steel, y0=74)
+    pauldrons(c, leather)
+    c.poly([(26, 62), (54, 62), (58, 74), (22, 74)], leather[1])   # leather gorget
+    c.line(24, 66, 56, 66, leather[0])
+    head(c, skin, rx=15, ry=19, jaw=0.15, ears="human")
+    for y in range(16, 30):                                # shaven head: a sheen on the scalp
+        for x in range(30, 40):
+            if ((x - 34) / 5) ** 2 + ((y - 22) / 4) ** 2 <= 1 and c.get(x, y) != F.TR:
+                c.set(x, y, skin[0])
+    face_details(c, skin, iris, grey[2], skin[2])
+    short_beard(c, grey)
+    c.line(31, 45, 36, 50, skin[0])                        # scar across the cheek
+    c.ellipse(55, 47, 1.6, 2.2, gold)                      # earring
+    c.set(55, 47, skin[2])
     c.outline()
     return c, p
 
