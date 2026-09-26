@@ -59,6 +59,7 @@ static void onEnter(Player *p)
     countdown_start(COUNTDOWN_ROUNDS, onRound);
     combat_setRoundHook(countdown_round);
     say("Der Nautiloid stürzt!", "10 RUNDEN BIS ZUM ABSTURZ", "(3 Schritte = 1 Runde)");
+    say("Im Westen ringt Zhalk mit", "dem Gedankenschinder. Wer", "sich ihm nähert, kämpft.");
 }
 
 static void onTransponder(void)

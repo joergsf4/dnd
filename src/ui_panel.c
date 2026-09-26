@@ -74,7 +74,8 @@ void uiPanel_drawInventory(void)
     text_draw(text, UI_PANEL_COL, 15);
     sprintf(text, "TRÄNKE:  %2d", inventory.healingPotions);
     text_draw(text, UI_PANEL_COL, 16);
-    text_draw(inventory.hasBasicGear ? "AUSRÜST.: JA" : "AUSRÜST.: - ", UI_PANEL_COL, 17);
+    sprintf(text, "RUCKSACK: %2d", inventory.bagCount);
+    text_draw(text, UI_PANEL_COL, 17);
     u8 row = 18;                         // key items while carried, packed from row 18
     for (u8 i = 0; i < ITEM_COUNT && row < 18 + INVENTORY_ITEM_ROWS; i++)
         if (inventory_hasItem((ItemId) i))

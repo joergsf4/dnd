@@ -93,8 +93,10 @@ together in Room 1 (the "Klonkammer" — see `BeschreibungInhaltVerticalSlice.md
       class + HP/MP + three small (1-5) skill-check modifiers, not real ability scores. Decide how
       much of real D&D rules to keep vs. simplify.
 - [ ] The scroll from Room 5 has no use yet (a one-shot combat spell would fit).
-- [ ] Real inventory/equipment screen — the panel's item block is a live readout, not an
-      interactive screen.
+- [x] Equipment: weapon/armour/shield per character, backpack, equipment screen (B > Ausrüstung),
+      5e proficiencies; the hero starts with nothing and finds his gear in Room 1's chest.
+- [ ] Not in yet: two-handed weapons (Großschwert + Schild is allowed), weight, selling/buying,
+      rings/amulets.
 
 ## Combat
 - [x] D&D 5e / BG3 level-1 class features (README, "Class features"): Kämpfer, Schurke, Magier,

@@ -2,6 +2,8 @@
 #include "dungeon_view.h"
 #include "ui_panel.h"
 #include "abilities.h"
+#include "equipment.h"
+#include "inventory.h"
 #include "textbox.h"
 #include "sfx.h"
 
@@ -111,10 +113,9 @@ void encounter_fight(Player *p, RoomObject *group)
 
     if (group->param0 == ENC_ZHALK)
     {
-        Character *c = ab_giveEverburn();
-        char l1[32];
-        sprintf(l1, "Sie geht an %s.", c ? c->name : "niemanden");
-        const char *lines[3] = { "Zhalk fällt! Die Immer-", "brand-Klinge lodert weiter.", l1 };
+        inventory_addEquip(EQ_EVERBURN);
+        uiPanel_drawInventory();
+        const char *lines[3] = { "Zhalk fällt! Seine Klinge", "lodert weiter: Immerbrand.", "(B: Ausrüstung)" };
         textbox_show(lines, 3, NULL, 0);
     }
 }

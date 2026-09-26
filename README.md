@@ -107,6 +107,7 @@ src/
   sfx.c/.h               Music and sound effects (XGM2)
   ending.c/.h            The escape sequence and the "ENDE DES PROLOGS" screen
   abilities.c/.h         Class features shared by combat and dungeon, party menu (B)
+  equipment.c/.h         Weapons, armour, shields: slots, proficiencies, the equipment screen
   combat.c/.h            Turn-based menu combat (see "Combat")
   encounter.c/.h         Enemy groups in the dungeon: closing in, starting fights
   figures.c/.h           Figure sprites in front of the view (dialogue scenes, combat)
@@ -241,7 +242,25 @@ No feats at level 1, so the classes are their features (`src/abilities.h` has th
   room and their direction, hidden ones too).
 
 The restoration stations are the long rest: full KP, ZP and HH. **B** in the dungeon opens the
-party menu: Heiltrank, Magierrüstung, Heilende Hände, Göttlicher Sinn.
+party menu: Ausrüstung, Heiltrank, Fähigkeiten (Magierrüstung, Heilende Hände, Göttlicher Sinn).
+
+### Equipment
+
+Three slots per character -- weapon, armour, shield -- decide armour class and damage die
+(`src/equipment.c`, 5e values): Dolch W4, Kampfstab W6, Kurzschwert W6, Streitkolben W6, Rapier W8,
+Langschwert W8, Großschwert W12, Immerbrand W10 + W4 fire; Lederrüstung 11 + GES, beschlagenes
+Leder 12 + GES, Kettenhemd 13 + GES (max 2), Halbplatte 15 + GES (max 2), Kettenpanzer 16, Schild +2.
+Without armour 10 + GES, without a weapon a fist (1 + bonus). Proficiencies as in 5e: the Magier
+only dagger and quarterstaff, no armour or shield; the Schurke simple weapons, short sword, rapier,
+longsword, light armour, no shield; fighters and the paladin everything; "Wir" nothing.
+
+The hero wakes up with nothing: the cartilage chest in Room 1 holds his class's gear (Kämpfer:
+Langschwert, Kettenhemd, Schild; Schurke: Rapier, Lederrüstung, Dolch; Magier: Kampfstab, Dolch)
+and offers to open the equipment screen right away. More loot: a dagger on the mind flayer's
+corpse, studded leather in the ornate chest, the Everburn Blade from Zhalk. Lae'zel and
+Schattenherz come equipped. Unworn items are in the backpack (12 places, count in the panel).
+The equipment screen (B > Ausrüstung) covers the view: left/right picks a member, up/down and A a
+slot, A an item from the backpack (or "ablegen"), B goes back.
 - An intact acid tank within 3 cells is a target too: once hit it bursts, 2d6 to every enemy.
 - Won: gold, fallen members come to with 1 KP. Everyone down: game over, restart.
 
@@ -252,7 +271,7 @@ encounters in `src/encounter.c`.
 
 Die Brücke (7x12): the transponder at the far end, two groups guarding the middle line (they
 only close in within 2 cells, so the outer lanes lead past them), Kommandant Zhalk duelling the
-mind flayer on the west side (walk up to him and you fight him: 45 KP, two attacks per turn,
+mind flayer on the west side (walk up next to him and you fight him -- the arrival text says so: 45 KP, two attacks per turn,
 the Everburn Blade in his hand -- its fire colours cycle, `SYS_setVBlankCallback` in combat.c),
 acid tanks, burning wreckage, hull breaches onto the hellmouth. The gate from Room 4 opens once
 Schattenherz is free.
@@ -260,8 +279,8 @@ Schattenherz is free.
 On arrival the mind flayer (bust) and Zhalk (figure) speak, then the **countdown** starts
 (`src/countdown.c`): 10 rounds, a round being a combat round or three steps (30 feet); the panel
 shows "ABSTURZ: n" (row 21, blinking at 3 and below). After round 5 two cambions storm in from
-behind. At zero the ship crashes: game over. Beating Zhalk wins the Immerbrand-Klinge (the
-party's fighter: weapon die at least 1W10, +1W4 fire). Connecting the transponder's nerve strands
+behind. At zero the ship crashes: game over. Beating Zhalk wins the Immerbrand-Klinge (into
+the backpack: W10 + W4 fire for whoever can wield it). Connecting the transponder's nerve strands
 plays the ending (`src/ending.c`): the ship tears itself away, the screen quakes and flashes, it
 crashes on the Sword Coast -- then "ENDE DES PROLOGS" with the party, gold and gems.
 

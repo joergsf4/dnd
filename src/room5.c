@@ -6,6 +6,7 @@
 #include "dungeon_view.h"
 #include "dungeon_objects.h"
 #include "skill_check.h"
+#include "equipment.h"
 #include "party.h"
 #include "game.h"
 
@@ -132,19 +133,21 @@ static void onOrnateChest(RoomObject *obj)
         }
         obj->flags |= OBJFLAG_TRIGGERED;
         inventory_giveItem(ITEM_SCROLL);
+        inventory_addEquip(EQ_STUDDED);
         inventory_addGold(25);
         inventory_addGem(1);
         uiPanel_drawInventory();
-        say("Klick! Das Schloss gibt", "nach. Darin: 25 Gold, eine", "Schriftrolle und ein Onyx.");
+        say("Klick! Darin: 25 Gold,", "Schriftrolle, Onyx und", "beschlagenes Leder.");
         return;
     }
     obj->flags |= OBJFLAG_TRIGGERED;
     inventory_takeItem(ITEM_GOLD_KEY);
     inventory_giveItem(ITEM_SCROLL);
+    inventory_addEquip(EQ_STUDDED);
     inventory_addGold(25);
     inventory_addGem(1);
     uiPanel_drawInventory();
-    say("Der Schlüssel passt! Darin:", "25 Gold, eine Schriftrolle", "und ein Onyx.");
+    say("Der Schlüssel passt! Darin:", "25 Gold, Schriftrolle, Onyx", "und beschlagenes Leder.");
 }
 
 static void room5_onInteract(Player *p, RoomObject *obj)

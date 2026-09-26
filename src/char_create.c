@@ -9,7 +9,7 @@ static const CharClass classOrder[3] = { CLASS_FIGHTER, CLASS_ROGUE, CLASS_MAGE 
 // Two lines per class, at most 21 characters each (they sit right of the portrait): the class
 // features (src/abilities.h).
 static const char *const blurbs[3][2] = {
-    { "ERHOLEN, SPALTEN,",    "NIEDERWERFEN. RK 17." },
+    { "ERHOLEN, SPALTEN,",    "NIEDERWERFEN." },
     { "HINTERHÄLTIG, FLINK,", "VERSTECKEN, EXPERTISE" },
     { "FEUERPFEIL, SCHLAF,",  "MAGISCHES GESCHOSS." },
 };

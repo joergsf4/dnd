@@ -5,6 +5,7 @@
 #include "party.h"
 #include "ui_panel.h"
 #include "dungeon_objects.h"
+#include "equipment.h"
 
 // Every text line must fit the textbox: at most 27 characters on screen (an umlaut counts as one).
 
@@ -83,8 +84,9 @@ static void onCorpse(RoomObject *obj)
     obj->flags |= OBJFLAG_TRIGGERED;
     inventory_addGold(15);
     inventory_addGem(1);
+    inventory_addEquip(EQ_DAGGER);
     uiPanel_drawInventory();
-    say("Ein toter Gedankenschinder.", "In seiner Robe: 15 Gold", "und ein Edelstein.");
+    say("Ein toter Gedankenschinder.", "Bei ihm: 15 Gold, ein", "Edelstein und ein Dolch.");
 }
 
 static void onChest(RoomObject *obj)
@@ -95,10 +97,13 @@ static void onChest(RoomObject *obj)
         return;
     }
     obj->flags |= OBJFLAG_TRIGGERED;
-    inventory_grantBasicGear();
+    equip_giveHeroGear(party.members[0].cls);   // the hero woke up with nothing
     inventory_addHealingPotion(1);
     uiPanel_drawInventory();
-    say("Eine Knorpelkiste. Darin:", "Grundausrüstung und", "ein Heiltrank.");
+    say("Eine Knorpelkiste. Darin:", "deine Ausrüstung und", "ein Heiltrank.");
+    const char *lines[1] = { "Gleich anlegen?" };
+    const char *options[2] = { "Ja", "Später (B: Gruppe)" };
+    if (textbox_show(lines, 1, options, 2) == 0) equip_screen(0);
 }
 
 static void room1_onInteract(Player *p, RoomObject *obj)

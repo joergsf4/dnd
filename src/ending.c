@@ -7,6 +7,7 @@
 #include "ui_panel.h"
 #include "text.h"
 #include "sfx.h"
+#include "equipment.h"
 #include "game.h"
 
 static void say(const char *l0, const char *l1, const char *l2)
@@ -57,7 +58,7 @@ void ending_run(void)
     char line[40];
     sprintf(line, "GOLD: %d   EDELSTEINE: %d", inventory.gold, inventory.gems);
     text_draw(line, 8, 21);
-    if (inventory_hasItem(ITEM_EVERBURN)) text_draw("IMMERBRAND-KLINGE ERBEUTET!", 7, 23);
+    if (equip_partyHas(EQ_EVERBURN)) text_draw("IMMERBRAND-KLINGE ERBEUTET!", 7, 23);
     text_draw("DANKE FÜRS SPIELEN!", 11, 25);
     text_draw("START: NEUES SPIEL", 11, 26);
 

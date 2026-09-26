@@ -295,7 +295,7 @@ static void weaponAttack(u8 m, u8 t, Strike strike)
 
     u8 dmg = weaponDie(c) + c->dmgBonus;
     if (r == 20) dmg += weaponDie(c);                    // a natural 20 rolls the damage die twice
-    if (c->buffs & BUFF_EVERBURN) dmg += roll(4);        // the Everburn Blade's fire
+    if (c->fireDie) dmg += roll(c->fireDie);             // the Everburn Blade's fire
     bool sneak = c->cls == CLASS_ROGUE && (mode > 0 || allyFighting(m));
     if (sneak) dmg += roll(6);                           // Hinterhältiger Angriff: +1W6
     bool fell = damageFoe(t, dmg);

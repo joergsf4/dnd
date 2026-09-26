@@ -367,7 +367,19 @@ def main():
             act(b, "gamepads.1.a")
             b.shot("r1_chest")
             act(b, "gamepads.1.a")
-            b.shot("r1_chest_open")            # opened chest, panel: potion + gear
+            b.shot("r1_equip_ask")             # "Gleich anlegen?"
+            act(b, "gamepads.1.a", 20)         # Ja: the equipment screen
+            b.shot("r1_equip_screen")
+            act(b, "gamepads.1.a")             # slot Waffe
+            b.shot("r1_equip_pick")
+            act(b, "gamepads.1.a")             # the first candidate
+            for _ in range(2):                 # Rüstung, then Schild
+                act(b, "gamepads.1.down", 8)
+                act(b, "gamepads.1.a")
+                act(b, "gamepads.1.a")
+            b.shot("r1_equipped")              # AC and damage from the gear
+            act(b, "gamepads.1.b", 20)
+            b.shot("r1_chest_open")            # opened chest, panel: potion, backpack
 
             # --- past the door, west wall (0,1) ---
             act(b, "gamepads.1.left")          # north -> west

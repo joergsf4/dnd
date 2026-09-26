@@ -4,6 +4,7 @@
 #include <genesis.h>
 
 #define PARTY_MAX 4
+#define EQUIP_SLOTS 3   // weapon, armour, shield (src/equipment.h)
 
 typedef enum
 {
@@ -25,7 +26,10 @@ typedef struct
     u8 str, dex, intl;  // minimal attribute block for skill_check.c; WIS/CON/CHA not modeled yet
     u8 ac;              // combat (src/combat.c): armour class an attack roll has to reach...
     u8 atk;             // ...d20 + atk...
-    u8 dmgDie, dmgBonus; // ...and on a hit 1d(dmgDie) + dmgBonus damage
+    u8 dmgDie, dmgBonus; // ...and on a hit 1d(dmgDie) + dmgBonus damage...
+    u8 fireDie;         // ...+ 1d(fireDie) fire (the Everburn Blade); ac, dmgDie and fireDie come
+                        // from the equipment (equip_recalc)
+    u8 equip[EQUIP_SLOTS]; // EquipId per slot, EQ_NONE = empty
     u8 buffs;           // lasting effects, BUFF_* in src/abilities.h
     u8 portrait;        // the hero's portrait, 0..PORTRAITS_PER_CLASS-1 (src/portraits.c)
     bool active;        // FALSE = empty slot, not yet recruited

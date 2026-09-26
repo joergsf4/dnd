@@ -3,6 +3,7 @@
 #include "textbox.h"
 #include "ui_panel.h"
 #include "sfx.h"
+#include "equipment.h"
 
 // Every text line must fit the textbox: at most 27 characters on screen (an umlaut counts as one).
 
@@ -24,7 +25,7 @@ bool ab_isFighter(const Character *c)
 
 u8 ab_armorClass(const Character *c)
 {
-    return (c->buffs & BUFF_MAGE_ARMOR) ? 13 + c->dex : c->ac;
+    return c->ac;   // kept up to date by equip_recalc
 }
 
 Character *ab_pickMember(const char *question)
@@ -68,6 +69,7 @@ void ab_mageArmor(Character *mage)
 {
     mage->mp--;
     mage->buffs |= BUFF_MAGE_ARMOR;
+    equip_recalc(mage);
     sfx_play(SFX_SPELL);
     uiPanel_redrawChrome();
 }
@@ -122,7 +124,24 @@ static void divineSense(const Player *p)
 
 // ---------------------------------------------------------------- party menu (B)
 
-typedef enum { PM_POTION, PM_MAGE_ARMOR, PM_LAY_ON_HANDS, PM_DIVINE_SENSE, PM_BACK } PartyAction;
+typedef enum
+{
+    PM_EQUIP, PM_POTION, PM_FEATURES, PM_MAGE_ARMOR, PM_LAY_ON_HANDS, PM_DIVINE_SENSE, PM_BACK
+} PartyAction;
+
+typedef struct
+{
+    const char *options[4];
+    PartyAction acts[4];
+    u8 n;
+} PartyMenu;
+
+static void addOption(PartyMenu *menu, const char *option, PartyAction act)
+{
+    if (menu->n >= 4) return;
+    menu->options[menu->n] = option;
+    menu->acts[menu->n++] = act;
+}
 
 void ab_partyMenu(const Player *p)
 {
@@ -134,20 +153,31 @@ void ab_partyMenu(const Player *p)
         if (c->cls == CLASS_MAGE) mage = c;
         if (c->cls == CLASS_SHADOWHEART) paladin = c;
     }
+    bool mageArmor = mage && mage->mp && !(mage->buffs & BUFF_MAGE_ARMOR);
 
-    const char *options[4];
-    PartyAction acts[4];
-    u8 n = 0;
-    if (inventory.healingPotions)                        { options[n] = "Heiltrank";          acts[n++] = PM_POTION; }
-    if (mage && mage->mp && !(mage->buffs & BUFF_MAGE_ARMOR)) { options[n] = "Magierrüstung (1 ZP)"; acts[n++] = PM_MAGE_ARMOR; }
-    if (paladin && paladin->mp)                          { options[n] = "Heilende Hände";     acts[n++] = PM_LAY_ON_HANDS; }
-    if (paladin && n < 4)                                { options[n] = "Göttlicher Sinn";    acts[n++] = PM_DIVINE_SENSE; }
-    if (n < 4)                                           { options[n] = "Zurück";             acts[n++] = PM_BACK; }
+    PartyMenu menu = { .n = 0 };
+    addOption(&menu, "Ausrüstung", PM_EQUIP);
+    if (inventory.healingPotions) addOption(&menu, "Heiltrank", PM_POTION);
+    if (mageArmor || paladin) addOption(&menu, "Fähigkeiten", PM_FEATURES);
+    addOption(&menu, "Zurück", PM_BACK);
 
     const char *lines[1] = { "Gruppe:" };
-    char l0[32], l1[32];
-    switch (acts[textbox_show(lines, 1, options, n)])
+    PartyAction act = menu.acts[textbox_show(lines, 1, menu.options, menu.n)];
+    if (act == PM_FEATURES)
     {
+        PartyMenu sub = { .n = 0 };
+        if (mageArmor) addOption(&sub, "Magierrüstung (1 ZP)", PM_MAGE_ARMOR);
+        if (paladin && paladin->mp) addOption(&sub, "Heilende Hände", PM_LAY_ON_HANDS);
+        if (paladin) addOption(&sub, "Göttlicher Sinn", PM_DIVINE_SENSE);
+        addOption(&sub, "Zurück", PM_BACK);
+        const char *prompt[1] = { "Welche Fähigkeit?" };
+        act = sub.acts[textbox_show(prompt, 1, sub.options, sub.n)];
+    }
+
+    char l0[32], l1[32];
+    switch (act)
+    {
+        case PM_EQUIP: equip_screen(0); break;
         case PM_POTION:
         {
             Character *t = ab_pickMember("Wer bekommt den Heiltrank?");
@@ -171,21 +201,6 @@ void ab_partyMenu(const Player *p)
         case PM_DIVINE_SENSE: divineSense(p); break;
         default: break;
     }
-}
-
-Character *ab_giveEverburn(void)
-{
-    for (u8 i = 0; i < PARTY_MAX; i++)
-    {
-        Character *c = &party.members[i];
-        if (!c->active || !ab_isFighter(c)) continue;
-        c->buffs |= BUFF_EVERBURN;
-        if (c->dmgDie < 10) c->dmgDie = 10;
-        inventory_giveItem(ITEM_EVERBURN);
-        uiPanel_redrawChrome();
-        return c;
-    }
-    return NULL;
 }
 
 void ab_gameOver(const char *l0, const char *l1, const char *l2)

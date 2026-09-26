@@ -25,12 +25,24 @@ void inventory_addHealingPotion(u8 amount)
     inventory.healingPotions += amount;
 }
 
-void inventory_grantBasicGear(void)
+void inventory_addEquipQuiet(u8 id)
 {
-    inventory.hasBasicGear = TRUE;
+    if (inventory.bagCount < INVENTORY_BAG_MAX) inventory.bag[inventory.bagCount++] = id;
 }
 
-static const char *const itemNames[ITEM_COUNT] = { "RUNE", "SCHLÜSSEL", "SCHRIFTROLLE", "IMMERBRAND" };
+void inventory_addEquip(u8 id)
+{
+    sfx_play(SFX_ITEM);
+    inventory_addEquipQuiet(id);
+}
+
+void inventory_removeEquipAt(u8 index)
+{
+    for (u8 i = index; i + 1 < inventory.bagCount; i++) inventory.bag[i] = inventory.bag[i + 1];
+    if (inventory.bagCount) inventory.bagCount--;
+}
+
+static const char *const itemNames[ITEM_COUNT] = { "RUNE", "SCHLÜSSEL", "SCHRIFTROLLE" };
 
 void inventory_giveItem(ItemId item)
 {
